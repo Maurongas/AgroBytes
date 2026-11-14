@@ -221,7 +221,9 @@ def impact(seq: list[CropParams], seasons: list[SeasonClimate]) -> tuple[float, 
     """(balance hídrico, riego necesario, nitrógeno estimado) para una secuencia de 3 cultivos."""
     balance = sum(sc.rain_mm - c.water_need_mm for c, sc in zip(seq, seasons))
     irrigation = sum(max(0.0, c.water_need_mm - sc.rain_mm) for c, sc in zip(seq, seasons))
-    nitrogen = max(0.0, BASE_NITROGEN_KG_HA + sum(c.nitrogen_delta_kg_ha for c in seq))
+    # Sin tope en 0: con el catálogo real casi todo resta nitrógeno y el tope dejaba ambos valores en 0.
+    # Negativo = la rotación consume más de lo que el suelo tenía al inicio (hay que fertilizar).
+    nitrogen = BASE_NITROGEN_KG_HA + sum(c.nitrogen_delta_kg_ha for c in seq)
     return round(balance), round(irrigation), round(nitrogen)
 
 
@@ -344,7 +346,7 @@ def recommend(data: ClimateData, crops: list[CropParams], req: AnalysisRequest, 
         impact=[
             ImpactItem(label="Balance hídrico", unit="mm", current=bal_cur, recommended=bal_rec, better_when="higher"),
             ImpactItem(label="Riego necesario", unit="mm", current=irr_cur, recommended=irr_rec, better_when="lower"),
-            ImpactItem(label="Nitrógeno en suelo (estimado)", unit="kg/ha", current=n_cur, recommended=n_rec,
+            ImpactItem(label="Balance de nitrógeno (estimado)", unit="kg/ha", current=n_cur, recommended=n_rec,
                        better_when="higher"),
         ],
         soil_health=SoilHealth(current=soil_health_index(baseline), recommended=soil_health_index(chosen)),
