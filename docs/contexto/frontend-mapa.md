@@ -1,4 +1,4 @@
-# Contexto Claude — Frontend: Mapa Interactivo y Selección de Ubicación
+# Frontend: Mapa Interactivo y Selección de Ubicación
 
 **Responsable:** hdmiaa · **Issue:** #2 · **Rama base:** `feature/front-mapa`
 
