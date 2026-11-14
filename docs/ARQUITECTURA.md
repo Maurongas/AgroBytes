@@ -90,9 +90,9 @@ sequenceDiagram
 
 Si NASA no responde y no hay caché → `503 {"detail": "NASA POWER no disponible"}`.
 
-> **Estado actual (issue #5):** mientras el DBA termina `repositories/`, el caché de clima vive **en memoria**
-> (se pierde al reiniciar), el catálogo se lee de `app/data/crops.json` (si falta → 503) y el análisis
-> **no se guarda** (el `id` es temporal).
+Caché de clima en dos niveles: memoria (rápido) → tabla `climate_cache` (sobrevive reinicios). Si NASA está
+caído se usa el registro guardado **aunque esté vencido**; si la BD falla, se sigue sin caché (nunca tumba el análisis).
+El catálogo se lee de la tabla `crops`. El análisis se guarda en `analyses` y el `id` de la respuesta es el de la BD.
 
 ---
 
@@ -110,22 +110,22 @@ NasaSpaceApp/
 │   └── contexto/                # contexto por rol para agentes
 ├── backend/
 │   ├── Dockerfile, requirements.txt (versiones fijadas)
-│   ├── alembic.ini, alembic/versions/       [DBA · pendiente]
+│   ├── alembic.ini, alembic/versions/       [DBA ✅]
 │   ├── research/                # script de investigación de fuentes (no es parte de la app) [Backend]
 │   ├── tests/                   # pytest                                     [Backend + DBA]
 │   └── app/
 │       ├── main.py              # app, CORS, routers, /health                [Backend]
 │       ├── core/config.py       # Settings desde env (pydantic-settings)     [DBA]
 │       ├── db/database.py       # engine, SessionLocal, Base, get_db         [DBA]
-│       ├── db/seed.py           # carga data/crops.json                      [DBA · pendiente]
-│       ├── models/              # analysis.py crop.py climate_cache.py       [DBA · pendiente]
-│       ├── repositories/        # analyses.py crops.py climate_cache.py      [DBA · pendiente]
-│       ├── data/crops.json      # catálogo semilla                           [DBA · pendiente]
+│       ├── db/seed.py           # carga data/crops.json                      [DBA ✅]
+│       ├── models/              # analysis.py crop.py climate_cache.py       [DBA ✅]
+│       ├── repositories/        # analyses.py crops.py climate_cache.py      [DBA ✅]
+│       ├── data/crops.json      # catálogo semilla                           [DBA ✅]
 │       ├── schemas/             # contrato API (Pydantic)                    [Backend]
 │       │   ├── base.py  analysis.py  climate.py  crop.py
 │       ├── api/v1/              # routers delgados                           [Backend]
 │       │   ├── analyses.py  climate.py  crops.py
-│       └── services/            # lógica                                     [Backend · pendiente]
+│       └── services/            # lógica                                     [Backend ✅]
 │           ├── geo.py           # centroide y área del polígono (puro)
 │           ├── nasa_power.py    # cliente HTTP NASA POWER
 │           ├── climate.py       # resumen climático + caché
@@ -166,13 +166,13 @@ snake_case; `schemas/base.py` hace la conversión). Documentación viva en `/doc
 | Método | Ruta | Descripción | Estado |
 |---|---|---|---|
 | GET | `/health` | Estado del backend y de la BD | ✅ listo |
-| POST | `/api/v1/analyses` | Analiza una parcela: clima + rotación; guarda el análisis | ✅ (aún no guarda; necesita `crops.json`) |
-| GET | `/api/v1/analyses?limit=20` | Historial (resúmenes) | 501 (stub) |
-| GET | `/api/v1/analyses/{id}` | Detalle de un análisis guardado | 501 (stub) |
+| POST | `/api/v1/analyses` | Analiza una parcela: clima + rotación; guarda el análisis | ✅ listo |
+| GET | `/api/v1/analyses?limit=20` | Historial (resúmenes) | ✅ listo |
+| GET | `/api/v1/analyses/{id}` | Detalle de un análisis guardado | ✅ listo |
 | GET | `/api/v1/climate?lat=&lon=` | Resumen climático NASA POWER de un punto (útil para depurar) | ✅ listo |
-| GET | `/api/v1/crops` | Catálogo de cultivos | ✅ (necesita `crops.json`) |
+| GET | `/api/v1/crops` | Catálogo de cultivos | ✅ listo |
 
-Mientras un endpoint responda 501, el frontend trabaja con `VITE_USE_MOCK=true` (valor por defecto).
+Todos los endpoints están implementados: el frontend ya puede usar `VITE_USE_MOCK=false`.
 
 ### 5.1 Enums (códigos en inglés; las etiquetas en español viven en el frontend)
 | Campo | Valores |
@@ -218,7 +218,7 @@ Response `201`:
   "impact": [
     { "label": "Balance hídrico", "unit": "mm", "current": -120, "recommended": -45, "betterWhen": "higher" },
     { "label": "Riego necesario", "unit": "mm", "current": 520, "recommended": 340, "betterWhen": "lower" },
-    { "label": "Nitrógeno en suelo (estimado)", "unit": "kg/ha", "current": 38, "recommended": 71, "betterWhen": "higher" }
+    { "label": "Balance de nitrógeno (estimado)", "unit": "kg/ha", "current": 38, "recommended": 71, "betterWhen": "higher" }
   ],
   "soilHealth": { "current": 52, "recommended": 74 },
   "climate": [{ "month": "Ene", "rain": 62, "temp": 14 }, "… 12 meses"],
@@ -267,8 +267,7 @@ El mismo `AnalysisResponse` de §5.2 (se lee del JSON guardado). `404` si no exi
 |---|---|
 | 422 | Validación (Pydantic): polígono inválido, enums, rangos |
 | 404 | `analyses/{id}` no existe |
-| 501 | Endpoint aún no implementado (temporal) |
-| 503 | NASA POWER caído y sin caché |
+| 503 | NASA POWER caído y sin caché · BD no disponible al guardar/leer · tabla `crops` vacía |
 
 Formato siempre: `{"detail": "mensaje legible en español"}` (el `client.ts` lo muestra tal cual).
 
@@ -289,7 +288,7 @@ erDiagram
         string priority
         jsonb soil "nullable"
         jsonb climate_summary "ClimateSummary usado"
-        jsonb result "AnalysisResponse completo"
+        jsonb result "AnalysisResponse sin id ni createdAt (salen de la fila)"
     }
     CROPS {
         string id PK "maize, bean…"
@@ -319,7 +318,9 @@ erDiagram
 Reglas:
 - **Migraciones con Alembic** (no `create_all`). La primera migración crea las 3 tablas,
   `CREATE EXTENSION IF NOT EXISTS postgis` y **elimina la tabla vieja `historial_consultas`**.
-- `climate_cache`: único en `(lat_grid, lon_grid, period)`. La malla de NASA POWER es de ~0.5°.
+- `climate_cache`: único en `(lat_grid, lon_grid, period)`. `lat_grid`/`lon_grid` = centro de celda de POWER según
+  `services/climate.snap_to_grid` (**0.5° × 0.625°**). `payload` = `{"summary": ClimateSummary, "monthly": serie mensual}`.
+- `analyses.id` es `INTEGER`; en la API viaja como texto (`"42"`). Un id no numérico en `/analyses/{id}` → 404.
 - `crops` se llena con `app/db/seed.py` desde `app/data/crops.json` (idempotente: upsert por `id`).
   Los `id` deben ser exactamente los de §5.1. Fuente de rangos: FAO ECOCROP / GAEZ.
 - No hay tabla `farms` en el MVP (las parcelas viven dentro de cada análisis).
@@ -367,7 +368,7 @@ invierno, primavera, verano). Para cada paso se evalúan los cultivos cuyo `seas
 **Impacto** (`current` = repetir `currentCrop` en las 3 temporadas; `recommended` = la rotación):
 - Balance hídrico = Σ(lluvia_temporada − water_need).
 - Riego necesario = Σ max(0, water_need − lluvia_temporada).
-- Nitrógeno en suelo (estimado) = max(0, 40 + Σ nitrogenDelta).
+- Balance de nitrógeno (estimado) = 40 + Σ nitrogenDelta (kg/ha; negativo = hay que fertilizar).
 
 **Salud del suelo (índice estimado 0–100):** 50 + 10 por leguminosa + 8 por cobertura − 10 por cada par de
 pasos consecutivos de la misma familia; acotado a [0, 100]. Se calcula igual para `current` y `recommended`.

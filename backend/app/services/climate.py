@@ -6,20 +6,32 @@ Dos bloques de datos:
 - **Reciente** (endpoint diario, últimos 90 días): cómo viene este año contra lo normal. Cambia cada
   día → su llave de caché incluye la fecha, así que se renueva sola a diario.
 
-Caché: por ahora en memoria (se pierde al reiniciar el backend). Cuando el DBA tenga
-`repositories.climate_cache`, se cambia `_long_term_cache` por la tabla `climate_cache` sin tocar el resto.
+Caché del largo plazo, en dos niveles:
+1. Memoria (`_long_term_cache`): lo más rápido, se pierde al reiniciar el backend.
+2. Tabla `climate_cache` (si el router pasa una sesión `db`): sobrevive reinicios y la comparten todos.
+   Si NASA POWER se cae, se usa el registro guardado aunque esté vencido (mejor un dato viejo que un 503).
+Si la BD falla, se sigue sin ella: la caché nunca debe tumbar un análisis.
+El bloque reciente solo se guarda en memoria (cambia cada día).
+
+Importante: la llave de la tabla es el centro de celda de `snap_to_grid` de este módulo (0.5° × 0.625°,
+la malla real de POWER), no el `snap_to_grid` de `repositories.climate_cache` (0.5° × 0.5°).
 """
 
 import asyncio
 import calendar
+import logging
 import statistics
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from typing import Generic, TypeVar
 
 import httpx
+from pydantic import ValidationError
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.repositories import climate_cache as cache_repo
 from app.schemas.climate import ClimateSummary, MonthlyClimatePoint
 from app.services import nasa_power
 from app.services.nasa_power import NasaUnavailableError, Series
@@ -33,6 +45,9 @@ YEARS = 10
 DATA_DELAY_DAYS = 7  # los datos diarios de POWER llegan con unos días de retraso
 RECENT_DAYS = 90
 MJ_TO_KWH = 1 / 3.6  # 1 kWh = 3.6 MJ
+STALE_MAX_DAYS = 3650  # si NASA está caído, se acepta un registro de la tabla de hasta 10 años
+
+log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -219,26 +234,69 @@ def build_recent(daily: Series, monthly: Series, summary: ClimateSummary, start:
 # ---------------------------------------------------------------- API del módulo (con red y caché)
 
 
-async def _long_term(client: httpx.AsyncClient, lat_g: float, lon_g: float, today: date) -> tuple[ClimateSummary, Series]:
+def _to_payload(summary: ClimateSummary, monthly: Series) -> dict:
+    """Lo que se guarda en `climate_cache.payload` (JSONB)."""
+    return {"summary": summary.model_dump(mode="json"), "monthly": monthly}
+
+
+def _from_payload(payload: dict) -> tuple[ClimateSummary, Series]:
+    return ClimateSummary.model_validate(payload["summary"]), payload["monthly"]
+
+
+def _db_get(db: Session, lat_g: float, lon_g: float, period: str, max_days: int | None = None
+            ) -> tuple[ClimateSummary, Series] | None:
+    try:
+        row = cache_repo.get_valid(db, lat_g, lon_g, period, max_days)
+        return _from_payload(row.payload) if row is not None else None
+    except (SQLAlchemyError, KeyError, TypeError, ValidationError):
+        log.warning("No se pudo leer climate_cache; se sigue sin caché de BD", exc_info=True)
+        db.rollback()
+        return None
+
+
+def _db_save(db: Session, lat_g: float, lon_g: float, period: str, value: tuple[ClimateSummary, Series]) -> None:
+    try:
+        cache_repo.upsert(db, lat_g, lon_g, period, _to_payload(*value))
+    except SQLAlchemyError:
+        log.warning("No se pudo guardar en climate_cache", exc_info=True)
+        db.rollback()
+
+
+async def _long_term(client: httpx.AsyncClient, lat_g: float, lon_g: float, today: date,
+                     db: Session | None = None) -> tuple[ClimateSummary, Series]:
     start_year, end_year = climate_period(today)
-    key = (lat_g, lon_g, f"{start_year}-{end_year}")
+    period = f"{start_year}-{end_year}"
+    key = (lat_g, lon_g, period)
     if (cached := _long_term_cache.get(key)) is not None:
         return cached
-    monthly = await nasa_power.fetch_monthly(lat_g, lon_g, start_year, end_year, client=client)
-    result = (build_summary(monthly, lat_g, lon_g, start_year, end_year), monthly)
+    if db is not None and (stored := _db_get(db, lat_g, lon_g, period)) is not None:
+        _long_term_cache.set(key, stored)
+        return stored
+    try:
+        monthly = await nasa_power.fetch_monthly(lat_g, lon_g, start_year, end_year, client=client)
+        result = (build_summary(monthly, lat_g, lon_g, start_year, end_year), monthly)
+    except NasaUnavailableError:
+        # NASA caído: si hay un registro vencido en la tabla, se usa (ARQUITECTURA §5.7: 503 solo "sin caché")
+        if db is not None and (stale := _db_get(db, lat_g, lon_g, period, STALE_MAX_DAYS)) is not None:
+            log.warning("NASA POWER no disponible; se usa caché vencida de (%s, %s)", lat_g, lon_g)
+            return stale
+        raise
     _long_term_cache.set(key, result)
+    if db is not None:
+        _db_save(db, lat_g, lon_g, period, result)
     return result
 
 
-async def get_climate_summary(lat: float, lon: float, today: date | None = None) -> ClimateSummary:
+async def get_climate_summary(lat: float, lon: float, today: date | None = None,
+                              db: Session | None = None) -> ClimateSummary:
     """Solo el clima de largo plazo (lo usa GET /api/v1/climate)."""
     today = today or datetime.now(timezone.utc).date()
     async with httpx.AsyncClient(timeout=nasa_power.TIMEOUT_S) as client:
-        summary, _ = await _long_term(client, *snap_to_grid(lat, lon), today)
+        summary, _ = await _long_term(client, *snap_to_grid(lat, lon), today, db)
     return summary
 
 
-async def get_climate(lat: float, lon: float, today: date | None = None) -> ClimateData:
+async def get_climate(lat: float, lon: float, today: date | None = None, db: Session | None = None) -> ClimateData:
     """Largo plazo + reciente (lo usa POST /api/v1/analyses). Las dos descargas van en paralelo."""
     today = today or datetime.now(timezone.utc).date()
     lat_g, lon_g = snap_to_grid(lat, lon)
@@ -250,11 +308,11 @@ async def get_climate(lat: float, lon: float, today: date | None = None) -> Clim
         if recent is None:
             # asyncio.gather lanza las dos peticiones a la vez: tarda lo que la más lenta, no la suma
             (summary, monthly), daily = await asyncio.gather(
-                _long_term(client, lat_g, lon_g, today),
+                _long_term(client, lat_g, lon_g, today, db),
                 nasa_power.fetch_daily(lat_g, lon_g, start, end, client=client),
             )
             recent = build_recent(daily, monthly, summary, start, end)
             _recent_cache.set((lat_g, lon_g, end), recent)
         else:
-            summary, _ = await _long_term(client, lat_g, lon_g, today)
+            summary, _ = await _long_term(client, lat_g, lon_g, today, db)
     return ClimateData(summary=summary, recent=recent)
