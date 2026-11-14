@@ -4,7 +4,7 @@ Interfaz web (React + Vite + TypeScript + Tailwind) para seleccionar una parcela
 
 Es un proyecto **independiente** dentro del repo: no modifica `frontend/` ni `backend/`.
 
-## ⚡ Cómo correrlo
+##Cómo correrlo
 
 ### Opción A — con Docker (junto con el resto del proyecto)
 
@@ -39,7 +39,7 @@ VITE_USE_MOCK=false
 
 > ⚠️ La app espera la ruta `POST /api/analyses`, que **todavía no existe** en `backend/` (el backend actual tiene `/api/v1/recommend` y `/api/v1/history`). Mientras no se agregue, déjala en modo mock.
 
-## 📁 Estructura
+## Estructura
 
 | Carpeta | Qué hay |
 |---|---|
