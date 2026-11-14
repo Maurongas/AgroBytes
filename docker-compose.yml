@@ -1,34 +1,45 @@
-# docker-compose.yml
 services:
   db:
     image: postgis/postgis:15-3.3
     environment:
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password # Usa la contraseña que tenías antes
+      POSTGRES_PASSWORD: password
       POSTGRES_DB: agridb
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
     ports:
       - "8000:8000"
     volumes:
       - ./backend:/app
     depends_on:
       - db
+    restart: always
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
     ports:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules # Esta es la línea que evita el error 127
+      - /app/node_modules
+      - /app/.next
     depends_on:
       - backend
-
+    environment:
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
+    tty: true
+    stdin_open: true
+    command: npx next dev
+    restart: always
 volumes:
   postgres_data:
