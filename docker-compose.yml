@@ -1,3 +1,13 @@
+# =====================================================================
+#  docker-compose.yml  —  levanta TODO el proyecto con un solo comando:
+#
+#       docker compose up --build
+#
+#  Son 3 "contenedores" (mini-computadoras aisladas):
+#    db       -> Base de datos PostgreSQL + PostGIS   (puerto 5432)
+#    backend  -> API en Python / FastAPI              (http://localhost:8000/docs)
+#    frontend -> Página web en Next.js                (http://localhost:3000)
+# =====================================================================
 services:
   db:
     image: postgis/postgis:15-3.3
@@ -8,8 +18,16 @@ services:
     ports:
       - "5432:5432"
     volumes:
+      # Los datos de la BD se guardan aquí y sobreviven aunque apagues los contenedores.
+      # Se borran SOLO si corres: docker compose down -v
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+    # Le dice a Docker cómo saber si la BD ya está lista para recibir conexiones
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d agridb"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
 
   backend:
     build:
@@ -17,10 +35,14 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      # Tu carpeta ./backend se "refleja" dentro del contenedor:
+      # si editas un .py, el servidor se recarga solo.
       - ./backend:/app
     depends_on:
-      - db
-    restart: always
+      db:
+        # Espera a que la BD esté lista (si no, el backend truena al crear las tablas)
+        condition: service_healthy
+    restart: unless-stopped
 
   frontend:
     build:
@@ -28,18 +50,22 @@ services:
     ports:
       - "3000:3000"
     volumes:
+      # Tu carpeta ./frontend se refleja en el contenedor (cambios en vivo)...
       - ./frontend:/app
+      # ...pero node_modules y .next se quedan DENTRO del contenedor
+      # (así no necesitas instalar Node en tu compu).
       - /app/node_modules
       - /app/.next
     depends_on:
       - backend
     environment:
+      # Necesario en Windows para que detecte cambios en los archivos
       - CHOKIDAR_USEPOLLING=true
       - WATCHPACK_POLLING=true
       - NEXT_TELEMETRY_DISABLED=1
     tty: true
     stdin_open: true
-    command: npx next dev
-    restart: always
+    restart: unless-stopped
+
 volumes:
   postgres_data:
