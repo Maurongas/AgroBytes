@@ -1,7 +1,11 @@
-fastapi
-uvicorn
-sqlalchemy
-geoalchemy2
-psycopg2-binary
-pydantic
-psycopg[binary]
+# Versiones fijadas. Si agregas una dependencia: fíjala aquí y corre
+#   docker compose up --build -V backend
+fastapi==0.162.7
+uvicorn==0.54.0
+pydantic==2.14.3
+pydantic-settings==2.16.3
+SQLAlchemy==2.1.8
+GeoAlchemy2==0.21.0
+psycopg[binary]==3.3.9
+httpx==0.28.1
+pytest==9.2.0

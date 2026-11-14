@@ -1,30 +1,30 @@
 # =====================================================================
-#  docker-compose.yml  —  levanta TODO el proyecto con un solo comando:
+#  docker-compose.yml — levanta TODO el proyecto con un solo comando:
 #
 #       docker compose up --build
 #
-#  Son 3 "contenedores" (mini-computadoras aisladas):
-#    db       -> Base de datos PostgreSQL + PostGIS   (puerto 5432)
-#    backend  -> API en Python / FastAPI              (http://localhost:8000/docs)
-#    frontend -> Página web en Next.js                (http://localhost:3000)
-#    field-shift -> Interfaz React + Vite             (http://localhost:5173)
+#    db       -> PostgreSQL + PostGIS        (localhost:5432)
+#    backend  -> API FastAPI                 (http://localhost:8000/docs)
+#    frontend -> React + Vite (mapa y UI)    (http://localhost:3000)
+#
+#  Las variables tienen valores por defecto; para cambiarlas copia
+#  .env.example como .env (Docker Compose lo lee solo).
 # =====================================================================
 services:
   db:
     image: postgis/postgis:15-3.3
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: agridb
+      POSTGRES_USER: ${POSTGRES_USER:-admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      POSTGRES_DB: ${POSTGRES_DB:-agridb}
     ports:
       - "5432:5432"
     volumes:
-      # Los datos de la BD se guardan aquí y sobreviven aunque apagues los contenedores.
-      # Se borran SOLO si corres: docker compose down -v
+      # Los datos sobreviven aunque apagues los contenedores.
+      # Se borran SOLO con: docker compose down -v
       - postgres_data:/var/lib/postgresql/data
-    # Le dice a Docker cómo saber si la BD ya está lista para recibir conexiones
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d agridb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-agridb}"]
       interval: 3s
       timeout: 3s
       retries: 20
@@ -35,13 +35,16 @@ services:
       context: ./backend
     ports:
       - "8000:8000"
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://admin:password@db:5432/agridb}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      NASA_POWER_BASE_URL: ${NASA_POWER_BASE_URL:-https://power.larc.nasa.gov/api}
+      CLIMATE_CACHE_DAYS: ${CLIMATE_CACHE_DAYS:-30}
     volumes:
-      # Tu carpeta ./backend se "refleja" dentro del contenedor:
-      # si editas un .py, el servidor se recarga solo.
+      # Si editas un .py, uvicorn se recarga solo.
       - ./backend:/app
     depends_on:
       db:
-        # Espera a que la BD esté lista (si no, el backend truena al crear las tablas)
         condition: service_healthy
     restart: unless-stopped
 
@@ -50,36 +53,18 @@ services:
       context: ./frontend
     ports:
       - "3000:3000"
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+      # true = datos de ejemplo (src/api/mock.ts). Pásalo a false cuando el backend implemente /api/v1/analyses.
+      VITE_USE_MOCK: ${VITE_USE_MOCK:-true}
+      # Necesario en Windows para detectar cambios en los archivos
+      CHOKIDAR_USEPOLLING: "true"
     volumes:
-      # Tu carpeta ./frontend se refleja en el contenedor (cambios en vivo)...
       - ./frontend:/app
-      # ...pero node_modules y .next se quedan DENTRO del contenedor
-      # (así no necesitas instalar Node en tu compu).
+      # node_modules se queda DENTRO del contenedor (no necesitas Node en tu compu)
       - /app/node_modules
-      - /app/.next
     depends_on:
       - backend
-    environment:
-      # Necesario en Windows para que detecte cambios en los archivos
-      - CHOKIDAR_USEPOLLING=true
-      - WATCHPACK_POLLING=true
-      - NEXT_TELEMETRY_DISABLED=1
-    tty: true
-    stdin_open: true
-    restart: unless-stopped
-
-  # Interfaz "field-shift" (React + Vite) — http://localhost:5173
-  # Independiente: usa datos de ejemplo, no depende del backend.
-  field-shift:
-    build:
-      context: ./field-shift
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./field-shift:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
     restart: unless-stopped
 
 volumes:

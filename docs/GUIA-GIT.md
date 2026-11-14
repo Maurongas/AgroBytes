@@ -38,17 +38,20 @@ Formato: **`tipo/descripcion-corta`** (minúsculas, con guiones, sin acentos)
 
 | Prefijo | Cuándo | Ejemplos para este proyecto |
 |---|---|---|
-| `feature/` | Algo nuevo | `feature/api-nasa-power`, `feature/mapa-parcelas`, `feature/graficas-clima`, `feature/login` |
+| `feature/` | Algo nuevo | `feature/back-nasa-api`, `feature/front-mapa`, `feature/front-historial` |
 | `fix/` | Arreglar un bug | `fix/historial-vacio`, `fix/cors-backend` |
 | `docs/` | Solo documentación | `docs/guia-docker` |
-| `refactor/` | Reordenar código sin cambiar lo que hace | `refactor/algoritmo-cultivos` |
-| `chore/` | Configuración, Docker, dependencias | `chore/actualizar-next` |
+| `refactor/` | Reordenar código sin cambiar lo que hace | `refactor/recommender-factores` |
+| `chore/` | Configuración, Docker, dependencias | `chore/actualizar-vite` |
 
-**Ramas sugeridas para empezar** (repártanlas):
-- `feature/api-nasa-power` — traer datos reales de clima de la API NASA POWER al backend
-- `feature/mapa-parcelas` — mapa en el frontend para escoger la ubicación (aprovecha PostGIS)
-- `feature/mejorar-algoritmo` — más reglas/cultivos en `backend/app/services/algorithm.py`
-- `feature/ui-resultados` — diseño de resultados e historial
+**Ramas de cada rol** (definidas en `docs/contexto/`):
+- `feature/front-layout` — Fernando · layout, navegación, resultados, historial
+- `feature/front-mapa` — Mia · mapa y selección de parcela
+- `feature/front-pwa` — menaxmn · PWA, offline y capa de datos (`src/api/`)
+- `feature/back-db-models` — Daniel · modelos, Alembic, catálogo, caché
+- `feature/back-nasa-api` — Mauro · NASA POWER, motor de reglas, endpoints
+
+Para tareas más pequeñas dentro de tu rol puedes abrir ramas cortas (`feature/front-historial`, `fix/mapa-tactil`…).
 
 **Reglas de oro:**
 - Ramas **cortas**: idealmente se fusionan en 1–3 días. Entre más vive una rama, más conflictos.
@@ -133,7 +136,7 @@ Un conflicto pasa cuando tú y alguien más cambiaron **las mismas líneas**. Gi
 
 ```
 <<<<<<< HEAD
-const titulo = "IA Agrícola";          ← tu versión
+const titulo = "DSS Agrícola";         ← tu versión
 =======
 const titulo = "AgroNASA";             ← la versión que viene de main
 >>>>>>> main
