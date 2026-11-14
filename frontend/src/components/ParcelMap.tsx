@@ -68,7 +68,7 @@ export default function ParcelMap() {
         </button>
         {drawing && (
           <button onClick={finishDrawing} disabled={points.length < 3}
-            className="flex items-center gap-2 rounded-xl bg-leaf-600 px-3 py-2 text-sm font-medium text-canvas hover:bg-leaf-700 disabled:opacity-40">
+            className="flex items-center gap-2 rounded-xl bg-leaf-600 px-3 py-2 text-sm font-medium text-paper hover:bg-leaf-700 disabled:opacity-40">
             <Check size={16} /> Terminar
           </button>
         )}
@@ -81,12 +81,12 @@ export default function ParcelMap() {
       </div>
 
       {drawing && (
-        <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-orbit/80 px-4 py-2 text-sm text-canvas">
+        <div className="absolute bottom-6 left-1/2 z-[1000] -translate-x-1/2 rounded-full bg-orbit/80 px-4 py-2 text-sm text-paper">
           Haz clic en el mapa para marcar las esquinas ({points.length}) y pulsa «Terminar»
         </div>
       )}
       {geometry && areaHa && (
-        <div className="absolute bottom-6 left-4 z-[1000] rounded-lg bg-orbit/80 px-3 py-1.5 font-mono text-xs text-canvas">
+        <div className="absolute bottom-6 left-4 z-[1000] rounded-lg bg-orbit/80 px-3 py-1.5 font-mono text-xs text-paper">
           {areaHa.toFixed(1)} ha
         </div>
       )}

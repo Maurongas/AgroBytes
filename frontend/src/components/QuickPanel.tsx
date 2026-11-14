@@ -28,7 +28,7 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
       <section className="mt-5">
         <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">1 · Terreno</p>
         <div className="mt-2 flex items-center gap-2 text-sm">
-          <span className={`flex h-5 w-5 items-center justify-center rounded-full ${geometry ? 'bg-leaf-600 text-canvas' : 'bg-surface-sunken text-ink-400'}`}>
+          <span className={`flex h-5 w-5 items-center justify-center rounded-full ${geometry ? 'bg-leaf-600 text-paper' : 'bg-surface-sunken text-ink-400'}`}>
             {geometry && <Check size={13} />}
           </span>
           <span className="text-ink-700">{geometry && areaHa ? `${areaHa.toFixed(1)} hectáreas marcadas` : 'Aún no has dibujado tu parcela'}</span>
@@ -41,7 +41,7 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
           {CROPS.map((c) => (
             <motion.button key={c.id} whileTap={{ scale: 0.96 }} onClick={() => setCrop(c.id)}
               className={`rounded-full border px-4 py-2 text-sm transition-colors ${
-                crop === c.id ? 'border-leaf-600 bg-leaf-50 font-medium text-leaf-900' : 'border-line bg-white text-ink-700 hover:border-leaf-300'}`}>
+                crop === c.id ? 'border-leaf-600 bg-leaf-50 font-medium text-leaf-900' : 'border-line bg-surface-raised text-ink-700 hover:border-leaf-300'}`}>
               {c.name}
             </motion.button>
           ))}
@@ -54,7 +54,7 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
           {PRIORITIES.map(({ id, title, text, icon: Icon, tone }) => (
             <motion.button key={id} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={() => setPriority(id)}
               className={`flex items-center gap-3 rounded-2xl border p-3 text-left transition-colors ${
-                priority === id ? 'border-leaf-600 bg-leaf-50' : 'border-line bg-white hover:border-leaf-300'}`}>
+                priority === id ? 'border-leaf-600 bg-leaf-50' : 'border-line bg-surface-raised hover:border-leaf-300'}`}>
               <Icon size={22} className={tone} />
               <span>
                 <span className="block text-sm font-medium">{title}</span>
@@ -68,7 +68,7 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
       {error && <p className="mt-4 rounded-xl bg-danger/10 p-3 text-sm text-danger">{error}</p>}
 
       <button onClick={onAnalyze} disabled={!ready || pending}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-leaf-600 px-4 py-3 font-medium text-canvas transition-colors hover:bg-leaf-700 disabled:opacity-50">
+        className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-leaf-600 px-4 py-3 font-medium text-paper transition-colors hover:bg-leaf-700 disabled:opacity-50">
         {pending ? 'Analizando…' : 'Analizar parcela'} {!pending && <ArrowRight size={18} />}
       </button>
       {!ready && <p className="mt-2 text-center text-xs text-ink-500">{missing}</p>}
