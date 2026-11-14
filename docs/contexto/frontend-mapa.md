@@ -1,55 +1,45 @@
-# Frontend: Mapa Interactivo y Selección de Ubicación
+# Frontend: Mapa interactivo y selección de parcela
 
-**Responsable:** hdmiaa · **Issue:** #2 · **Rama base:** `feature/front-mapa`
+**Responsable:** Mia (hdmiaa) · **Issue:** #2 · **Rama base:** `feature/front-mapa`
 
-> Claude: lee primero `docs/ARQUITECTURA.md` (secciones 3, 5.1, 5.4 y 9). Ese documento manda.
+> Agente: lee primero `docs/ARQUITECTURA.md` §4, §5.2 y §9. Ese documento manda.
+> Cambios de la v2.0: `docs/CAMBIOS-ARQUITECTURA.md`.
 
-## Tu rol
-El mapa es la entrada principal de la app: el usuario elige su parcela con un clic y de ahí salen
-`lat` y `lon` para pedir el clima de NASA y la recomendación.
+## ⚠️ Cambio importante (v2.0)
+Tu proyecto `field-shift/` **es ahora el frontend oficial** y vive en `frontend/` (historial de git
+conservado). El Next.js viejo se borró. Corre en **http://localhost:3000** (antes 5173). Ajustes que se le
+hicieron: puerto 3000, `lang="es"`, cliente apuntando a `POST /api/v1/analyses` con errores `detail`,
+sin métrica NDVI ni "Rendimiento estimado", nitrógeno marcado como "(estimado)", unidad de humedad `0–1`.
 
 ## Stack
-Next.js 16.4 (App Router) · React 19.3 · TypeScript · Tailwind 4 · **react-leaflet 5 + leaflet** (react-leaflet 5 es la versión para React 19).
-Tiles: OpenStreetMap (sin API key). No uses Mapbox, para no depender de llaves.
-
-**Importante:** la ruta es `frontend/app/` (**no** `frontend/src/app/` como dice el issue).
+React 19 · Vite 8 · react-leaflet 5 · Leaflet 1.9 · @turf/turf · Zustand · TanStack Query · Tailwind 4.
 
 ## Archivos que te pertenecen
 ```
-frontend/app/components/MapComponent.tsx     (mapa Leaflet, solo cliente)
-frontend/app/components/LocationPicker.tsx   (envoltura con dynamic() + input de coordenadas + botón "Mi ubicación")
+frontend/src/components/ParcelMap.tsx    mapa + dibujo del polígono
+frontend/src/components/QuickPanel.tsx   panel: terreno, cultivo actual, prioridad, botón analizar
+frontend/src/components/ScanOverlay.tsx  animación mientras analiza
+frontend/src/views/SelectView.tsx
+frontend/src/store/useStore.ts           estado global (otros agregan campos coordinando contigo)
+frontend/src/lib/crops.ts                catálogo de cultivos de la UI (ids = backend)
 ```
-En `app/page.tsx` (compartido con Fernando) solo insertas `<LocationPicker value onChange />`.
 
-## Puntos técnicos clave
-- Leaflet usa `window` → **no puede renderizarse en servidor**. En `LocationPicker.tsx`:
-  ```tsx
-  const MapComponent = dynamic(() => import("./MapComponent"), { ssr: false });
-  ```
-  `MapComponent.tsx` lleva `"use client"`.
-- Importa el CSS: `import "leaflet/dist/leaflet.css"` dentro de `MapComponent.tsx`.
-- Ícono del marcador: con bundlers se rompe la ruta por defecto → configura `L.icon` con imágenes en `public/` o importadas.
-- El contenedor del mapa necesita una altura explícita (`h-[400px]` o `h-full` dentro de un padre con altura).
-
-## Tareas
-1. Instalar: `docker compose exec frontend npm install leaflet react-leaflet` y `npm install -D @types/leaflet`, y luego `docker compose up --build -V`.
-2. `MapComponent`: centrado por defecto en Ensenada, B.C. (31.86, -116.60), zoom 9. Un clic coloca o mueve el marcador y llama a `onChange({lat, lon})`.
-3. `LocationPicker`:
-   - Inputs de lat/lon sincronizados con el mapa (escribir mueve el marcador; un clic actualiza los inputs).
-   - Botón "Usar mi ubicación" (`navigator.geolocation`), con manejo de permiso denegado.
-   - Validación: lat ∈ [-90, 90], lon ∈ [-180, 180]; redondeo a 4 decimales.
-   - Mostrar "Celda NASA ~50 km": la resolución de NASA POWER es de ~0.5°; opcional, dibujar el rectángulo de la celda.
-4. Interfaz controlada: `type Ubicacion = { lat: number; lon: number }` (desde `lib/types.ts`); props `value: Ubicacion | null`, `onChange(u: Ubicacion)`.
-5. (Fase 3) Mostrar las parcelas guardadas (`api.listFarms()`) como marcadores; clic en una → selecciona esa ubicación. Botón "Guardar parcela" (nombre + tipo de suelo) → `api.createFarm()`.
-6. (Opcional) Al seleccionar el punto, llamar a `api.getClimate(lat, lon)` y mostrar un mini resumen en un popup.
+## Tareas (en orden)
+1. **Robustez del dibujo**: deshacer último punto, cancelar, impedir polígonos con < 3 puntos o que se
+   crucen; mostrar el área (ya con turf). Recuerda: GeoJSON `[lon, lat]`, Leaflet `[lat, lon]` (conversión
+   solo en `useStore.finishDrawing`).
+2. **Buscar ubicación**: input de coordenadas y botón "Mi ubicación" (geolocalización del navegador) para
+   centrar el mapa.
+3. **Suelo (opcional)**: si se agrega al panel, usa `Soil` de `types.ts` (`sandy | loam | clay`) y `setSoil`.
+4. **Atribución del mapa base**: Esri World Imagery pide "Esri, Maxar, Earthstar Geographics…" en la atribución.
+5. Mantener `lib/crops.ts` alineado con `backend/app/data/crops.json` (mismos ids: ARQUITECTURA §5.1).
+6. Agregar `'history'` al tipo `view` cuando Fernando lo necesite (él hace la vista).
 
 ## Reglas
-- No hagas `fetch` directo: usa `lib/api.ts`.
-- El mapa debe funcionar en móvil (touch) y no romper el layout de Fernando.
-- Offline: si no hay red, los tiles no cargan. Muestra un aviso y deja usar los inputs de coordenadas (coordina con menaxmn).
-- Librerías nuevas: sube `package.json` y `package-lock.json`.
+- `field-shift/` ya no existe: no lo recrees. Todo cambio va en `frontend/`.
+- No hagas `fetch` en componentes: usa `src/api/client.ts` (de menaxmn).
+- Colores con tokens de `index.css`. Textos en español.
 
 ## Definición de terminado
-- Clic en el mapa → los inputs se actualizan → el formulario recibe `{lat, lon}`.
-- Sin errores de `window is not defined` al recargar `/`.
-- `npm run lint` sin errores.
+- Dibujar, corregir y analizar una parcela funciona con mouse y en pantalla táctil.
+- El request que sale cumple §5.2 (puedes verlo en la pestaña Red con `VITE_USE_MOCK=false`).

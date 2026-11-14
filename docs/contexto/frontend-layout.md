@@ -1,50 +1,50 @@
-# Contexto Claude — Frontend: Layout, Navegación, Resultados e Historial
+# Frontend: Layout, navegación y resultados
 
 **Responsable:** Fernando (FernandoBorbas) · **Issue:** #1 · **Rama base:** `feature/front-layout`
 
-> Claude: lee primero `docs/ARQUITECTURA.md` (secciones 4, 5 y 9). Ese documento manda.
+> Agente: lee primero `docs/ARQUITECTURA.md` §4, §5 y §9. Ese documento manda.
+> Cambios de la v2.0: `docs/CAMBIOS-ARQUITECTURA.md`.
 
-## Tu rol
-Diseñas la estructura visual y la experiencia de la app: layout global, Navbar, tema, tarjetas de
-resultados y la página de historial. Eres el "dueño" del aspecto visual; los demás frontends usan tus componentes.
+## ⚠️ Cambio importante (v2.0)
+El frontend ya **no es Next.js**. La app es la que hizo Mia (antes `field-shift/`), ahora en `frontend/`:
+**React 19 + Vite 8 + TypeScript + Tailwind 4**, rutas en `frontend/src/`. Tus PRs #7 (Navbar) y #8
+(historial) se hicieron sobre el Next.js borrado: hay que **portarlos** (ver tareas 1 y 2). Tu lógica sí
+se reutiliza: formatos de fecha/número, estados de carga/error/vacío, tabla + tarjetas móviles.
 
 ## Stack
-Next.js **16.4** (App Router, Turbopack) · React 19.3 · TypeScript · Tailwind CSS 4 · corre en Docker.
-Next 16 tiene cambios respecto a versiones anteriores: ante la duda, consulta la documentación incluida en
-`node_modules/next/dist/docs/` o la oficial, y no asumas APIs de Next 13/14.
-
-**Importante:** la ruta es `frontend/app/` (**no** `frontend/src/app/` como dice el issue).
+React 19 · Vite 8 · Tailwind 4 (tokens en `src/index.css` con `@theme`) · Framer Motion · Recharts ·
+lucide-react · Zustand (`src/store/useStore.ts`) · TanStack Query.
 
 ## Archivos que te pertenecen
 ```
-frontend/app/layout.tsx
-frontend/app/globals.css
-frontend/app/historial/page.tsx
-frontend/app/components/Navbar.tsx
-frontend/app/components/ResultCards.tsx      (las 3 estrategias)
-frontend/app/components/ClimateCard.tsx      (resumen climático NASA + gráfica mensual)
-frontend/app/components/ui/                  (Button, Card, Select... si se necesitan)
+frontend/src/App.tsx                  navegación entre vistas (select | diagnosis | history)
+frontend/src/index.css                tema: tokens de color y fuentes
+frontend/src/views/DiagnosisView.tsx  resultados del análisis
+frontend/src/views/HistoryView.tsx    (por crear) historial
+frontend/src/components/Navbar.tsx    (por crear)
+frontend/src/components/NasaMetricCard.tsx  ImpactBar.tsx  GaugeSoilHealth.tsx  CountUp.tsx
 ```
-`app/page.tsx` es compartido con el equipo del mapa: tú haces el acomodo general (mapa | formulario | resultados) y el mapa lo pone hdmiaa.
+Compartido: `useStore.ts` es de Mia; para agregar `'history'` al tipo `view` (y una acción `goToHistory`)
+coordina con ella. `api/` es de menaxmn: usa sus funciones, no hagas `fetch` directo.
 
-## Tareas
-1. `layout.tsx`: `<html lang="es">`, `metadata` con título "NasaSpaceApp — DSS Agrícola" y descripción, `<Navbar />` en todas las vistas.
-2. `Navbar.tsx` responsivo (menú hamburguesa en móvil): logo/nombre, enlaces "Inicio" y "Historial", espacio a la derecha para `<InstallPrompt />` (lo hace menaxmn).
-3. Tema en `globals.css` con variables de Tailwind 4 (`@theme`): colores primario (verde), acento y fondos. Hoy está todo en `bg-gray-900` repetido en cada página; centralízalo.
-4. Extrae de la `page.tsx` actual el formulario y las tarjetas a componentes. El formulario ya **no** pide temperatura ni lluvia (las da NASA); pide: tipo de suelo, cultivo actual, disponibilidad de agua y prioridad. La ubicación viene del mapa.
-5. `ResultCards.tsx`: recibe `RecommendationResponse` (tipo de `lib/types.ts`); muestra por estrategia: título, cultivo, **puntaje con barra**, lista de `justificacion`, beneficios, riesgos y tradeoff. Arriba, el nivel de incertidumbre con su `motivo`.
-6. `ClimateCard.tsx`: temperatura media, lluvia anual, humedad del suelo (mostrar como %), fuente y periodo, y una gráfica sencilla de los 12 meses (puede ser SVG propio o una librería ligera como `recharts`; si agregas librería, avisa).
-7. `historial/page.tsx`: tabla con los campos de §5.3; en móvil, tarjetas en lugar de tabla.
+## Tareas (en orden)
+1. **Navbar** (de tu PR #7): `components/Navbar.tsx` con los tokens del tema (canvas/ink/leaf), no el tema
+   oscuro gris del Next viejo. Enlaces: "Analizar" (`view='select'`) e "Historial" (`view='history'`).
+   Debe convivir con el mapa a pantalla completa de `SelectView` (no taparlo en móvil).
+2. **HistoryView** (de tu PR #8): usa `listAnalyses()` de `src/api/client.ts` con `useQuery`; tipo
+   `AnalysisSummary` (§5.3). Columnas: fecha, ubicación (lat, lon), área, cultivo actual (`cropName`),
+   prioridad, cultivos de la rotación. Clic en un renglón → `getAnalysis(id)` → `view='diagnosis'`.
+   En modo mock ya devuelve 2 renglones de ejemplo.
+3. **DiagnosisView**: mostrar `analysis.uncertainty` (nivel + motivo) de forma visible; revisar que las
+   4 métricas se vean bien (ya está en `lg:grid-cols-4`); mantener las etiquetas "(estimado)" del nitrógeno
+   y salud del suelo.
+4. Responsivo y accesible (contraste, foco visible, `aria-label` en botones con solo ícono).
 
 ## Reglas
-- **No hagas `fetch` directo**: usa `lib/api.ts` (lo mantiene menaxmn). Si necesitas una función nueva ahí, pídela o agrégala en coordinación.
-- Tipos solo de `lib/types.ts`; nada de `any`.
-- Estados de carga, error y vacío en cada vista.
-- Textos en español; no digas "ML", "IA" ni "satélite" si no es cierto: la fuente es "NASA POWER".
-- Accesible: `label` en cada input, contraste suficiente, que se use con teclado.
-- Librería nueva: `docker compose exec frontend npm install <pkg>` y luego `docker compose up --build -V`; sube `package.json` y `package-lock.json`.
+- Colores siempre con tokens del tema (`bg-leaf-600`, `text-ink-700`…), nada de hex sueltos en componentes.
+- Textos en español; no digas "ML", "IA" ni "satélite": la fuente es "NASA POWER".
+- Etiquetas de enums en español (`PRIORITY_LABEL`, `SEASON_LABEL`); los códigos llegan en inglés.
 
 ## Definición de terminado
-- Navbar visible en `/` y `/historial`, y funciona en móvil (prueba a 375 px).
-- Con una respuesta de ejemplo (puedes copiar la de §5.2 en un archivo mock), las tarjetas y el clima se ven completos.
-- `npm run lint` sin errores: `docker compose exec frontend npm run lint`.
+- Se navega Analizar ⇄ Resultados ⇄ Historial sin recargar, en escritorio y móvil.
+- Con `VITE_USE_MOCK=true` todo funciona sin backend; con `false` usa la API real sin cambios de código.

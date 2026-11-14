@@ -88,8 +88,8 @@ docker compose up --build
 
 - La **primera vez tarda** (5–10 min): descarga y construye todo (~3 GB).
 - Las siguientes veces arranca en segundos.
-- Cuando veas `✓ Ready` del frontend, abre:
-  - http://localhost:3000 → la página
+- Cuando el frontend diga `VITE ... ready`, abre:
+  - http://localhost:3000 → la app (mapa)
   - http://localhost:8000/docs → la API (puedes probar los endpoints desde ahí)
 
 ---
@@ -154,7 +154,7 @@ docker compose down
 
 ## 7. 💾 ¿Tienes poco espacio en disco?
 
-El proyecto ocupa aprox. **3–4 GB** en Docker (frontend 1.7 GB, base de datos 0.8 GB, backend 0.3 GB) + **~2–3 GB** de Docker Desktop. Opciones, de mejor a peor:
+El proyecto ocupa aprox. **3–4 GB** en Docker (frontend ~1 GB, base de datos 0.8 GB, backend 0.3 GB) + **~2–3 GB** de Docker Desktop. Opciones, de mejor a peor:
 
 ### Opción A — GitHub Codespaces (0 GB en tu compu) ⭐
 Corre todo **en la nube** de GitHub; tu compu solo abre VS Code.
@@ -184,7 +184,7 @@ Si tienes un disco `D:` o una USB rápida: Docker Desktop → ⚙️ **Settings 
 |---|---|
 | `Cannot connect to the Docker daemon` / `pipe ... not found` | Docker Desktop no está abierto. Ábrelo y espera a "Engine running". |
 | `port is already allocated` (3000, 8000 o 5432) | Otro programa usa ese puerto. Si tienes PostgreSQL instalado en tu compu, detén su servicio. O corre `docker compose down` por si quedó algo prendido. |
-| La página no carga los resultados | Revisa que el backend esté vivo: http://localhost:8000. Mira `docker compose logs backend`. |
+| La página no carga los resultados | Revisa que el backend esté vivo: http://localhost:8000/health. Mira `docker compose logs backend`. Si un endpoint responde 501 es porque aún no se implementa: deja `VITE_USE_MOCK=true`. |
 | `ModuleNotFoundError` en el backend o `Module not found` en el frontend | Alguien agregó una librería. Corre `docker compose up --build -V`. |
 | Cambié código y no se actualiza | Guarda el archivo. Si sigue igual: `docker compose restart frontend` (o `backend`). |
 | Algo está muy roto y nada funciona | Último recurso: `docker compose down -v` y `docker compose up --build` (borra la BD local). |

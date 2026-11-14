@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🌱 frontend — React 19 + Vite + Tailwind
 
-## Getting Started
+App del DSS agrícola: dibujas tu parcela en el mapa, eliges cultivo y prioridad, y ves el diagnóstico
+(métricas NASA POWER, rotación recomendada, impacto estimado, clima mensual).
 
-First, run the development server:
+> Antes era el proyecto `field-shift/` (de Mia). Desde la arquitectura v2.0 es **el** frontend oficial.
 
+## Cómo correrlo
+
+**Con Docker (recomendado), desde la raíz del repo:**
 ```bash
+docker compose up --build
+```
+Abre 👉 http://localhost:3000
+
+**Sin Docker (Node 20+):**
+```bash
+cd frontend
+cp .env.example .env.local
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Datos: ejemplo (mock) o API real
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Variable | Qué hace |
+|---|---|
+| `VITE_API_URL` | URL del backend (`http://localhost:8000`) |
+| `VITE_USE_MOCK` | `true` = usa `src/api/mock.ts`; `false` = llama al backend |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Con Docker se configuran en `docker-compose.yml` (o en un `.env` en la raíz). El mock tiene exactamente la
+forma del contrato (`docs/ARQUITECTURA.md` §5), así que pasar a `false` no requiere cambiar código.
 
-## Learn More
+## Estructura
 
-To learn more about Next.js, take a look at the following resources:
+```
+src/
+├── api/         types.ts (contrato), client.ts (único lugar con fetch), mock.ts
+├── store/       useStore.ts (Zustand)
+├── lib/         crops.ts (catálogo de la UI)
+├── views/       SelectView (mapa + panel), DiagnosisView (resultados)
+└── components/  ParcelMap, QuickPanel, ScanOverlay, NasaMetricCard, ImpactBar, GaugeSoilHealth, CountUp
+```
+Quién es dueño de cada archivo: `docs/ARQUITECTURA.md` §4.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Comandos útiles (dentro del contenedor)
+```bash
+docker compose exec frontend npx tsc -b      # revisar tipos
+docker compose exec frontend npx eslint .    # lint
+docker compose exec frontend npm install <paquete>   # luego: docker compose up --build -V frontend
+```

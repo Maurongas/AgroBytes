@@ -1,67 +1,48 @@
-# Contexto Claude — Frontend: PWA, Offline y Cliente API
+# Frontend: PWA, offline y capa de datos
 
 **Responsable:** menaxmn · **Issue:** #3 · **Rama base:** `feature/front-pwa`
 
-> Claude: lee primero `docs/ARQUITECTURA.md` (secciones 5 y 9). Ese documento manda.
+> Agente: lee primero `docs/ARQUITECTURA.md` §5 y §9. Ese documento manda.
+> Cambios de la v2.0: `docs/CAMBIOS-ARQUITECTURA.md`.
 
-## Tu rol
-Haces que la app se pueda instalar y siga siendo útil sin internet (agricultores en campo con mala señal).
-Como el offline vive en la capa de red, también eres responsable del **cliente API** y de los **tipos**
-que usa todo el frontend.
+## ⚠️ Cambio importante (v2.0)
+El frontend ya **no es Next.js**: es **React 19 + Vite 8** en `frontend/src/`. Por eso la PWA se hace con
+**`vite-plugin-pwa`** (no `app/manifest.ts` ni `public/sw.js` a mano como decía la v1.0). La capa de datos
+ya existe y es tuya: `src/api/` (cliente, tipos y mock), alineada con el contrato v2.0.
 
 ## Stack
-Next.js 16.4 (App Router, Turbopack) · React 19.3 · TypeScript · Service Worker propio.
-
-**Cambio respecto al issue:** **NO usar `next-pwa`**. No está mantenido y depende de webpack; Next 16
-usa Turbopack. Usar en su lugar:
-- `app/manifest.ts` (soporte nativo de Next para el manifiesto),
-- `public/sw.js` escrito a mano,
-- un componente cliente que lo registre.
-(Revisa la guía oficial "Progressive Web Apps" de Next.js para la versión instalada.)
-
-**Importante:** la ruta es `frontend/app/` (**no** `frontend/src/app/`).
+Vite 8 · vite-plugin-pwa (Workbox) · TanStack Query · TypeScript 6.
 
 ## Archivos que te pertenecen
 ```
-frontend/app/lib/types.ts         tipos TS = espejo de §5 de ARQUITECTURA (Mauro los revisa)
-frontend/app/lib/api.ts           cliente único: getClimate, recommend, getHistory, listFarms, createFarm, listCrops
-frontend/app/lib/offline.ts       guardar/leer la última recomendación y el historial
-frontend/app/manifest.ts
-frontend/public/sw.js
-frontend/public/icons/            192x192, 512x512, maskable
-frontend/app/components/SWRegister.tsx
-frontend/app/components/OfflineBanner.tsx
-frontend/app/components/InstallPrompt.tsx
+frontend/src/api/types.ts     espejo EXACTO de ARQUITECTURA §5 (Mauro revisa cambios)
+frontend/src/api/client.ts    cliente único: createAnalysis, listAnalyses, getAnalysis (+ los que se agreguen)
+frontend/src/api/mock.ts      datos de ejemplo con la forma de §5
+frontend/src/lib/offline.ts   (por crear) guardar/leer último análisis
+frontend/src/main.tsx         QueryClient y registro del service worker
+frontend/vite.config.ts       plugins (aquí va VitePWA)
+frontend/public/              íconos PWA
 ```
 
-## Tareas (en orden; 1 y 2 desbloquean a todo el frontend → hazlas primero)
-1. **`lib/types.ts`**: tipos de todas las respuestas y peticiones de §5 (`ClimateSummary`, `RecommendRequest`,
-   `RecommendationResponse`, `Recomendacion`, `HistoryItem`, `Farm`, `Ubicacion`, enums como uniones de string).
-2. **`lib/api.ts`**:
-   - `const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000"` (quitar el `localhost:8000` escrito en las páginas).
-   - Una función `request<T>()` que lanza `ApiError` con el `detail` del backend.
-   - **Mock mode:** si `NEXT_PUBLIC_USE_MOCKS=1`, regresa los ejemplos de §5. Así Fernando y hdmiaa avanzan sin backend.
-   - `recommend()` guarda la respuesta exitosa con `offline.saveLastResult()`; si falla por red, regresa la última guardada con la bandera `fromCache: true`.
-3. **Manifest** (`app/manifest.ts`): nombre, short_name, `start_url: "/"`, `display: "standalone"`, colores del tema (pídelos a Fernando) e íconos.
-4. **`public/sw.js`**:
-   - install: precache del app shell (`/`, `/historial`, íconos, manifest).
-   - fetch: estáticos de `/_next/static/` → cache-first; páginas → network-first con fallback al cache; `/api/*` → **no** cachear en el SW (eso lo hace `lib/api.ts`, que sabe qué es válido).
-   - Versiona el nombre del cache (`dss-v1`) y borra los viejos en `activate`.
-   - En desarrollo el SW puede estorbar al hot reload: regístralo solo si `process.env.NODE_ENV === "production"` o con un flag `NEXT_PUBLIC_ENABLE_SW=1`.
-5. `SWRegister.tsx` (en `layout.tsx`, coordinado con Fernando), `OfflineBanner.tsx` (escucha `online`/`offline` y avisa "Sin conexión: mostrando la última consulta guardada") e `InstallPrompt.tsx` (`beforeinstallprompt`, botón en la Navbar).
-6. Historial offline: `getHistory()` cachea la última lista.
+## Lo que ya existe
+- `client.ts` con `request()` común: lee `VITE_API_URL`, muestra el `detail` de los errores del backend,
+  y si `VITE_USE_MOCK=true` (por defecto en compose) responde con `mock.ts`.
+- `types.ts`/`mock.ts` ya incluyen `uncertainty`, `location`, `createdAt` y `AnalysisSummary`.
 
-## Cómo probar
-- Build de producción dentro del contenedor: `docker compose exec frontend sh -c "npx next build && npx next start -H 0.0.0.0 -p 3001"` (expón el puerto o prueba en 3000 deteniendo el dev).
-- DevTools → Application → Manifest / Service Workers. Network → "Offline" → recargar: debe cargar la interfaz y la última consulta.
-- Lighthouse → categoría PWA.
+## Tareas (en orden)
+1. **PWA**: instala `vite-plugin-pwa` (versión compatible con Vite 8; `docker compose exec frontend npm install -D vite-plugin-pwa`
+   y luego `docker compose up --build -V frontend`). Manifest: nombre, `short_name`, `display: standalone`,
+   `theme_color`/`background_color` desde los tokens (`canvas` #FBF8F1, `orbit` #12261F), íconos 192/512 y maskable.
+2. **Service worker**: precache del app shell; `NetworkFirst` para `/api/*`; no cachear masivamente tiles del mapa.
+3. **Offline** (`lib/offline.ts`): guardar el último `AnalysisResponse` (y el último historial) en
+   `localStorage` dentro de try/catch; si la petición falla sin red, devolver lo guardado y avisar en la UI.
+4. **Banner offline** y **botón instalar** (componentes en `src/components/`; acuerda la ubicación con Fernando).
+5. Mantener `types.ts` y `mock.ts` idénticos al contrato cada vez que cambie §5.
 
 ## Reglas
-- Ningún componente hace `fetch` directo; todos usan `lib/api.ts`.
-- Si cambia el contrato en ARQUITECTURA §5, actualizas `types.ts` en el mismo PR.
-- No guardes datos sensibles en el cache.
+- Nadie hace `fetch` fuera de `src/api/`. Sin `any` en datos de la API.
+- Si cambias el contrato: también `backend/app/schemas/` y ARQUITECTURA §5 (coordina con Mauro).
 
 ## Definición de terminado
-- La app se puede instalar desde Chrome (escritorio y Android).
-- En modo offline: carga la interfaz, muestra el banner y la última recomendación.
-- `NEXT_PUBLIC_USE_MOCKS=1` permite usar toda la app sin backend.
+- La app se instala (Chrome → "Instalar"), abre sin red y muestra el último análisis.
+- Lighthouse PWA sin errores críticos.
