@@ -1,6 +1,5 @@
-"""Modelos SQLAlchemy (tablas). Dueño: DBA. Ver docs/ARQUITECTURA.md §6.
+from app.models.analysis import Analysis
+from app.models.climate_cache import ClimateCache
+from app.models.crop import Crop
 
-Pendiente (issue #4): analysis.py, crop.py, climate_cache.py.
-Importa aquí cada modelo para que Alembic los detecte, p. ej.:
-    from app.models.analysis import Analysis  # noqa: F401
-"""
+__all__ = ["Analysis", "Crop", "ClimateCache"]
