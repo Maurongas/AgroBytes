@@ -50,7 +50,7 @@ piezas se conectaran. Decisiones:
 | `backend/app/schemas/base.py, analysis.py, climate.py, crop.py` | **Contrato completo** en Pydantic (JSON en camelCase) |
 | `backend/app/api/v1/analyses.py, climate.py, crops.py` | Routers con el contrato; responden **501** hasta implementarse |
 | `backend/tests/test_api.py` | 3 pruebas (`pytest` pasa) |
-| `backend/research/` | Script que extrae el texto de las fuentes de datos sugeridas (`fuentes.md` no se sube) |
+| `backend/research/` | Script que extrae el texto de las fuentes de datos sugeridas → `fuentes.md` (versionado; se regenera con el script) |
 
 ### Modificado
 | Archivo | Cambio |
