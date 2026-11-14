@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.schemas.base import CamelModel
 
@@ -20,6 +20,25 @@ class Polygon(CamelModel):
 
     type: Literal["Polygon"]
     coordinates: list[list[list[float]]] = Field(min_length=1)
+
+    @field_validator("coordinates")
+    @classmethod
+    def anillo_valido(cls, coordinates: list[list[list[float]]]) -> list[list[list[float]]]:
+        """Pydantic convierte cualquier ValueError de aquí en un 422 con el mensaje."""
+        ring = coordinates[0]
+        if len(ring) < 4:
+            raise ValueError("El polígono necesita al menos 3 vértices y repetir el primero al final")
+        for point in ring:
+            if len(point) < 2:
+                raise ValueError("Cada punto debe ser [longitud, latitud]")
+            lon, lat = point[0], point[1]
+            if not (-180 <= lon <= 180 and -90 <= lat <= 90):
+                raise ValueError("Coordenada fuera de rango; el orden es [longitud, latitud]")
+        if ring[0][:2] != ring[-1][:2]:
+            raise ValueError("El anillo del polígono debe cerrarse (el último punto = el primero)")
+        if len({(p[0], p[1]) for p in ring}) < 3:
+            raise ValueError("El polígono necesita al menos 3 vértices distintos")
+        return coordinates
 
 
 class Soil(CamelModel):

@@ -17,8 +17,11 @@ uvicorn recarga solo.
 ## Lo que ya existe (v2.0)
 - `app/main.py`: CORS desde `settings`, `/health` (revisa BD), incluye `api/v1`.
 - `app/schemas/`: **contrato completo** (`analysis.py`, `climate.py`, `crop.py`; `base.py` convierte a camelCase).
-- `app/api/v1/`: routers `analyses`, `climate`, `crops` que hoy responden **501** (`_pending.py`).
-- `tests/test_api.py`: 3 pruebas (health, 422 de coordenadas, 422 del body).
+- `app/services/`: `nasa_power.py`, `climate.py` (caché en memoria), `geo.py`, `crops.py`, `recommender.py` ✅.
+- `app/api/v1/`: `POST /analyses`, `GET /climate` y `GET /crops` implementados. `GET /analyses` y
+  `/analyses/{id}` siguen en **501** hasta que existan `repositories.analyses` (DBA).
+- `tests/`: 31 pruebas sin internet (`conftest.py` trae un catálogo y un clima inventados).
+- Pendiente por dependencia del DBA: guardar el análisis, historial, caché en `climate_cache`, catálogo desde BD.
 - `research/`: `extraer_links.py` + `links.md` (fuentes investigadas; `fuentes.md` se regenera, no se sube).
 
 ## Archivos que te pertenecen
