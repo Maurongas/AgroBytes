@@ -30,7 +30,7 @@ export default function DiagnosisView() {
 
       <motion.section className="bg-orbit px-6 py-6" initial={{ y: -24, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-        <p className="mb-3 flex items-center gap-2 text-xs uppercase tracking-widest text-canvas/60">
+        <p className="mb-3 flex items-center gap-2 text-xs uppercase tracking-widest text-paper/60">
           <span className="h-2 w-2 rounded-full bg-nasa-mark" /> Datos de la NASA para tu parcela
         </p>
         <motion.div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
@@ -70,7 +70,7 @@ export default function DiagnosisView() {
                   <h3 className="font-display text-2xl font-semibold">{cropName(step.cropId)}</h3>
                 </div>
                 <div className="flex items-center gap-3">
-                  <span className="rounded-full bg-leaf-600 px-3 py-1 text-sm font-medium text-canvas">{step.score} / 100</span>
+                  <span className="rounded-full bg-leaf-600 px-3 py-1 text-sm font-medium text-paper">{step.score} / 100</span>
                   <ChevronDown className={`transition-transform ${open ? 'rotate-180' : ''}`} size={20} />
                 </div>
               </button>
@@ -82,11 +82,11 @@ export default function DiagnosisView() {
                       {step.reasons.map((r) => <li key={r}>{r}</li>)}
                     </ul>
                     <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                      <div className="rounded-xl bg-white/70 p-3">
+                      <div className="rounded-xl bg-surface-raised/70 p-3">
                         <p className="text-xs text-ink-500">Ahorro de agua</p>
                         <p className="font-display text-xl font-semibold text-sky-700">{step.waterSavingPct} %</p>
                       </div>
-                      <div className="rounded-xl bg-white/70 p-3">
+                      <div className="rounded-xl bg-surface-raised/70 p-3">
                         <p className="text-xs text-ink-500">Nitrógeno (estimado)</p>
                         <p className="font-display text-xl font-semibold text-nitro">{step.nitrogenDelta > 0 ? '+' : ''}{step.nitrogenDelta} kg/ha</p>
                       </div>
@@ -103,19 +103,19 @@ export default function DiagnosisView() {
 
         <section className="space-y-5 lg:col-span-2">
           <h2 className="font-display text-2xl font-semibold">Impacto comparado</h2>
-          <div className="rounded-card border border-line bg-white p-5 shadow-card">
+          <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card">
             <p className="text-sm font-medium">Salud del suelo</p>
             <div className="mt-2 flex items-center justify-around">
               <div className="text-center"><GaugeSoilHealth value={analysis.soilHealth.current} /><p className="text-xs text-ink-500">Actual</p></div>
               <div className="text-center"><GaugeSoilHealth value={analysis.soilHealth.recommended} /><p className="text-xs text-ink-500">Con la rotación</p></div>
             </div>
           </div>
-          <div className="space-y-5 rounded-card border border-line bg-white p-5 shadow-card">
+          <div className="space-y-5 rounded-card border border-line bg-surface-raised p-5 shadow-card">
             {analysis.impact.map((it) => <ImpactBar key={it.label} item={it} />)}
           </div>
         </section>
 
-        <section className="rounded-card border border-line bg-white p-5 shadow-card lg:col-span-5">
+        <section className="rounded-card border border-line bg-surface-raised p-5 shadow-card lg:col-span-5">
           <h2 className="font-display text-xl font-semibold">Clima de la parcela</h2>
           <div className="mt-3 h-[240px]">
             <ResponsiveContainer width="100%" height="100%">

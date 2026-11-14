@@ -3,9 +3,11 @@ import * as turf from '@turf/turf';
 import type { AnalysisResponse, Priority, Soil } from '../api/types';
 
 export type LatLng = [number, number]; // Leaflet usa [latitud, longitud]
+export type ViewId = 'select' | 'diagnosis' | 'history' | 'alerts' | 'calendar' | 'compare' | 'account';
 
 interface State {
-  view: 'select' | 'diagnosis';
+  view: ViewId;
+  goTo: (v: ViewId) => void;
   drawing: boolean;
   points: LatLng[];
   geometry: GeoJSON.Polygon | null;
@@ -27,6 +29,7 @@ interface State {
 
 export const useStore = create<State>((set, get) => ({
   view: 'select',
+  goTo: (view) => set({ view }),
   drawing: false,
   points: [],
   geometry: null,
