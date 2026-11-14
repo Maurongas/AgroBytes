@@ -22,6 +22,7 @@ El usuario captura temperatura, lluvia y tipo de suelo → el backend recomienda
 |---|---|---|
 | `frontend/` | Página web (React / Next.js + Tailwind) | `app/page.tsx` (formulario), `app/historial/page.tsx` |
 | `backend/` | API en Python (FastAPI + SQLAlchemy) | `app/main.py` (rutas), `app/services/algorithm.py` (reglas de cultivos), `app/models.py` (tablas) |
+| `field-shift/` | Interfaz de diagnóstico de parcela (React + Vite + Tailwind, con mapa) | [field-shift/README.md](field-shift/README.md) |
 | `docker-compose.yml` | Receta que levanta los 3 servicios juntos | — |
 
 ## ⚡ Arranque rápido
@@ -39,6 +40,7 @@ Cuando termine de cargar:
 - 🌐 Página web: http://localhost:3000
 - 📜 Historial: http://localhost:3000/historial
 - 🔧 API (documentación interactiva): http://localhost:8000/docs
+- 🌱 field-shift: http://localhost:5173
 
 Para apagar: `Ctrl + C` y luego `docker compose down`.
 

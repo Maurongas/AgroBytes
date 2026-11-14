@@ -7,6 +7,7 @@
 #    db       -> Base de datos PostgreSQL + PostGIS   (puerto 5432)
 #    backend  -> API en Python / FastAPI              (http://localhost:8000/docs)
 #    frontend -> Página web en Next.js                (http://localhost:3000)
+#    field-shift -> Interfaz React + Vite             (http://localhost:5173)
 # =====================================================================
 services:
   db:
@@ -65,6 +66,20 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
     tty: true
     stdin_open: true
+    restart: unless-stopped
+
+  # Interfaz "field-shift" (React + Vite) — http://localhost:5173
+  # Independiente: usa datos de ejemplo, no depende del backend.
+  field-shift:
+    build:
+      context: ./field-shift
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./field-shift:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
     restart: unless-stopped
 
 volumes:

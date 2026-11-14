@@ -2,7 +2,8 @@ import type { AnalysisRequest, AnalysisResponse } from './types';
 import { mockAnalysis } from './mock';
 
 const BASE = import.meta.env.VITE_API_URL as string | undefined;
-const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+// Si no hay API configurada (VITE_API_URL vacío), usa datos de ejemplo automáticamente.
+const USE_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || !BASE;
 
 export async function createAnalysis(req: AnalysisRequest): Promise<AnalysisResponse> {
   if (USE_MOCK) {

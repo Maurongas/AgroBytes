@@ -1,75 +1,49 @@
-# React + TypeScript + Vite
+# 🌱 field-shift — Diagnóstico de parcela
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Interfaz web (React + Vite + TypeScript + Tailwind) para seleccionar una parcela en el mapa y ver su diagnóstico: salud del suelo, métricas de la NASA e impacto.
 
-Currently, two official plugins are available:
+Es un proyecto **independiente** dentro del repo: no modifica `frontend/` ni `backend/`.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## ⚡ Cómo correrlo
 
-## React Compiler
+### Opción A — con Docker (junto con el resto del proyecto)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Desde la raíz del repo:
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+docker compose up --build
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Abre 👉 http://localhost:5173
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### Opción B — sin Docker (necesitas Node 20+)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+cd field-shift
+npm install
+npm run dev
+```
+
+Abre 👉 http://localhost:5173
+
+## 🔌 Datos: ejemplo (mock) o API real
+
+Por defecto usa **datos de ejemplo**, así funciona sin backend.
+
+Para conectarlo a una API, copia `.env.example` como `.env.local` y llena:
 
 ```
+VITE_API_URL=http://localhost:8000
+VITE_USE_MOCK=false
+```
+
+> ⚠️ La app espera la ruta `POST /api/analyses`, que **todavía no existe** en `backend/` (el backend actual tiene `/api/v1/recommend` y `/api/v1/history`). Mientras no se agregue, déjala en modo mock.
+
+## 📁 Estructura
+
+| Carpeta | Qué hay |
+|---|---|
+| `src/views/` | Pantallas: `SelectView` (elegir parcela) y `DiagnosisView` (resultados) |
+| `src/components/` | Mapa, medidores, tarjetas de métricas NASA, animaciones |
+| `src/api/` | Cliente de la API, tipos y datos de ejemplo (`mock.ts`) |
+| `src/store/` | Estado global (zustand) |
