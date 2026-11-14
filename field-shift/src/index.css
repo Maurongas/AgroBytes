@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --color-canvas: #FBF8F1;
+  --color-canvas-subtle: #F4EFE3;
+  --color-surface-raised: #FFFDF8;
+  --color-surface-sunken: #EFE9DB;
+  --color-orbit: #12261F;
+  --color-orbit-soft: #1C382E;
+
+  --color-ink-900: #1B2A22;
+  --color-ink-700: #3A4A41;
+  --color-ink-500: #66756B;
+  --color-ink-400: #8A978E;
+
+  --color-line-soft: #E6DFCF;
+  --color-line: #D5CCB7;
+  --color-line-strong: #B9AE94;
+
+  --color-leaf-50: #EEF6EA;
+  --color-leaf-100: #D9EBD0;
+  --color-leaf-300: #9CCB86;
+  --color-leaf-500: #4E9F3D;
+  --color-leaf-600: #3F7D4A;
+  --color-leaf-700: #2D6427;
+  --color-leaf-900: #173417;
+
+  --color-clay-100: #F3E3D3;
+  --color-clay-300: #D9A97E;
+  --color-clay-500: #B5733F;
+  --color-clay-700: #7E4A25;
+
+  --color-sky-50: #E8F4FC;
+  --color-sky-300: #7CC3EE;
+  --color-sky-500: #1F8FD6;
+  --color-sky-700: #12629A;
+
+  --color-sun-100: #FFF1CC;
+  --color-sun-300: #FFCF5C;
+  --color-sun-500: #F5A623;
+  --color-sun-700: #B36B00;
+
+  --color-moist: #2BA6A0;
+  --color-nitro: #8A63D2;
+  --color-ok: #2E9E5B;
+  --color-warn: #E8A317;
+  --color-danger: #D64545;
+  --color-nasa-mark: #E03C21;
+
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --radius-card: 20px;
+  --radius-panel: 28px;
+
+  --shadow-card: 0 1px 2px rgba(27,42,34,.05), 0 8px 24px -12px rgba(27,42,34,.12);
+  --shadow-lift: 0 2px 4px rgba(27,42,34,.06), 0 18px 40px -16px rgba(27,42,34,.22);
+}
+
+html, body, #root { height: 100%; }
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink-900);
+  font-family: var(--font-sans);
+  font-feature-settings: 'tnum' 1;
+}
+
+@keyframes scan {
+  from { left: 0; }
+  to { left: 100%; }
+}
