@@ -170,7 +170,8 @@ snake_case; `schemas/base.py` hace la conversión). Documentación viva en `/doc
 | GET | `/api/v1/analyses?limit=20` | Historial (resúmenes) | ✅ listo |
 | GET | `/api/v1/analyses/{id}` | Detalle de un análisis guardado | ✅ listo |
 | GET | `/api/v1/climate?lat=&lon=` | Resumen climático NASA POWER de un punto (útil para depurar) | ✅ listo |
-| GET | `/api/v1/crops` | Catálogo de cultivos | ✅ listo |
+| GET | `/api/v1/crops` | Catálogo de cultivos (FAO ECOCROP + FAO) | ✅ listo |
+| GET | `/api/v1/soil?lat=&lon=` | Suelo estimado del punto (ISRIC SoilGrids); 404 si no hay dato | ✅ listo |
 
 Todos los endpoints están implementados: el frontend ya puede usar `VITE_USE_MOCK=false`.
 
@@ -183,7 +184,9 @@ Todos los endpoints están implementados: el frontend ya puede usar `VITE_USE_MO
 | `status` (métrica) | `ok` · `warn` · `danger` |
 | `uncertainty.level` | `low` · `medium` · `high` |
 | `metrics[].id` | `soilMoisture` · `rain90d` · `tempMean` · `solarRadiation` |
-| cultivos (`currentCrop`, `cropId`) | `maize` · `wheat` · `soy` · `bean` · `chile` · `tomato` · `oat` · `sorghum` (= `frontend/src/lib/crops.ts` = `crops.json`) |
+| cultivos (`currentCrop`, `cropId`) | 18 ids de `backend/app/data/crops.json` (= `frontend/src/lib/crops.ts`): `maize` · `sorghum` · `wheat` · `barley` · `oat` · `bean` · `soy` · `chickpea` · `pea` · `vetch` · `canola` · `safflower` · `cotton` · `tomato` · `chile` · `potato` · `onion` · `squash` |
+| `cropId` especial | `fallow` = descanso/barbecho (ningún cultivo tolera el clima de esa temporada); nunca es `currentCrop` |
+| `family` (cultivo) | rol: `cereal` · `legume` · `cover` · `vegetable` · `oilseed` · `industrial` (la familia botánica va en `botanicalFamily`) |
 
 ### 5.2 `POST /api/v1/analyses`
 Request:
@@ -192,11 +195,13 @@ Request:
   "geometry": { "type": "Polygon", "coordinates": [[[-116.61, 31.85], [-116.59, 31.85], [-116.59, 31.87], [-116.61, 31.85]]] },
   "currentCrop": "maize",
   "priority": "water",
-  "soil": { "texture": "clay" }
+  "soil": { "texture": "clay", "ph": 7.8 },
+  "irrigated": true
 }
 ```
 - `geometry`: GeoJSON Polygon, coordenadas `[lon, lat]`, anillo cerrado (≥ 4 puntos). Si no → `422`.
-- `soil` es opcional (hoy la UI no lo pide; si falta, el factor suelo vale 1).
+- `soil` es opcional. Lo que falte (textura o pH) se completa con **SoilGrids** (`soilDetected` en la respuesta).
+- `irrigated` es opcional: `true` = parcela de riego (el agua se compara por riego necesario); `false`/omitido = temporal.
 
 Response `201`:
 ```json
@@ -213,7 +218,9 @@ Response `201`:
     { "season": "winter", "cropId": "oat", "score": 84,
       "reasons": ["Cubre el suelo y reduce la erosión", "Tolera temperaturas bajas"],
       "waterSavingPct": 38, "nitrogenDelta": -8, "risks": ["Rendimiento menor si falta lluvia en enero"],
-      "plantingWindow": "Dic – Ene" }
+      "plantingWindow": "Dic – Ene", "irrigationMm": 120 },
+    { "season": "spring", "cropId": "fallow", "score": 0, "reasons": ["Ningún cultivo del catálogo tolera…"],
+      "waterSavingPct": 100, "nitrogenDelta": 0, "risks": [], "plantingWindow": "—", "irrigationMm": 0 }
   ],
   "impact": [
     { "label": "Balance hídrico", "unit": "mm", "current": -120, "recommended": -45, "betterWhen": "higher" },
@@ -222,13 +229,17 @@ Response `201`:
   ],
   "soilHealth": { "current": 52, "recommended": 74 },
   "climate": [{ "month": "Ene", "rain": 62, "temp": 14 }, "… 12 meses"],
-  "uncertainty": { "level": "high", "reason": "La lluvia anual varía 38 % entre años" }
+  "uncertainty": { "level": "high", "reason": "La lluvia anual varía 38 % entre años" },
+  "soilDetected": { "texture": "clay", "ph": 7.8, "clayPct": 39.8, "sandPct": 29.2, "source": "ISRIC SoilGrids v2.0 (0–30 cm)" },
+  "irrigated": true
 }
 ```
 - `metrics`: siempre las 4 de §5.1, en ese orden. Todas de NASA POWER.
 - `rotation`: siempre 3 pasos, en orden cronológico (ver §7).
 - `impact`: siempre esos 3 renglones, en ese orden.
 - `soilHealth` y `nitrogenDelta` son **estimaciones por reglas**; la UI lo indica.
+- `soilDetected`: `null` si SoilGrids no tiene dato (zonas urbanas, agua) o no respondió (beta, límite 5 consultas/min).
+- `irrigationMm`: riego estimado del ciclo de ese cultivo (FAO-56, ver §7).
 
 ### 5.3 `GET /api/v1/analyses?limit=20`
 ```json
@@ -258,8 +269,15 @@ El mismo `AnalysisResponse` de §5.2 (se lee del JSON guardado). `404` si no exi
 
 ### 5.6 `GET /api/v1/crops`
 ```json
-[{ "id": "bean", "name": "Frijol", "family": "legume", "seasons": ["spring", "summer"], "soils": ["loam", "clay"],
-   "waterNeedMm": 350, "nitrogenDeltaKgHa": 40 }]
+[{ "id": "bean", "name": "Frijol", "scientificName": "Phaseolus vulgaris", "family": "legume",
+   "botanicalFamily": "Fabaceae", "seasons": ["spring", "summer"], "soils": ["sandy", "loam", "clay"],
+   "waterNeedMm": 400, "cycleDays": 102, "nitrogenDeltaKgHa": 18,
+   "source": "FAO ECOCROP (Phaseolus vulgaris); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 16–72 fijado" }]
+```
+
+### 5.6b `GET /api/v1/soil?lat=32.5&lon=-115.3`
+```json
+{ "texture": "clay", "ph": 7.8, "clayPct": 39.8, "sandPct": 29.2, "source": "ISRIC SoilGrids v2.0 (0–30 cm)" }
 ```
 
 ### 5.7 Errores
@@ -267,6 +285,7 @@ El mismo `AnalysisResponse` de §5.2 (se lee del JSON guardado). `404` si no exi
 |---|---|
 | 422 | Validación (Pydantic): polígono inválido, enums, rangos |
 | 404 | `analyses/{id}` no existe |
+| 404 | `analyses/{id}` no existe · `soil` sin dato para ese punto |
 | 503 | NASA POWER caído y sin caché · BD no disponible al guardar/leer · tabla `crops` vacía |
 
 Formato siempre: `{"detail": "mensaje legible en español"}` (el `client.ts` lo muestra tal cual).
@@ -287,23 +306,30 @@ erDiagram
         string current_crop
         string priority
         jsonb soil "nullable"
+        bool irrigated "nullable"
         jsonb climate_summary "ClimateSummary usado"
         jsonb result "AnalysisResponse sin id ni createdAt (salen de la fila)"
     }
     CROPS {
         string id PK "maize, bean…"
         string name "Maíz, Frijol…"
-        string family "cereal|legume|vegetable|cover"
-        float temp_opt_min
-        float temp_opt_max
-        float temp_abs_min
-        float temp_abs_max
-        float water_need_mm "por ciclo"
-        int cycle_days
+        string scientific_name "ECOCROP"
+        string family "rol: cereal|legume|cover|vegetable|oilseed|industrial"
+        string botanical_family "Poaceae, Fabaceae…"
+        float temp_opt_min "ECOCROP TOPMN"
+        float temp_opt_max "ECOCROP TOPMX"
+        float temp_abs_min "ECOCROP TMIN"
+        float temp_abs_max "ECOCROP TMAX"
+        float frost_kill_c "ECOCROP KTMP, nullable"
+        float ph_min "nullable"
+        float ph_max "nullable"
+        float water_need_mm "FAO T5, por ciclo"
+        float kc_mid "FAO-56 T12, nullable"
+        int cycle_days "FAO T4"
         string[] seasons
         string[] soils "sandy|loam|clay"
         float nitrogen_delta_kg_ha "positivo = aporta"
-        string source "FAO ECOCROP…"
+        string source "todas las fuentes del cultivo"
     }
     CLIMATE_CACHE {
         int id PK
@@ -322,15 +348,17 @@ Reglas:
   `services/climate.snap_to_grid` (**0.5° × 0.625°**). `payload` = `{"summary": ClimateSummary, "monthly": serie mensual}`.
 - `analyses.id` es `INTEGER`; en la API viaja como texto (`"42"`). Un id no numérico en `/analyses/{id}` → 404.
 - `crops` se llena con `app/db/seed.py` desde `app/data/crops.json` (idempotente: upsert por `id`).
-  Los `id` deben ser exactamente los de §5.1. Fuente de rangos: FAO ECOCROP / GAEZ.
+  **`crops.json` no se edita a mano**: lo genera `backend/research/build_crops.py` desde FAO ECOCROP + tablas FAO
+  (detalle de cada campo en `docs/INVESTIGACION-CULTIVOS.md` §4). Los `id` deben ser exactamente los de §5.1.
+- Migraciones: `7c4987b08e73` (tablas iniciales) → `a3f1c2d4e5b6` (catálogo v2 + `analyses.irrigated`).
 - No hay tabla `farms` en el MVP (las parcelas viven dentro de cada análisis).
 
 ---
 
 ## 7. Motor de reglas (`services/recommender.py`)
 
-Función **pura** (sin BD ni HTTP): `recommend(clima, cultivos, req, hoy) -> resultado`. Reglas
-transparentes; cada número de la respuesta debe poder explicarse con esta sección.
+Función **pura** (sin BD ni HTTP): `recommend(clima, cultivos, req, hoy, suelo_detectado) -> resultado`. Reglas
+transparentes; cada número de la respuesta debe poder explicarse con esta sección. Fuentes: `docs/INVESTIGACION-CULTIVOS.md`.
 
 **Temporadas por hemisferio** (si `lat < 0` se invierten):
 | Temporada | Meses (norte) |
@@ -340,38 +368,39 @@ transparentes; cada número de la respuesta debe poder explicarse con esta secci
 | autumn | Sep, Oct, Nov |
 | winter | Dic, Ene, Feb |
 
-Clima de cada temporada = promedio de `tempC` y suma de `rainMm` de sus 3 meses (de `monthly`).
+Clima de cada temporada (de `monthly`): temperatura media, **mínima media** (promedio de `tempMinC`), lluvia total
+y **ET₀** (Hargreaves, FAO-56 ec. 52, con `tempMaxC`/`tempMinC` y la radiación extraterrestre de la latitud).
 
-**Rotación:** 3 pasos = las **3 temporadas siguientes** a la actual (en noviembre, hemisferio norte →
-invierno, primavera, verano). Para cada paso se evalúan los cultivos cuyo `seasons` incluye esa temporada:
+**Agua del cultivo (FAO-56):** `need = kc_mid × 0.8 × ET₀ × cycle_days` (si no hay `kc_mid`, `water_need_mm` de FAO).
+Lluvia del ciclo = `0.8 × lluvia_diaria_de_la_temporada × cycle_days` (80 % efectiva). `irrigationMm = max(0, need − lluvia)`.
+
+**Rotación:** 3 pasos = las **3 temporadas siguientes** a la actual. En cada paso compiten **todos** los cultivos
+que **toleran** el clima (temperatura media > límite absoluto y mínima media ≥ `frost_kill_c`, o 0 °C si no hay dato):
 
 | Factor | Cálculo (0–1) | Peso |
 |---|---|---|
-| temperatura | 1 si temp ∈ [opt_min, opt_max]; baja lineal a 0 en los límites absolutos | 0.40 |
-| agua | `min(1, lluvia_temporada / water_need_mm)` | 0.30 |
-| suelo | 1 si `soil.texture` ∈ `soils` o no hay `soil`; si no, 0.5 | 0.15 |
-| prioridad | `water` → `1 − water_need/máx_del_catálogo`; `nitrogen` → legume 1, cover 0.7, otro 0; `yield` → cereal/vegetable 1, otro 0.5 | 0.15 |
+| temperatura | 1 si temp ∈ [opt_min, opt_max]; baja lineal a 0 en los límites absolutos; 0 si hay helada letal | 0.40 |
+| agua | temporal: `min(1, lluvia / need)` · con riego: `1 − riego / máx_riego_de_la_temporada` | 0.30 |
+| suelo | textura (1 si ∈ `soils` o sin dato; 0.5 si no) × pH (1 si ∈ [ph_min − 0.5, ph_max + 0.5] o sin dato; 0.6 si no) | 0.15 |
+| prioridad | `water` → `1 − need / máx_need`; `nitrogen` → legume 1, cover 0.7, otro 0; `yield` → cereal/vegetable/oilseed/industrial 1, otro 0.5 | 0.15 |
 
-- `score = round(100 × Σ peso·factor)`. Si temperatura = 0 → el cultivo se descarta en esa temporada.
-- **Regla de rotación:** misma familia que el paso anterior (o que `currentCrop` en el paso 1) → score × 0.7.
-  Nunca el mismo cultivo dos pasos seguidos (el paso 1 tampoco repite `currentCrop`: es "cambio de campo").
-- Se elige el de mayor score por paso (empate → el que necesita menos agua).
-- Si ningún cultivo de esa temporada tolera la temperatura, se toma el mejor de todo el catálogo que la tolere
-  (riesgo "No es su temporada habitual"); si ninguno la tolera, el mejor igualmente (riesgo "fuera del rango").
-- `reasons`: frases generadas desde los factores más altos y la regla de rotación.
-- `risks`: temperatura de la temporada a < 3 °C de `temp_abs_min` → "Riesgo de helada"; factor agua < 0.6 →
-  "Requiere riego"; misma familia que el anterior → riesgo de plagas; incertidumbre alta → "Lluvia muy variable entre años".
-- `waterSavingPct = round(100 × (need(currentCrop) − need(cultivo)) / need(currentCrop))`.
-- `nitrogenDelta` = `nitrogen_delta_kg_ha` del catálogo.
-- `plantingWindow` = primeros 2 meses de la temporada (ej. "Sep – Oct").
+- `score = round(100 × Σ peso·factor)`, luego multiplicadores:
+  - misma **familia botánica** que el paso anterior → × 0.7 (plagas y enfermedades compartidas; p. ej. chile → jitomate);
+  - fuera de su temporada habitual (`seasons`, calendario templado) → × 0.9 (es preferencia, no filtro: en climas fríos
+    el trigo o la canola se siembran en verano);
+  - cambia de sistema de producción respecto a `currentCrop` (granos ↔ hortalizas; las coberturas encajan en ambos) → × 0.85.
+- Nunca el mismo cultivo dos pasos seguidos (el paso 1 tampoco repite `currentCrop`). Empate → el que necesita menos agua.
+- **Barbecho:** si ningún cultivo tolera el clima de la temporada → paso `cropId: "fallow"`, score 0.
+- `reasons` / `risks`: frases desde los factores (helada, riego, pH, familia, sistema, temporada, lluvia variable).
+- `waterSavingPct` = ahorro de agua vs. `currentCrop` en esa misma temporada. `nitrogenDelta` = del catálogo.
 
-**Impacto** (`current` = repetir `currentCrop` en las 3 temporadas; `recommended` = la rotación):
-- Balance hídrico = Σ(lluvia_temporada − water_need).
-- Riego necesario = Σ max(0, water_need − lluvia_temporada).
+**Impacto** (`current` = `currentCrop` solo en las temporadas donde puede crecer, descanso en las demás;
+`recommended` = la rotación; el barbecho no consume agua ni N):
+- Balance hídrico = Σ(lluvia del ciclo − need) · Riego necesario = Σ irrigationMm.
 - Balance de nitrógeno (estimado) = 40 + Σ nitrogenDelta (kg/ha; negativo = hay que fertilizar).
 
 **Salud del suelo (índice estimado 0–100):** 50 + 10 por leguminosa + 8 por cobertura − 10 por cada par de
-pasos consecutivos de la misma familia; acotado a [0, 100]. Se calcula igual para `current` y `recommended`.
+cultivos consecutivos de la misma familia botánica; acotado a [0, 100].
 
 **Métricas** (`series` = 12 valores mensuales de la climatología):
 | id | Valor | `status` |

@@ -18,6 +18,7 @@ export interface AnalysisRequest {
   currentCrop: string;       // id del catálogo, ej. 'maize'
   priority: Priority;
   soil?: Soil;
+  irrigated?: boolean;       // ¿tiene riego? (null/omitido = temporal)
 }
 
 // Todas las métricas salen de NASA POWER
@@ -34,13 +35,14 @@ export interface NasaMetric {
 
 export interface RotationStep {
   season: Season;
-  cropId: string;
+  cropId: string;           // id del catálogo, o 'fallow' = descanso/barbecho
   score: number;            // 0-100
   reasons: string[];
   waterSavingPct: number;
   nitrogenDelta: number;    // kg/ha ESTIMADO por reglas, positivo = aporta
   risks: string[];
-  plantingWindow: string;   // «Sep – Oct»
+  plantingWindow: string;   // «Sep – Oct» ('—' si es barbecho)
+  irrigationMm: number;     // riego estimado del ciclo (FAO-56), 0 si la lluvia alcanza
 }
 
 export interface ImpactItem {
@@ -56,6 +58,31 @@ export interface Uncertainty {
   reason: string;           // «La lluvia anual varía 38 % entre años»
 }
 
+// Suelo estimado por coordenadas (ISRIC SoilGrids, 0–30 cm). También: GET /api/v1/soil?lat=&lon= (404 si no hay dato)
+export interface DetectedSoil {
+  texture: SoilTexture;
+  ph: number | null;
+  clayPct: number;
+  sandPct: number;
+  source: string;
+}
+
+// GET /api/v1/crops — catálogo (FAO ECOCROP + FAO)
+export type CropRole = 'cereal' | 'legume' | 'cover' | 'vegetable' | 'oilseed' | 'industrial';
+export interface CropInfo {
+  id: string;
+  name: string;
+  scientificName: string;
+  family: CropRole;          // rol en la rotación
+  botanicalFamily: string;   // Poaceae, Fabaceae, Solanaceae…
+  seasons: Season[];
+  soils: SoilTexture[];
+  waterNeedMm: number;
+  cycleDays: number;
+  nitrogenDeltaKgHa: number;
+  source: string;
+}
+
 // POST /api/v1/analyses y GET /api/v1/analyses/{id} — lo que el backend responde
 export interface AnalysisResponse {
   id: string;
@@ -68,6 +95,8 @@ export interface AnalysisResponse {
   soilHealth: { current: number; recommended: number }; // índice 0-100 ESTIMADO por reglas
   climate: { month: string; rain: number; temp: number }[]; // 12 meses
   uncertainty: Uncertainty;
+  soilDetected?: DetectedSoil | null; // null si SoilGrids no tiene dato o no respondió
+  irrigated?: boolean | null;
 }
 
 // GET /api/v1/analyses — un renglón del historial

@@ -2,121 +2,504 @@
   {
     "id": "maize",
     "name": "Maíz",
+    "scientific_name": "Zea mays",
     "family": "cereal",
+    "botanical_family": "Poaceae",
     "temp_opt_min": 18.0,
-    "temp_opt_max": 30.0,
+    "temp_opt_max": 33.0,
     "temp_abs_min": 10.0,
-    "temp_abs_max": 40.0,
-    "water_need_mm": 550.0,
-    "cycle_days": 120,
-    "seasons": ["spring", "summer"],
-    "soils": ["loam", "clay"],
-    "nitrogen_delta_kg_ha": -80.0,
-    "source": "FAO ECOCROP (Zea mays)"
-  },
-  {
-    "id": "wheat",
-    "name": "Trigo",
-    "family": "cereal",
-    "temp_opt_min": 15.0,
-    "temp_opt_max": 23.0,
-    "temp_abs_min": 4.0,
-    "temp_abs_max": 32.0,
-    "water_need_mm": 450.0,
-    "cycle_days": 130,
-    "seasons": ["autumn", "winter"],
-    "soils": ["loam", "clay"],
-    "nitrogen_delta_kg_ha": -65.0,
-    "source": "FAO ECOCROP (Triticum aestivum)"
-  },
-  {
-    "id": "soy",
-    "name": "Soya",
-    "family": "legume",
-    "temp_opt_min": 20.0,
-    "temp_opt_max": 30.0,
-    "temp_abs_min": 10.0,
-    "temp_abs_max": 38.0,
-    "water_need_mm": 500.0,
-    "cycle_days": 110,
-    "seasons": ["spring", "summer"],
-    "soils": ["loam", "clay", "sandy"],
-    "nitrogen_delta_kg_ha": 60.0,
-    "source": "FAO ECOCROP (Glycine max)"
-  },
-  {
-    "id": "bean",
-    "name": "Frijol",
-    "family": "legume",
-    "temp_opt_min": 16.0,
-    "temp_opt_max": 27.0,
-    "temp_abs_min": 10.0,
-    "temp_abs_max": 35.0,
-    "water_need_mm": 380.0,
-    "cycle_days": 95,
-    "seasons": ["spring", "summer", "autumn"],
-    "soils": ["loam", "sandy"],
-    "nitrogen_delta_kg_ha": 45.0,
-    "source": "FAO ECOCROP (Phaseolus vulgaris)"
-  },
-  {
-    "id": "chile",
-    "name": "Chile",
-    "family": "vegetable",
-    "temp_opt_min": 18.0,
-    "temp_opt_max": 28.0,
-    "temp_abs_min": 10.0,
-    "temp_abs_max": 36.0,
-    "water_need_mm": 600.0,
-    "cycle_days": 115,
-    "seasons": ["spring", "summer"],
-    "soils": ["loam", "sandy"],
-    "nitrogen_delta_kg_ha": -55.0,
-    "source": "FAO ECOCROP (Capsicum annuum)"
-  },
-  {
-    "id": "tomato",
-    "name": "Tomate",
-    "family": "vegetable",
-    "temp_opt_min": 18.0,
-    "temp_opt_max": 27.0,
-    "temp_abs_min": 10.0,
-    "temp_abs_max": 35.0,
+    "temp_abs_max": 47.0,
+    "frost_kill_c": null,
+    "ph_min": 5.0,
+    "ph_max": 7.0,
     "water_need_mm": 650.0,
-    "cycle_days": 105,
-    "seasons": ["spring", "summer", "autumn"],
-    "soils": ["loam", "sandy"],
-    "nitrogen_delta_kg_ha": -70.0,
-    "source": "FAO ECOCROP (Solanum lycopersicum)"
-  },
-  {
-    "id": "oat",
-    "name": "Avena",
-    "family": "cereal",
-    "temp_opt_min": 12.0,
-    "temp_opt_max": 22.0,
-    "temp_abs_min": 2.0,
-    "temp_abs_max": 30.0,
-    "water_need_mm": 350.0,
-    "cycle_days": 110,
-    "seasons": ["autumn", "winter"],
-    "soils": ["loam", "sandy", "clay"],
-    "nitrogen_delta_kg_ha": -40.0,
-    "source": "FAO ECOCROP (Avena sativa)"
+    "kc_mid": 1.2,
+    "cycle_days": 152,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -104.0,
+    "source": "FAO ECOCROP (Zea mays); FAO IWM T4-T5; FAO-56 T12; N: 17.4 kg/t × 6 t"
   },
   {
     "id": "sorghum",
     "name": "Sorgo",
+    "scientific_name": "Sorghum bicolor",
     "family": "cereal",
+    "botanical_family": "Poaceae",
     "temp_opt_min": 22.0,
-    "temp_opt_max": 34.0,
-    "temp_abs_min": 12.0,
-    "temp_abs_max": 42.0,
+    "temp_opt_max": 35.0,
+    "temp_abs_min": 8.0,
+    "temp_abs_max": 40.0,
+    "frost_kill_c": null,
+    "ph_min": 5.5,
+    "ph_max": 7.5,
+    "water_need_mm": 550.0,
+    "kc_mid": 1.05,
+    "cycle_days": 125,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -87.0,
+    "source": "FAO ECOCROP (Sorghum bicolor); FAO IWM T4-T5; FAO-56 T12; N: 17.4 kg/t (maíz) × 5 t"
+  },
+  {
+    "id": "wheat",
+    "name": "Trigo",
+    "scientific_name": "Triticum aestivum",
+    "family": "cereal",
+    "botanical_family": "Poaceae",
+    "temp_opt_min": 15.0,
+    "temp_opt_max": 23.0,
+    "temp_abs_min": 5.0,
+    "temp_abs_max": 27.0,
+    "frost_kill_c": 0.0,
+    "ph_min": 6.0,
+    "ph_max": 7.0,
+    "water_need_mm": 550.0,
+    "kc_mid": 1.15,
+    "cycle_days": 135,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -105.0,
+    "source": "FAO ECOCROP (Triticum aestivum); FAO IWM T4-T5; FAO-56 T12; N: 21 kg/t × 5 t"
+  },
+  {
+    "id": "barley",
+    "name": "Cebada",
+    "scientific_name": "Hordeum vulgare",
+    "family": "cereal",
+    "botanical_family": "Poaceae",
+    "temp_opt_min": 15.0,
+    "temp_opt_max": 20.0,
+    "temp_abs_min": 2.0,
+    "temp_abs_max": 40.0,
+    "frost_kill_c": 0.0,
+    "ph_min": 6.5,
+    "ph_max": 7.5,
+    "water_need_mm": 550.0,
+    "kc_mid": 1.15,
+    "cycle_days": 135,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -81.0,
+    "source": "FAO ECOCROP (Hordeum vulgare); FAO IWM T4-T5; FAO-56 T12; N: 20.3 kg/t × 4 t"
+  },
+  {
+    "id": "oat",
+    "name": "Avena",
+    "scientific_name": "Avena sativa",
+    "family": "cereal",
+    "botanical_family": "Poaceae",
+    "temp_opt_min": 16.0,
+    "temp_opt_max": 20.0,
+    "temp_abs_min": 5.0,
+    "temp_abs_max": 30.0,
+    "frost_kill_c": -1.0,
+    "ph_min": 5.0,
+    "ph_max": 6.0,
+    "water_need_mm": 550.0,
+    "kc_mid": 1.15,
+    "cycle_days": 135,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -55.0,
+    "source": "FAO ECOCROP (Avena sativa); FAO IWM T4-T5; FAO-56 T12; N: 18.3 kg/t × 3 t"
+  },
+  {
+    "id": "bean",
+    "name": "Frijol",
+    "scientific_name": "Phaseolus vulgaris",
+    "family": "legume",
+    "botanical_family": "Fabaceae",
+    "temp_opt_min": 16.0,
+    "temp_opt_max": 25.0,
+    "temp_abs_min": 7.0,
+    "temp_abs_max": 32.0,
+    "frost_kill_c": null,
+    "ph_min": 5.5,
+    "ph_max": 7.5,
     "water_need_mm": 400.0,
-    "cycle_days": 110,
-    "seasons": ["spring", "summer"],
-    "soils": ["loam", "clay", "sandy"],
+    "kc_mid": 1.15,
+    "cycle_days": 102,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": 18.0,
+    "source": "FAO ECOCROP (Phaseolus vulgaris); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 16–72 fijado"
+  },
+  {
+    "id": "soy",
+    "name": "Soya",
+    "scientific_name": "Glycine max",
+    "family": "legume",
+    "botanical_family": "Fabaceae",
+    "temp_opt_min": 20.0,
+    "temp_opt_max": 33.0,
+    "temp_abs_min": 10.0,
+    "temp_abs_max": 38.0,
+    "frost_kill_c": null,
+    "ph_min": 5.5,
+    "ph_max": 6.5,
+    "water_need_mm": 575.0,
+    "kc_mid": 1.15,
+    "cycle_days": 142,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": 37.0,
+    "source": "FAO ECOCROP (Glycine max); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 90–95 fijado"
+  },
+  {
+    "id": "chickpea",
+    "name": "Garbanzo",
+    "scientific_name": "Cicer arietinum",
+    "family": "legume",
+    "botanical_family": "Fabaceae",
+    "temp_opt_min": 15.0,
+    "temp_opt_max": 29.0,
+    "temp_abs_min": 7.0,
+    "temp_abs_max": 35.0,
+    "frost_kill_c": 0.0,
+    "ph_min": 6.0,
+    "ph_max": 8.5,
+    "water_need_mm": 425.0,
+    "kc_mid": 1.0,
+    "cycle_days": 135,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": 25.0,
+    "source": "FAO ECOCROP (Cicer arietinum); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 21–104 fijado"
+  },
+  {
+    "id": "pea",
+    "name": "Chícharo",
+    "scientific_name": "Pisum sativum",
+    "family": "legume",
+    "botanical_family": "Fabaceae",
+    "temp_opt_min": 10.0,
+    "temp_opt_max": 24.0,
+    "temp_abs_min": 4.0,
+    "temp_abs_max": 30.0,
+    "frost_kill_c": 0.0,
+    "ph_min": 5.5,
+    "ph_max": 7.0,
+    "water_need_mm": 425.0,
+    "kc_mid": 1.15,
+    "cycle_days": 95,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": 15.0,
+    "source": "FAO ECOCROP (Pisum sativum); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 30–40 fijado"
+  },
+  {
+    "id": "vetch",
+    "name": "Veza (abono verde)",
+    "scientific_name": "Vicia sativa",
+    "family": "cover",
+    "botanical_family": "Fabaceae",
+    "temp_opt_min": 14.0,
+    "temp_opt_max": 23.0,
+    "temp_abs_min": 3.0,
+    "temp_abs_max": 28.0,
+    "frost_kill_c": -1.0,
+    "ph_min": 6.0,
+    "ph_max": 7.0,
+    "water_need_mm": 425.0,
+    "kc_mid": 1.0,
+    "cycle_days": 125,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": 119.0,
+    "source": "FAO ECOCROP (Vicia sativa ssp. sativa); FAO IWM T4-T5; FAO-56 T12; N: 107–131 fijado, se incorpora"
+  },
+  {
+    "id": "canola",
+    "name": "Canola",
+    "scientific_name": "Brassica napus",
+    "family": "oilseed",
+    "botanical_family": "Brassicaceae",
+    "temp_opt_min": 15.0,
+    "temp_opt_max": 25.0,
+    "temp_abs_min": 5.0,
+    "temp_abs_max": 41.0,
+    "frost_kill_c": -6.0,
+    "ph_min": 6.5,
+    "ph_max": 7.6,
+    "water_need_mm": 550.0,
+    "kc_mid": 1.1,
+    "cycle_days": 132,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -77.0,
+    "source": "FAO ECOCROP (Brassica napus); FAO IWM T4-T5; FAO-56 T12; N: 38.7 kg/t × 2 t"
+  },
+  {
+    "id": "safflower",
+    "name": "Cártamo",
+    "scientific_name": "Carthamus tinctorius",
+    "family": "oilseed",
+    "botanical_family": "Asteraceae",
+    "temp_opt_min": 20.0,
+    "temp_opt_max": 32.0,
+    "temp_abs_min": 5.0,
+    "temp_abs_max": 45.0,
+    "frost_kill_c": -2.0,
+    "ph_min": 6.5,
+    "ph_max": 7.5,
+    "water_need_mm": 800.0,
+    "kc_mid": 1.1,
+    "cycle_days": 150,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -50.0,
+    "source": "FAO ECOCROP (Carthamus tinctorius); FAO IWM T4-T5; FAO-56 T12; N aprox."
+  },
+  {
+    "id": "cotton",
+    "name": "Algodón",
+    "scientific_name": "Gossypium hirsutum",
+    "family": "industrial",
+    "botanical_family": "Malvaceae",
+    "temp_opt_min": 22.0,
+    "temp_opt_max": 36.0,
+    "temp_abs_min": 15.0,
+    "temp_abs_max": 42.0,
+    "frost_kill_c": null,
+    "ph_min": 6.0,
+    "ph_max": 7.5,
+    "water_need_mm": 1000.0,
+    "kc_mid": 1.18,
+    "cycle_days": 188,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
     "nitrogen_delta_kg_ha": -60.0,
-    "source": "FAO ECOCROP (Sorghum bicolor)"
+    "source": "FAO ECOCROP (Gossypium hirsutum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+  },
+  {
+    "id": "tomato",
+    "name": "Jitomate",
+    "scientific_name": "Lycopersicon esculentum",
+    "family": "vegetable",
+    "botanical_family": "Solanaceae",
+    "temp_opt_min": 20.0,
+    "temp_opt_max": 27.0,
+    "temp_abs_min": 7.0,
+    "temp_abs_max": 35.0,
+    "frost_kill_c": null,
+    "ph_min": 5.5,
+    "ph_max": 6.8,
+    "water_need_mm": 600.0,
+    "kc_mid": 1.15,
+    "cycle_days": 158,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -90.0,
+    "source": "FAO ECOCROP (Lycopersicon esculentum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+  },
+  {
+    "id": "chile",
+    "name": "Chile",
+    "scientific_name": "Capsicum annuum",
+    "family": "vegetable",
+    "botanical_family": "Solanaceae",
+    "temp_opt_min": 17.0,
+    "temp_opt_max": 30.0,
+    "temp_abs_min": 8.0,
+    "temp_abs_max": 35.0,
+    "frost_kill_c": null,
+    "ph_min": 5.5,
+    "ph_max": 6.8,
+    "water_need_mm": 750.0,
+    "kc_mid": 1.05,
+    "cycle_days": 165,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam"
+    ],
+    "nitrogen_delta_kg_ha": -70.0,
+    "source": "FAO ECOCROP (Capsicum annuum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+  },
+  {
+    "id": "potato",
+    "name": "Papa",
+    "scientific_name": "Solanum tuberosum",
+    "family": "vegetable",
+    "botanical_family": "Solanaceae",
+    "temp_opt_min": 15.0,
+    "temp_opt_max": 25.0,
+    "temp_abs_min": 7.0,
+    "temp_abs_max": 30.0,
+    "frost_kill_c": 0.0,
+    "ph_min": 5.0,
+    "ph_max": 6.2,
+    "water_need_mm": 600.0,
+    "kc_mid": 1.15,
+    "cycle_days": 125,
+    "seasons": [
+      "spring",
+      "summer",
+      "autumn"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -80.0,
+    "source": "FAO ECOCROP (Solanum tuberosum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+  },
+  {
+    "id": "onion",
+    "name": "Cebolla",
+    "scientific_name": "Allium cepa",
+    "family": "vegetable",
+    "botanical_family": "Amaryllidaceae",
+    "temp_opt_min": 12.0,
+    "temp_opt_max": 25.0,
+    "temp_abs_min": 4.0,
+    "temp_abs_max": 30.0,
+    "frost_kill_c": null,
+    "ph_min": 6.0,
+    "ph_max": 7.0,
+    "water_need_mm": 450.0,
+    "kc_mid": 1.05,
+    "cycle_days": 180,
+    "seasons": [
+      "autumn",
+      "winter"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -50.0,
+    "source": "FAO ECOCROP (Allium cepa); FAO IWM T4-T5; FAO-56 T12; N aprox."
+  },
+  {
+    "id": "squash",
+    "name": "Calabaza",
+    "scientific_name": "Cucurbita pepo",
+    "family": "vegetable",
+    "botanical_family": "Cucurbitaceae",
+    "temp_opt_min": 17.0,
+    "temp_opt_max": 30.0,
+    "temp_abs_min": 6.0,
+    "temp_abs_max": 40.0,
+    "frost_kill_c": null,
+    "ph_min": 5.5,
+    "ph_max": 6.8,
+    "water_need_mm": 500.0,
+    "kc_mid": 1.0,
+    "cycle_days": 108,
+    "seasons": [
+      "spring",
+      "summer"
+    ],
+    "soils": [
+      "sandy",
+      "loam",
+      "clay"
+    ],
+    "nitrogen_delta_kg_ha": -40.0,
+    "source": "FAO ECOCROP (Cucurbita pepo); FAO IWM T4-T5; FAO-56 T12; N aprox."
   }
 ]

@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from geoalchemy2 import Geography
-from sqlalchemy import DateTime, Float, Integer, String, func
+from sqlalchemy import Boolean, DateTime, Float, Integer, String, func
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -26,5 +26,6 @@ class Analysis(Base):
     current_crop: Mapped[str] = mapped_column(String(50), nullable=False)
     priority: Mapped[str] = mapped_column(String(20), nullable=False)
     soil: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    irrigated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
     climate_summary: Mapped[dict] = mapped_column(JSONB, nullable=False)
     result: Mapped[dict] = mapped_column(JSONB, nullable=False)

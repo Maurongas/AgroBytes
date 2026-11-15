@@ -7,14 +7,13 @@ JSON directamente; eso solo lo usan scripts y pruebas.
 
 import json
 from pathlib import Path
-from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.repositories import crops as crops_repo
-from app.schemas.analysis import Season, SoilTexture
+from app.schemas.analysis import CropRole, Season, SoilTexture
 
 CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "crops.json"
 
@@ -26,12 +25,18 @@ class CropParams(BaseModel):
 
     id: str
     name: str
-    family: Literal["cereal", "legume", "vegetable", "cover"]
+    scientific_name: str = ""
+    family: CropRole  # rol en la rotación
+    botanical_family: str = ""  # vacío = se usa `family` para la regla de rotación
     temp_opt_min: float
     temp_opt_max: float
     temp_abs_min: float
     temp_abs_max: float
-    water_need_mm: float = Field(gt=0, description="Agua que necesita en un ciclo")
+    frost_kill_c: float | None = Field(default=None, description="ECOCROP KTMP; None = sensible a helada (0 °C)")
+    ph_min: float | None = None
+    ph_max: float | None = None
+    water_need_mm: float = Field(gt=0, description="Agua que necesita en un ciclo (FAO, valor típico)")
+    kc_mid: float | None = Field(default=None, description="FAO-56: con ET₀ da el agua según el clima local")
     cycle_days: int = Field(gt=0)
     seasons: list[Season]
     soils: list[SoilTexture]
