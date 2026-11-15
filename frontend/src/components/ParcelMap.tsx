@@ -7,6 +7,7 @@ import { rectanguloDesdeEsquinas, seCruza } from '../lib/geo';
 import { REGION_BOUNDS, REGION_LATLNGS, MAX_AREA_HA } from '../lib/region';
 import DrawToolbar, { type Herramienta } from './map/DrawToolbar';
 import EditableParcel from './map/EditableParcel';
+import BuscarLugar from './map/BuscarLugar';
 
 // Todo el mundo con un hueco por cada polígono de la región: oscurece lo que queda fuera
 const WORLD: [number, number][] = [[-89, -179], [-89, 179], [89, 179], [89, -179]];
@@ -130,16 +131,19 @@ export default function ParcelMap() {
       ? borrarPunto ? 'Toca un punto para quitarlo' : 'Arrastra los puntos para ajustar la parcela'
       : null;
   // Área mientras se dibuja, para avisar antes de terminar si se pasa del máximo
+  const [mapa, setMapa] = useState<L.Map | null>(null); // para BuscarLugar, que va fuera del MapContainer
   const liveArea = drawing && points.length >= 3 ? polygonAreaHa(points) : null;
   const tooBig = liveArea !== null && liveArea > MAX_AREA_HA;
 
   return (
-    <div className={`relative h-full w-full ${drawing ? 'cursor-crosshair' : ''}`}>
-      <MapContainer center={[31.8667, -116.5963]} zoom={13} minZoom={3} maxBounds={REGION_BOUNDS} maxBoundsViscosity={1}
+    // En celular el panel «Tu parcela» tapa la esquina inferior: los controles de Leaflet (atribución) suben
+    // por encima del panel oculto (46 px) para que la atribución de Esri se vea al mirar el mapa.
+    <div className={`relative h-full w-full [&_.leaflet-bottom]:mb-12 lg:[&_.leaflet-bottom]:mb-0 ${drawing ? 'cursor-crosshair' : ''}`}>
+      <MapContainer ref={setMapa} center={[31.8667, -116.5963]} zoom={13} minZoom={3} maxBounds={REGION_BOUNDS} maxBoundsViscosity={1}
         doubleClickZoom={false} zoomControl={false} className="h-full w-full">
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          attribution="Tiles © Esri"
+          attribution="Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community"
         />
         <Polygon positions={[WORLD, ...REGION_LATLNGS]} interactive={false}
           pathOptions={{ stroke: false, fillColor: '#0B1220', fillOpacity: 0.55 }} />
@@ -167,6 +171,7 @@ export default function ParcelMap() {
 
       {/* En lg+ se descuenta el ancho del panel lateral (360/400 px + márgenes) para no quedar debajo de él */}
       <div className="absolute left-3 top-3 z-[1000] flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2 lg:max-w-[calc(100%-360px-2.75rem)] xl:max-w-[calc(100%-400px-2.75rem)]">
+        <BuscarLugar map={mapa} />
         <DrawToolbar
           herramienta={herramienta} onHerramienta={cambiarHerramienta}
           editando={editando} onEditando={(v) => { setEditando(v); if (!v) setBorrarPunto(false); }}
@@ -190,11 +195,16 @@ export default function ParcelMap() {
             {parcelError}
           </p>
         )}
+        {!drawing && !geometry && !parcelError && (
+          <p className="rounded-lg bg-orbit/80 px-3 py-1.5 text-xs text-paper lg:hidden">
+            Disponible en México, EE. UU. y Canadá · parcelas de hasta {MAX_AREA_HA} ha
+          </p>
+        )}
       </div>
 
       {!drawing && !geometry && !parcelError && (
-        // En celular va bajo la barra de dibujo (abajo lo tapa el panel); en lg+ abajo a la izquierda.
-        <div className="absolute left-3 right-3 top-[5.25rem] z-[1000] w-fit rounded-lg bg-orbit/80 px-3 py-1.5 text-xs text-paper lg:bottom-6 lg:left-4 lg:right-auto lg:top-auto">
+        // En lg+ abajo a la izquierda; en celular va en la columna de arriba (abajo lo tapa el panel).
+        <div className="absolute bottom-6 left-4 z-[1000] hidden rounded-lg bg-orbit/80 px-3 py-1.5 text-xs text-paper lg:block">
           Disponible en México, EE. UU. y Canadá · parcelas de hasta {MAX_AREA_HA} ha
         </div>
       )}
