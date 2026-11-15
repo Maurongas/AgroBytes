@@ -230,6 +230,8 @@ Request:
 }
 ```
 - `geometry`: GeoJSON Polygon, coordenadas `[lon, lat]`, anillo cerrado (≥ 4 puntos). Si no → `422`.
+  Además, **todos los vértices deben estar dentro de México, EE. UU. o Canadá** y el área debe estar entre
+  **0.1 y 500 ha**; si no → `422` con un `detail` en español para mostrar al usuario (ver §7, *Región y tamaño*).
 - `soil` es opcional. Lo que falte (textura o pH) se completa con **SoilGrids** (`soilDetected` en la respuesta).
   `soil.organicMatter` (`low`·`mid`·`high`, opcional) ajusta el índice `soilHealth` (§7); SoilGrids no lo da.
 - `irrigated` es opcional: `true` = parcela de riego (el agua se compara por riego necesario); `false`/omitido = temporal.
@@ -241,6 +243,7 @@ Response `201`:
   "createdAt": "2026-11-14T18:22:10Z",
   "areaHa": 8.4,
   "location": { "lat": 31.86, "lon": -116.6 },
+  "country": "MX",
   "metrics": [
     { "id": "soilMoisture", "label": "Humedad del suelo", "value": 0.21, "unit": "0–1", "status": "warn",
       "meaning": "Algo seco para maíz", "series": [0.31, 0.3, "… 12 valores mensuales"], "source": "NASA POWER · 2015-2024" }
@@ -322,7 +325,7 @@ Timeout 10 s. Caché en memoria por punto (~1 km). Si SoilGrids falla, ese punto
 ### 5.7 Errores
 | Código | Cuándo |
 |---|---|
-| 422 | Validación (Pydantic): polígono inválido, enums, rangos |
+| 422 | Validación (Pydantic): polígono inválido, enums, rangos · parcela fuera de MX/EE. UU./Canadá o fuera de 0.1–500 ha |
 | 400 | Falta `X-Device-Id` con `REQUIRE_DEVICE_ID=true` |
 | 404 | `analyses/{id}` no existe o es de otro dispositivo · `soil` sin dato para ese punto |
 | 429 | Más de `RATE_LIMIT_ANALYSES_PER_MIN` análisis por IP en un minuto (header `Retry-After`) |
@@ -372,6 +375,14 @@ erDiagram
         float nitrogen_delta_kg_ha "positivo = aporta"
         string source "todas las fuentes del cultivo"
     }
+    CROP_COUNTRIES {
+        string crop_id PK "FK crops.id"
+        string country_code PK "MX | US | CA"
+        float harvested_area_ha "FAOSTAT, promedio anual; 0 = no se siembra"
+        string period "2020-2024"
+        string source
+    }
+    CROPS ||--o{ CROP_COUNTRIES : "se siembra en"
     CLIMATE_CACHE {
         int id PK
         float lat_grid "redondeado a 0.5"
@@ -391,8 +402,12 @@ Reglas:
 - `crops` se llena con `app/db/seed.py` desde `app/data/crops.json` (idempotente: upsert por `id`).
   **`crops.json` no se edita a mano**: lo genera `backend/research/build_crops.py` desde FAO ECOCROP + tablas FAO
   (detalle de cada campo en `docs/INVESTIGACION-CULTIVOS.md` §4). Los `id` deben ser exactamente los de §5.1.
+- `crop_countries` se llena con `app/db/seed.py` desde `app/data/crop_countries.json` (upsert por
+  `(crop_id, country_code)`), que genera `backend/research/build_crop_countries.py` desde **FAOSTAT QCL** (área
+  cosechada, promedio de los últimos 5 años). Tampoco se edita a mano.
 - Migraciones: `7c4987b08e73` (tablas iniciales) → `a3f1c2d4e5b6` (catálogo v2 + `analyses.irrigated`) →
-  `b7d2e9f4a1c3` (`analyses.device_id` + índice; los análisis anteriores quedan con `NULL` = sin dueño).
+  `b7d2e9f4a1c3` (`analyses.device_id` + índice; los análisis anteriores quedan con `NULL` = sin dueño) →
+  `c4e8a2f7b913` (`crop_countries`).
 - No hay tabla `farms` en el MVP (las parcelas viven dentro de cada análisis).
 
 ---
@@ -463,6 +478,21 @@ cultivos consecutivos de la misma familia botánica; acotado a [0, 100].
 **Área y centroide** (`services/geo.py`, puro): centroide = promedio de vértices; área con proyección
 equirectangular local (error < 1 % para parcelas). Sin dependencias extra.
 
+**Región y tamaño** (`services/region.py`, puro; espejo en `frontend/src/lib/region.ts`): la herramienta está
+calibrada para **Norteamérica** (`docs/ALCANCE-GEOGRAFICO.md`), así que todos los vértices deben caer en **México,
+EE. UU. o Canadá**. Contornos: `app/data/region.json` (= `frontend/src/data/region.json`), Natural Earth 1:50m
+simplificado a ~2 km por `backend/research/build_region.py`; se acepta hasta 0.05° (~5 km) fuera del contorno para
+no rechazar parcelas en la costa. El país (`country` en la respuesta) sale del centroide. El área debe estar entre
+`MIN_AREA_HA = 0.1` y `MAX_AREA_HA = 500`. El máximo existe porque el clima se pide en **un solo punto** (el centroide, malla de ~55 km)
+y el suelo en otro: una parcela más grande ya no comparte un solo clima/suelo, y conviene dividirla.
+
+**Cultivos por país** (FAOSTAT, tabla `crop_countries`): solo se **recomiendan** cultivos con
+`MIN_COUNTRY_AREA_HA = 10 000` ha cosechadas al año o más en el país de la parcela (p. ej. en Canadá no se ofrece
+sorgo, algodón ni cártamo; en México no se ofrece canola). Los de cobertura (veza) no se filtran: se incorporan al
+suelo y no salen en estadísticas de cosecha. El cultivo actual del usuario puede ser cualquiera del catálogo. Si el
+cultivo elegido está entre los 5 más sembrados del país, se agrega la razón "Es de los 5 cultivos más sembrados en
+…". No cambia el puntaje. Si no hay datos del país, no se filtra.
+
 ---
 
 ## 8. Integración NASA POWER (`services/nasa_power.py`)
@@ -498,6 +528,10 @@ Parámetros: `parameters=T2M,T2M_MAX,T2M_MIN,PRECTOTCORR,GWETROOT,ALLSKY_SFC_SW_
 - **Vistas** controladas por `view` en `useStore` (`'select' | 'diagnosis' | 'history'`); no se usa router.
 - **Mapa:** react-leaflet; el usuario dibuja el polígono (clics + "terminar"); `@turf/turf` calcula el área
   para mostrarla. GeoJSON usa `[lon, lat]`, Leaflet `[lat, lon]`: la conversión vive solo en `useStore`.
+  El mapa no sale de Norteamérica (`maxBounds`, máscara oscura fuera de MX/EE. UU./Canadá); no acepta clics fuera, y al
+  terminar, `validateParcel` (`src/lib/region.ts`) rechaza parcelas fuera de 0.1–500 ha (`parcelError` en el store).
+  Al editar puntos (`components/map/EditableParcel.tsx`) se valida igual: si el cambio la deja fuera de la región o
+  del tamaño, se avisa y el punto vuelve a su lugar.
 - **Cliente API único** (`src/api/client.ts`): nadie hace `fetch` en componentes. Peticiones con TanStack Query.
   `VITE_USE_MOCK=true` → responde con `mock.ts` (misma forma que §5).
 - **Tipos** (`src/api/types.ts`): espejo exacto de §5. TS sin `any` en datos de la API.

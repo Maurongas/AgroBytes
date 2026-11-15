@@ -5,10 +5,10 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from app.db.database import SessionLocal
-from app.db.seed import seed_crops
+from app.db.seed import seed_crop_countries, seed_crops
 from app.models.analysis import Analysis
 from app.models.climate_cache import ClimateCache
-from app.repositories import analyses, climate_cache, crops
+from app.repositories import analyses, climate_cache, crop_countries, crops
 
 
 @pytest.fixture()
@@ -30,6 +30,16 @@ def test_crops_list_and_get(db):
     maize = crops.get_by_id(db, "maize")
     assert maize is not None
     assert maize.family == "cereal"
+
+
+def test_crop_countries_seed_y_consulta(db):
+    seed_crops(db)
+    assert seed_crop_countries(db) > 0
+    assert seed_crop_countries(db) > 0  # idempotente
+    canada = crop_countries.areas_by_country(db, "CA")
+    assert canada["wheat"] > 1_000_000
+    assert canada["sorghum"] < 1000  # en Canadá casi no se siembra sorgo
+    assert crop_countries.areas_by_country(db, "XX") == {}
 
 
 def test_climate_cache_upsert_and_expiration(db):

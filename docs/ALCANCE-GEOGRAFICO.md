@@ -3,6 +3,11 @@
 > Qué tan ambicioso es hacer la herramienta "para cualquier parte del mundo", cuánto trabajo cuesta cada nivel
 > y qué recomendamos para el hackathon. Fecha: 2026-11-14. Ver también `INVESTIGACION-CULTIVOS.md`.
 
+> **Estado (2026-11-14):** implementado lo principal del **Nivel 1**: la región se limita a México, EE. UU. y Canadá
+> (`services/region.py`, contornos de Natural Earth) y el filtro de relevancia por país con FAOSTAT (tabla
+> `crop_countries`, ≥ 10 000 ha cosechadas). Pendiente del nivel 1: temporada única en climas fríos, más cultivos,
+> inglés/unidades imperiales y validación con USDA/AAFC.
+
 ## Resumen
 
 **Lo que ya funciona en todo el mundo:** el clima (NASA POWER), el suelo (SoilGrids), los rangos de cada cultivo
@@ -46,7 +51,7 @@ con datos reales en Mexicali, Ensenada, San Quintín, el Bajío, Chiapas, Iowa, 
 ### Nivel 1 — Norteamérica (MX + EE. UU. + Canadá) ⭐ recomendado · ~10–15 días-persona
 | Tarea | Por qué | Esfuerzo |
 |---|---|---|
-| **Filtro de relevancia por país** con FAOSTAT: tabla país → cultivos con superficie cosechada > 0 | Que no recomiende lo que nadie siembra ahí. FAOSTAT QCL se descarga en bloque sin llave ([bulk QCL](https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_All_Data_NOFLAG.zip)). | 2–3 |
+| **Filtro de relevancia por país** con FAOSTAT: tabla país → cultivos con superficie cosechada > 0 | Que no recomiende lo que nadie siembra ahí. FAOSTAT QCL se descarga en bloque sin llave ([bulk QCL](https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_Americas.zip)). | 2–3 |
 | País por coordenadas con **PostGIS** + límites de Natural Earth (dominio público) | Ya tenemos PostGIS: `ST_Contains(pais.geom, punto)`. | 1–2 |
 | **Temporada de cultivo en climas fríos**: si el invierno es barbecho, la rotación es por año (1 cultivo/año), no por estación | En Canadá y el norte de EE. UU. se siembra una vez al año. | 2–3 |
 | Agregar cultivos: remolacha, girasol, trigo duro, alfalfa (perenne, como "pradera") | Cultivos grandes de EE. UU./Canadá. Con `build_crops.py` es agregar renglones. | 1–2 |
@@ -80,7 +85,7 @@ cubrir → todo se etiqueta como orientativo.
 - Validación de NASA POWER en Omán (temperatura buena, lluvia mala en zona árida): https://arxiv.org/pdf/2210.16111
 - ISRIC SoilGrids, acceso y límite de uso: https://docs.isric.org/globaldata/soilgrids/SoilGrids_faqs_02.html
 - FAO ECOCROP (copia pública): https://github.com/openclim/ecocrop
-- FAOSTAT QCL (descarga en bloque): https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_All_Data_NOFLAG.zip
+- FAOSTAT QCL (descarga en bloque): https://bulks-faostat.fao.org/production/Production_Crops_Livestock_E_Americas.zip
 - MapSPAM 2020: https://www.landcarbonlab.org/news-updates/crop-distribution-yields-spam-2020-model-map
 - FAO GAEZ: https://www.fao.org/gaez/gaezv4/en
 - USDA CropScape: https://nassgeodata.gmu.edu/CropScape/devhelp/getexamples.html

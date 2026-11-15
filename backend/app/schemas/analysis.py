@@ -14,6 +14,7 @@ SoilTexture = Literal["sandy", "loam", "clay"]
 MetricId = Literal["soilMoisture", "rain90d", "tempMean", "solarRadiation"]
 UncertaintyLevel = Literal["low", "medium", "high"]
 CropRole = Literal["cereal", "legume", "cover", "vegetable", "oilseed", "industrial"]
+CountryCode = Literal["MX", "US", "CA"]  # ISO 3166-1 alfa-2; región de trabajo (ver ARQUITECTURA §7)
 # Paso de la rotación sin cultivo: ningún cultivo del catálogo tolera el clima de esa temporada
 FALLOW_ID = "fallow"
 
@@ -131,6 +132,11 @@ class AnalysisResponse(CamelModel):
     created_at: datetime
     area_ha: float
     location: Location = Field(description="Centroide de la parcela")
+    country: CountryCode | None = Field(
+        default=None,
+        description="País de la parcela; solo se recomiendan cultivos que ahí se siembran (FAOSTAT). "
+                    "null en análisis guardados antes de este campo",
+    )
     metrics: list[NasaMetric]
     rotation: list[RotationStep]
     impact: list[ImpactItem]

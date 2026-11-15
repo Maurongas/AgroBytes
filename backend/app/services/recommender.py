@@ -7,6 +7,7 @@ Fuentes de las reglas (docs/INVESTIGACION-CULTIVOS.md):
 - Rangos de temperatura, helada (KTMP) y pH: FAO ECOCROP (vía el catálogo).
 - Agua del cultivo: FAO-56, ETc = Kc × ET₀; ET₀ por Hargreaves con Tmax/Tmin de NASA POWER.
 - Rotación: no repetir familia botánica (plagas y enfermedades compartidas).
+- Qué se siembra en cada país: FAOSTAT, área cosechada (solo se recomienda lo que ahí se cultiva).
 - Pesos del puntaje y nitrógeno: reglas simplificadas propias (se etiquetan como estimación).
 """
 
@@ -56,6 +57,8 @@ DEFAULT_FROST_KILL_C = 0.0  # cultivos sin KTMP en ECOCROP: se asume que la hela
 KC_SEASON_FACTOR = 0.8  # Kc promedio del ciclo ≈ 80 % del Kc de media estación (simplificación de FAO-56)
 EFFECTIVE_RAIN = 0.8  # fracción de la lluvia que aprovecha el cultivo (simplificación)
 PH_TOLERANCE = 0.5  # fuera del óptimo de ECOCROP ± 0.5 → penaliza
+MIN_COUNTRY_AREA_HA = 10_000  # se recomienda un cultivo solo si en el país se cosechan ≥ 10 000 ha al año (FAOSTAT)
+TOP_CROPS_IN_COUNTRY = 5  # "uno de los cultivos más sembrados del país"
 
 
 @dataclass(frozen=True)
@@ -297,14 +300,32 @@ def choose(crops: list[CropParams], sc: SeasonClimate, req: AnalysisRequest, pre
 # ---------------------------------------------------------------- textos
 
 
+def grown_in_country(crops: list[CropParams], country_areas: dict[str, float] | None) -> list[CropParams]:
+    """Cultivos que se siembran en el país (≥ MIN_COUNTRY_AREA_HA). Los de cobertura no se filtran: se incorporan
+    al suelo y no aparecen en estadísticas de cosecha. Sin datos del país → todos."""
+    if not country_areas:
+        return crops
+    return [c for c in crops if c.family == "cover" or country_areas.get(c.id, 0) >= MIN_COUNTRY_AREA_HA]
+
+
+def top_in_country(country_areas: dict[str, float] | None) -> set[str]:
+    if not country_areas:
+        return set()
+    ranked = sorted((a, crop_id) for crop_id, a in country_areas.items() if a >= MIN_COUNTRY_AREA_HA)
+    return {crop_id for _, crop_id in ranked[-TOP_CROPS_IN_COUNTRY:]}
+
+
 def reasons_for(c: Candidate, sc: SeasonClimate, previous: CropParams, current: CropParams,
-                req: AnalysisRequest) -> list[str]:
+                req: AnalysisRequest, country_name: str | None = None, popular: bool = False) -> list[str]:
     reasons: list[str] = []
     label = SEASON_LABEL[sc.season]
     if c.temp_f == 1:
         reasons.append(f"La temperatura de {label} ({sc.temp_c:.0f} °C) está en su rango óptimo")
     elif c.temp_f >= 0.6:
         reasons.append(f"Tolera la temperatura de {label} ({sc.temp_c:.0f} °C)")
+    if popular and country_name:
+        reasons.append(f"Es de los {TOP_CROPS_IN_COUNTRY} cultivos más sembrados en {country_name} (FAOSTAT): "
+                       "hay mercado e insumos")
     if req.irrigated and c.water_f >= 0.8:
         reasons.append(f"Es de las opciones que menos riego necesitan (~{c.irrigation_mm:.0f} mm en el ciclo)")
     elif not req.irrigated and c.water_f >= 0.9:
@@ -480,9 +501,14 @@ def uncertainty_for(data: ClimateData) -> Uncertainty:
 
 
 def recommend(data: ClimateData, crops: list[CropParams], req: AnalysisRequest, today: date,
-              detected_soil: DetectedSoil | None = None) -> RecommendationResult:
+              detected_soil: DetectedSoil | None = None, country_areas: dict[str, float] | None = None,
+              country_name: str | None = None) -> RecommendationResult:
+    """`country_areas` = {crop_id: ha cosechadas al año} del país de la parcela (FAOSTAT). Solo se recomiendan
+    cultivos que ahí se siembran; el cultivo actual del usuario puede ser cualquiera del catálogo."""
     by_id = {c.id: c for c in crops}
     current = by_id[req.current_crop]  # el router ya validó que existe
+    candidates = grown_in_country(crops, country_areas)
+    popular = top_in_country(country_areas)
     uncertainty = uncertainty_for(data)
     # Lo que dijo el usuario manda; lo que falte se completa con SoilGrids
     soil = SoilInput(
@@ -496,7 +522,7 @@ def recommend(data: ClimateData, crops: list[CropParams], req: AnalysisRequest, 
     chosen: list[CropParams | None] = []
     previous = current
     for sc in seasons:
-        best, out_of_season = choose(crops, sc, req, previous, soil, current)
+        best, out_of_season = choose(candidates, sc, req, previous, soil, current)
         if best is None:
             rotation.append(fallow_step(sc))
             chosen.append(None)
@@ -505,7 +531,7 @@ def recommend(data: ClimateData, crops: list[CropParams], req: AnalysisRequest, 
             season=sc.season,
             crop_id=best.crop.id,
             score=best.score,
-            reasons=reasons_for(best, sc, previous, current, req),
+            reasons=reasons_for(best, sc, previous, current, req, country_name, best.crop.id in popular),
             water_saving_pct=water_saving_pct(water_need(current, sc), best.water_need_mm),
             nitrogen_delta=best.crop.nitrogen_delta_kg_ha,
             risks=risks_for(best, sc, uncertainty.level == "high", out_of_season, irrigated, soil),

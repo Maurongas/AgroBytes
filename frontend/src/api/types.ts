@@ -83,12 +83,16 @@ export interface CropInfo {
   source: string;
 }
 
+// Región de trabajo: México, EE. UU. y Canadá (ISO 3166-1 alfa-2)
+export type CountryCode = 'MX' | 'US' | 'CA';
+
 // POST /api/v1/analyses y GET /api/v1/analyses/{id} — lo que el backend responde
 export interface AnalysisResponse {
   id: string;
   createdAt: string;        // ISO 8601 UTC
   areaHa: number;
   location: { lat: number; lon: number }; // centroide de la parcela
+  country?: CountryCode | null; // país de la parcela; solo se recomiendan cultivos que ahí se siembran (FAOSTAT)
   metrics: NasaMetric[];
   rotation: RotationStep[]; // ordenado por temporada del ciclo
   impact: ImpactItem[];

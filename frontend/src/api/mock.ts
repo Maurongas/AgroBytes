@@ -5,6 +5,7 @@ export const mockAnalysis: AnalysisResponse = {
   createdAt: '2026-11-14T18:00:00Z',
   areaHa: 8.4,
   location: { lat: 31.86, lon: -116.6 },
+  country: 'MX',
   metrics: [
     { id: 'soilMoisture', label: 'Humedad del suelo', value: 0.21, unit: '0–1', status: 'warn',
       meaning: 'Algo seco para maíz', series: [0.31,0.3,0.28,0.26,0.24,0.22,0.2,0.19,0.2,0.22,0.24,0.21],
