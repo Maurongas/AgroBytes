@@ -8,7 +8,7 @@ import NasaMetricCard from '../components/NasaMetricCard';
 import GaugeSoilHealth from '../components/GaugeSoilHealth';
 import ImpactBar from '../components/ImpactBar';
 import { exportarPlanPdf } from '../lib/pdf';
-import { PRIORITY_LABEL } from '../lib/etiquetas';
+import { PRIORITY_LABEL, TEXTURA_LABEL } from '../lib/etiquetas';
 import { COUNTRY_NAME } from '../lib/region';
 
 const INCERTIDUMBRE = {
@@ -36,6 +36,11 @@ export default function DiagnosisView() {
         )}
         {crop && <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{cropName(crop)}</span>}
         {priority && <span className="rounded-full bg-sky-50 px-3 py-1 text-xs text-sky-700">{PRIORITY_LABEL[priority]}</span>}
+        {analysis.irrigated != null && (
+          <span className="rounded-full bg-sky-50 px-3 py-1 text-xs text-sky-700">
+            {analysis.irrigated ? 'Con riego' : 'Temporal (sin riego)'}
+          </span>
+        )}
         <button onClick={() => exportarPlanPdf(analysis, { crop, priority })}
           className="ml-auto flex items-center gap-1.5 rounded-full bg-leaf-600 px-4 py-1.5 text-sm font-medium text-paper hover:bg-leaf-700">
           <Download size={16} /> Exportar PDF
@@ -99,7 +104,7 @@ export default function DiagnosisView() {
                     <ul className="mt-4 list-disc space-y-1 pl-5 text-sm text-ink-700">
                       {step.reasons.map((r) => <li key={r}>{r}</li>)}
                     </ul>
-                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
                       <div className="rounded-xl bg-surface-raised/70 p-3">
                         <p className="text-xs text-ink-500">Ahorro de agua</p>
                         <p className="font-display text-xl font-semibold text-sky-700">{step.waterSavingPct} %</p>
@@ -107,6 +112,12 @@ export default function DiagnosisView() {
                       <div className="rounded-xl bg-surface-raised/70 p-3">
                         <p className="text-xs text-ink-500">Nitrógeno (estimado)</p>
                         <p className="font-display text-xl font-semibold text-nitro">{step.nitrogenDelta > 0 ? '+' : ''}{step.nitrogenDelta} kg/ha</p>
+                      </div>
+                      <div className="rounded-xl bg-surface-raised/70 p-3">
+                        <p className="text-xs text-ink-500">Riego estimado</p>
+                        <p className="font-display text-xl font-semibold text-sky-700">
+                          {step.irrigationMm > 0 ? `${step.irrigationMm} mm` : 'No necesita'}
+                        </p>
                       </div>
                     </div>
                     {step.risks.length > 0 && (
@@ -128,6 +139,19 @@ export default function DiagnosisView() {
               <div className="text-center"><GaugeSoilHealth value={analysis.soilHealth.recommended} /><p className="text-xs text-ink-500">Con la rotación</p></div>
             </div>
           </div>
+          {analysis.soilDetected && (
+            <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card">
+              <p className="text-sm font-medium">Suelo de la parcela</p>
+              <p className="mt-1 font-display text-xl font-semibold">{TEXTURA_LABEL[analysis.soilDetected.texture]}</p>
+              <p className="mt-1 text-sm text-ink-700">
+                Arcilla {Math.round(analysis.soilDetected.clayPct)} % · Arena {Math.round(analysis.soilDetected.sandPct)} %
+                {analysis.soilDetected.ph != null && ` · pH ${analysis.soilDetected.ph.toFixed(1)}`}
+              </p>
+              <p className="mt-2 text-xs text-ink-500">
+                {analysis.soilDetected.source}. Es una estimación global de unos 250 m, no una muestra de tu parcela.
+              </p>
+            </div>
+          )}
           <div className="space-y-5 rounded-card border border-line bg-surface-raised p-5 shadow-card">
             {analysis.impact.map((it) => <ImpactBar key={it.label} item={it} />)}
           </div>
