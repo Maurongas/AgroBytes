@@ -2,11 +2,28 @@
 
 ## Transformando datos de observación terrestre de la NASA en decisiones agrícolas inteligentes
 
-> **De los satélites al campo: transformamos datos de la NASA en resiliencia agrícola.**
+> **De los datos de la NASA al campo: transformamos información ambiental en resiliencia agrícola.**
+
+![Mapa con la parcela dibujada](docs/img/mapa.png)
 
 Los agricultores enfrentan condiciones cada vez más impredecibles debido al cambio climático, la escasez de agua y la degradación del suelo. Aunque la NASA proporciona una enorme cantidad de datos ambientales de alta calidad, convertir esa información en decisiones prácticas para el campo sigue siendo un desafío.
 
 **Field Shift** cierra esa brecha al transformar datos climáticos y ambientales en recomendaciones agrícolas claras, comprensibles y accionables. Nuestra plataforma ayuda a los productores a seleccionar rotaciones de cultivos más resilientes, optimizar el uso del agua y mejorar la salud del suelo, fortaleciendo su capacidad de adaptación frente a condiciones cambiantes.
+
+---
+
+## ▶️ Cómo correrlo
+
+Necesitas [Docker](https://www.docker.com/).
+
+```bash
+git clone https://github.com/nahuumm/NasaSpaceApp.git
+cd NasaSpaceApp
+docker compose up --build
+```
+
+- App: http://localhost:3000
+- API (documentación interactiva): http://localhost:8000/docs
 
 ---
 
@@ -32,6 +49,14 @@ A partir de la ubicación de una parcela y los objetivos del productor, el siste
 - 🌦️ Incrementar la resiliencia frente a eventos climáticos adversos.
 - 📈 Mantener la productividad agrícola a largo plazo.
 
+| Diagnóstico | Comparar |
+|---|---|
+| ![Resultados del análisis](docs/img/diagnostico.png) | ![Comparación de rotaciones](docs/img/comparar.png) |
+
+| Historial en celular | Modo oscuro |
+|---|---|
+| ![Historial en celular](docs/img/historial-movil.png) | ![Diagnóstico en modo oscuro](docs/img/diagnostico-oscuro.png) |
+
 ---
 
 ## 🛰️ Integración de Datos de la NASA
@@ -46,6 +71,11 @@ Actualmente utilizamos NASA POWER para obtener información climática basada en
 - Precipitación.
 - Radiación solar.
 - Tendencias meteorológicas.
+
+### Otras fuentes
+
+- **ISRIC SoilGrids:** propiedades del suelo.
+- **FAO ECOCROP:** requerimientos de cada cultivo (temperatura, lluvia, ciclo).
 
 ### Futuras Integraciones
 
@@ -96,6 +126,14 @@ En lugar de proporcionar respuestas opacas, el sistema permite que los agriculto
 
 ---
 
+## ⚠️ Límites
+
+- Las recomendaciones son **estimaciones basadas en reglas agronómicas**, no una predicción del futuro.
+- Las alertas muestran los **riesgos típicos del año** según el clima histórico, no un pronóstico del tiempo.
+- Cada resultado indica su nivel de **incertidumbre**. No sustituye la visita de un agrónomo.
+
+---
+
 ## 🌍 Impacto Potencial
 
 Field Shift busca democratizar el acceso a la información ambiental avanzada.
@@ -117,7 +155,7 @@ Creemos que las decisiones agrícolas más inteligentes comienzan con informaci�
 
 Nuestra visión es convertir Field Shift en una plataforma integral de agricultura resiliente que combine observaciones de la Tierra, análisis ambiental y recomendaciones agronómicas accesibles para cualquier productor.
 
-A medida que se incorporen nuevas fuentes de datos satelitales, el sistema podrá ofrecer recomendaciones aún más precisas para enfrentar los desafíos agrícolas del futuro.
+A medida que se incorporen nuevas fuentes de datos, el sistema podrá ofrecer recomendaciones aún más precisas para enfrentar los desafíos agrícolas del futuro.
 
 ---
 
@@ -126,13 +164,14 @@ A medida que se incorporen nuevas fuentes de datos satelitales, el sistema podr�
 Field Shift demuestra cómo los datos de observación terrestre de la NASA pueden transformarse en herramientas prácticas que ayuden a los agricultores a producir más inteligentemente, conservar recursos y adaptarse a un entorno cada vez más cambiante.
 
 ---
+
 ## 👥 Equipo
 
-| Rol | Responsable | Issue |
-|---|---|---|
+| Área | Rol | Responsable | Issue |
+|---|---|---|---|
 | Frontend | Layout y navegación | Fernando (FernandoBorbas) | #1 |
-| Frontend | Mapa | Mia (hdmiaa) | #2 |
+| Frontend | Mapa | Mía (hdmiaa) | #2 |
 | Frontend | PWA y datos | Ximena (menaxmn) | #3 |
 | Backend | Base de datos | Daniel (daniel379618) | #4 |
 | Backend | API, NASA POWER y reglas | Mauro (Maurongas) | #5 |
-|Backend | Creación de Repositorio de Github, Docker y Video| Nahúm (nahuumm) | 
+| Backend | Repositorio de GitHub, Docker y video | Nahúm (nahuumm) | — |
