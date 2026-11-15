@@ -14,6 +14,7 @@ from app.main import app
 from app.repositories import analyses as analyses_repo
 from app.services import climate as climate_service
 from app.services import crops as crops_service
+from app.services import soil as soil_service
 from app.services.crops import CatalogUnavailableError
 from app.services.nasa_power import NasaUnavailableError
 from tests.conftest import make_climate
@@ -26,7 +27,8 @@ def bd_falsa(monkeypatch):
     """Sin PostgreSQL: get_db da None y analyses_repo guarda en una lista."""
     filas: list[SimpleNamespace] = []
 
-    def create(db, *, geometry, lat, lon, area_ha, current_crop, priority, climate_summary, result, soil=None):
+    def create(db, *, geometry, lat, lon, area_ha, current_crop, priority, climate_summary, result, soil=None,
+               irrigated=None):
         fila = SimpleNamespace(id=len(filas) + 1, created_at=datetime.now(timezone.utc), geometry=geometry, lat=lat,
                                lon=lon, area_ha=area_ha, current_crop=current_crop, priority=priority, soil=soil,
                                climate_summary=climate_summary, result=result)
@@ -37,6 +39,11 @@ def bd_falsa(monkeypatch):
     monkeypatch.setattr(analyses_repo, "list_recent", lambda db, limit=20: list(reversed(filas))[:limit])
     monkeypatch.setattr(analyses_repo, "get", lambda db, id: next((f for f in filas if f.id == id), None))
     app.dependency_overrides[get_db] = lambda: None
+
+    async def sin_soilgrids(lat, lon, client=None):
+        return None
+
+    monkeypatch.setattr(soil_service, "get_soil", sin_soilgrids)
     yield filas
     app.dependency_overrides.clear()
 

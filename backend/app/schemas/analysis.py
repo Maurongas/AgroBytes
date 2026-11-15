@@ -13,6 +13,9 @@ Status = Literal["ok", "warn", "danger"]
 SoilTexture = Literal["sandy", "loam", "clay"]
 MetricId = Literal["soilMoisture", "rain90d", "tempMean", "solarRadiation"]
 UncertaintyLevel = Literal["low", "medium", "high"]
+CropRole = Literal["cereal", "legume", "cover", "vegetable", "oilseed", "industrial"]
+# Paso de la rotación sin cultivo: ningún cultivo del catálogo tolera el clima de esa temporada
+FALLOW_ID = "fallow"
 
 
 class Polygon(CamelModel):
@@ -52,6 +55,11 @@ class AnalysisRequest(CamelModel):
     current_crop: str = Field(examples=["maize"], description="id del catálogo de cultivos")
     priority: Priority
     soil: Soil | None = None
+    irrigated: bool | None = Field(
+        default=None,
+        description="¿La parcela tiene riego? true = el agua se compara por riego necesario; "
+                    "false/null = temporal (depende de la lluvia)",
+    )
 
 
 class Location(CamelModel):
@@ -72,13 +80,14 @@ class NasaMetric(CamelModel):
 
 class RotationStep(CamelModel):
     season: Season
-    crop_id: str
+    crop_id: str = Field(description='id del catálogo, o "fallow" = descanso/barbecho')
     score: int = Field(ge=0, le=100)
     reasons: list[str]
     water_saving_pct: float
     nitrogen_delta: float = Field(description="kg/ha estimado por reglas; positivo = aporta")
     risks: list[str]
     planting_window: str = Field(examples=["Sep – Oct"])
+    irrigation_mm: float = Field(default=0, description="Riego estimado para el ciclo (FAO-56: Kc × ET₀ − lluvia)")
 
 
 class ImpactItem(CamelModel):
@@ -102,6 +111,16 @@ class MonthlyClimate(CamelModel):
     temp: float = Field(description="°C")
 
 
+class DetectedSoil(CamelModel):
+    """Suelo estimado por coordenadas (ISRIC SoilGrids, 0–30 cm). Es un modelo global de ~250 m, no una muestra."""
+
+    texture: SoilTexture
+    ph: float | None
+    clay_pct: float
+    sand_pct: float
+    source: str = "ISRIC SoilGrids v2.0 (0–30 cm)"
+
+
 class Uncertainty(CamelModel):
     level: UncertaintyLevel
     reason: str = Field(examples=["La lluvia anual varía 38 % entre años"])
@@ -118,6 +137,8 @@ class AnalysisResponse(CamelModel):
     soil_health: SoilHealth
     climate: list[MonthlyClimate] = Field(min_length=12, max_length=12)
     uncertainty: Uncertainty
+    soil_detected: DetectedSoil | None = Field(default=None, description="null si SoilGrids no tiene dato o no respondió")
+    irrigated: bool | None = None
 
 
 class AnalysisSummary(CamelModel):

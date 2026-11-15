@@ -86,6 +86,97 @@ def test_suelo_incompatible_baja_el_puntaje(climate, catalog):
     tomate = next(c for c in catalog if c.id == "tomato")
     maiz = catalog[0]
     sc = recommender.season_climate("spring", climate)
-    con_franco = recommender.evaluate(tomate, sc, req(soil="loam"), maiz, 600)
-    con_arena = recommender.evaluate(tomate, sc, req(soil="sandy"), maiz, 600)
+    ctx = recommender.season_context(catalog, sc)
+    con_franco = recommender.evaluate(tomate, sc, req(soil="loam"), maiz, ctx, recommender.SoilInput("loam", None))
+    con_arena = recommender.evaluate(tomate, sc, req(soil="sandy"), maiz, ctx, recommender.SoilInput("sandy", None))
     assert con_arena.score < con_franco.score
+
+
+# ---------------------------------------------------------------- reglas v2 (ECOCROP / FAO-56)
+
+
+def clima_con(temps: list[float], amplitud: float = 8, lat: float = 31.86):
+    """Clima inventado con temperaturas mensuales dadas (mínima = media − amplitud)."""
+    base = make_climate(lat=lat)
+    monthly = [p.model_copy(update={"temp_c": t, "temp_max_c": t + amplitud, "temp_min_c": t - amplitud})
+               for p, t in zip(base.summary.monthly, temps)]
+    return base.__class__(summary=base.summary.model_copy(update={"monthly": monthly}), recent=base.recent)
+
+
+def test_barbecho_si_nada_tolera_el_invierno(catalog):
+    # Invierno tipo Iowa: −6 °C de media, mínimas de −14 °C
+    frio = clima_con([-6, -4, 2, 9, 15, 21, 24, 22, 17, 10, 3, -4])
+    r = recommender.recommend(frio, catalog, req(), NOV)
+    invierno = r.rotation[0]
+    assert invierno.season == "winter" and invierno.crop_id == "fallow"
+    assert invierno.score == 0 and "tolera" in invierno.reasons[0]
+    assert all(s.crop_id != "fallow" for s in r.rotation[1:])
+
+
+def test_helada_descarta_cultivos_sensibles():
+    tomate = crop("tomato", "vegetable", (20, 27), (7, 35), 600, ["winter"], -90)
+    avena = crop("oat", "cereal", (16, 20), (5, 30), 550, ["winter"], -55).model_copy(update={"frost_kill_c": -1})
+    previo = crop("bean", "legume", (16, 25), (7, 32), 400, ["summer"], 18)
+    suelo = recommender.SoilInput(None, None)
+    cerca = recommender.SeasonClimate("winter", (12, 1, 2), temp_c=12, rain_mm=100, temp_min_c=0.5)
+    ctx = recommender.season_context([tomate, avena], cerca)
+    assert recommender.evaluate(tomate, cerca, req(), previo, ctx, suelo).frost_risk
+    helada = recommender.SeasonClimate("winter", (12, 1, 2), temp_c=12, rain_mm=100, temp_min_c=-0.5)
+    assert recommender.evaluate(tomate, helada, req(), previo, ctx, suelo).temp_f == 0  # mata al jitomate
+    assert recommender.evaluate(avena, helada, req(), previo, ctx, suelo).temp_f > 0  # la avena aguanta −1 °C
+
+
+def test_familia_botanica_castiga_solanaceas_seguidas():
+    chile = crop("chile", "vegetable", (17, 30), (8, 35), 750, ["summer"], -70).model_copy(
+        update={"botanical_family": "Solanaceae"})
+    tomate = crop("tomato", "vegetable", (20, 27), (7, 35), 600, ["summer"], -90).model_copy(
+        update={"botanical_family": "Solanaceae"})
+    calabaza = crop("squash", "vegetable", (17, 30), (6, 40), 500, ["summer"], -40).model_copy(
+        update={"botanical_family": "Cucurbitaceae"})
+    sc = recommender.season_climate("summer", make_climate())
+    ctx = recommender.season_context([tomate, calabaza], sc)
+    suelo = recommender.SoilInput(None, None)
+    assert recommender.evaluate(tomate, sc, req(), chile, ctx, suelo).same_family
+    assert not recommender.evaluate(calabaza, sc, req(), chile, ctx, suelo).same_family
+
+
+def test_ph_fuera_de_rango_baja_el_puntaje_y_avisa(climate):
+    papa = crop("potato", "vegetable", (15, 25), (7, 30), 600, ["spring"], -80).model_copy(
+        update={"ph_min": 5.0, "ph_max": 6.2})
+    maiz = crop("maize", "cereal", (18, 33), (10, 47), 650, ["summer"], -104)
+    sc = recommender.season_climate("spring", climate)
+    ctx = recommender.season_context([papa], sc)
+    alcalino_suelo = recommender.SoilInput("loam", 7.9)
+    ok = recommender.evaluate(papa, sc, req(), maiz, ctx, recommender.SoilInput("loam", 6.0))
+    alcalino = recommender.evaluate(papa, sc, req(), maiz, ctx, alcalino_suelo)
+    assert ok.ph_ok and not alcalino.ph_ok and alcalino.score < ok.score
+    riesgos = recommender.risks_for(alcalino, sc, False, False, False, alcalino_suelo)
+    assert any("pH del suelo (7.9)" in r for r in riesgos)
+
+
+def test_et0_hargreaves_razonable():
+    # FAO-56 ejemplo 8: Ra a 20°S el 3 de septiembre = 32.2 MJ/m²/día
+    assert recommender.extraterrestrial_radiation(-20, 9, day=3) == pytest.approx(32.2, abs=0.1)
+    # Verano desértico (Mexicali) >> invierno costero (Ensenada)
+    verano = recommender.et0_hargreaves(33, 42, 24, 32.5, 7)
+    invierno = recommender.et0_hargreaves(14, 20, 8, 31.9, 1)
+    assert 6 < verano < 10 and 1 < invierno < 3.5
+
+
+def test_agua_depende_del_clima_si_hay_kc():
+    algodon = crop("cotton", "industrial", (22, 36), (15, 42), 1000, ["summer"], -60).model_copy(
+        update={"kc_mid": 1.18, "cycle_days": 188})
+    caliente = recommender.SeasonClimate("summer", (6, 7, 8), 33, 5, 24, et0_mm_day=8)
+    templado = recommender.SeasonClimate("summer", (6, 7, 8), 21, 5, 14, et0_mm_day=4)
+    assert recommender.water_need(algodon, caliente) == pytest.approx(2 * recommender.water_need(algodon, templado))
+    sin_kc = algodon.model_copy(update={"kc_mid": None})
+    assert recommender.water_need(sin_kc, caliente) == 1000  # sin Kc → valor típico de FAO
+
+
+def test_con_riego_no_se_queja_de_la_lluvia(climate, catalog):
+    temporal = recommender.recommend(climate, catalog, req(), NOV)
+    body = req().model_dump(by_alias=True) | {"irrigated": True}
+    riego = recommender.recommend(climate, catalog, AnalysisRequest.model_validate(body), NOV)
+    assert any("Requiere riego" in r for s in temporal.rotation for r in s.risks)
+    assert not any("Requiere riego" in r for s in riego.rotation for r in s.risks)
+    assert all(s.irrigation_mm >= 0 for s in riego.rotation)

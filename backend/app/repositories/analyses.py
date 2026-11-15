@@ -22,6 +22,7 @@ def create(
     climate_summary: dict[str, Any],
     result: dict[str, Any],
     soil: dict[str, Any] | None = None,
+    irrigated: bool | None = None,
 ) -> Analysis:
     """Inserta un análisis convirtiendo el polígono GeoJSON a Geography(POLYGON, 4326)."""
     if isinstance(geometry, dict) and geometry.get("type") == "Feature":
@@ -41,6 +42,7 @@ def create(
         current_crop=current_crop,
         priority=priority,
         soil=soil,
+        irrigated=irrigated,
         climate_summary=climate_summary,
         result=result,
     )

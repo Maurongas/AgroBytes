@@ -22,13 +22,13 @@ export const mockAnalysis: AnalysisResponse = {
   rotation: [
     { season: 'autumn', cropId: 'bean', score: 91,
       reasons: ['Fija nitrógeno y repone el suelo tras el maíz', 'Necesita 30 % menos agua que el maíz', 'Ciclo corto que aprovecha la lluvia de otoño'],
-      waterSavingPct: 30, nitrogenDelta: 45, risks: ['Sensible a heladas tempranas'], plantingWindow: 'Sep – Oct' },
+      waterSavingPct: 30, nitrogenDelta: 45, risks: ['Sensible a heladas tempranas'], plantingWindow: 'Sep – Oct', irrigationMm: 120 },
     { season: 'winter', cropId: 'oat', score: 84,
       reasons: ['Cubre el suelo y reduce la erosión', 'Tolera temperaturas bajas', 'Bajo consumo de agua'],
-      waterSavingPct: 38, nitrogenDelta: -8, risks: ['Rendimiento menor si falta lluvia en enero'], plantingWindow: 'Nov – Dic' },
+      waterSavingPct: 38, nitrogenDelta: -8, risks: ['Rendimiento menor si falta lluvia en enero'], plantingWindow: 'Nov – Dic', irrigationMm: 60 },
     { season: 'summer', cropId: 'sorghum', score: 79,
       reasons: ['Resiste calor y sequía', 'Aprovecha la alta radiación solar'],
-      waterSavingPct: 42, nitrogenDelta: -12, risks: ['Requiere control de maleza temprano'], plantingWindow: 'May – Jun' },
+      waterSavingPct: 42, nitrogenDelta: -12, risks: ['Requiere control de maleza temprano'], plantingWindow: 'May – Jun', irrigationMm: 410 },
   ],
   impact: [
     { label: 'Balance hídrico', unit: 'mm', current: -120, recommended: -45, betterWhen: 'higher' },
@@ -45,6 +45,8 @@ export const mockAnalysis: AnalysisResponse = {
     { month: 'Nov', rain: 35, temp: 17 }, { month: 'Dic', rain: 58, temp: 14 },
   ],
   uncertainty: { level: 'high', reason: 'La lluvia anual varía 38 % entre años (NASA POWER 2015-2024)' },
+  soilDetected: { texture: 'loam', ph: 6.9, clayPct: 19.2, sandPct: 58.1, source: 'ISRIC SoilGrids v2.0 (0–30 cm)' },
+  irrigated: false,
 };
 export const mockHistory: AnalysisSummary[] = [
   { id: 'demo-001', createdAt: '2026-11-14T18:00:00Z', location: { lat: 31.86, lon: -116.6 }, areaHa: 8.4,

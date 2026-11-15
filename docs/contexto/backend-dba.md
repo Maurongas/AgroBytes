@@ -16,7 +16,10 @@ PostgreSQL 15 + PostGIS 3.3 · SQLAlchemy 2 · GeoAlchemy2 · Alembic · psycopg
 ## Lo que ya existe (v2.0)
 - `app/core/config.py`: `Settings` (DATABASE_URL, CORS_ORIGINS, NASA_POWER_BASE_URL, CLIMATE_CACHE_DAYS) desde env.
 - `app/db/database.py`: `engine`, `SessionLocal`, `Base(DeclarativeBase)`, `get_db`.
-- `app/models/`, `app/repositories/`: paquetes vacíos con la lista de lo pendiente.
+- `app/models/`, `app/repositories/`, Alembic y `seed.py`: ✅ hechos (migraciones `7c4987b08e73` → `a3f1c2d4e5b6`).
+- **Catálogo v2:** `crops.json` (18 cultivos) **ya no se edita a mano**: lo genera `backend/research/build_crops.py`
+  desde FAO ECOCROP + tablas FAO (`cd backend && python research/build_crops.py`). Para agregar un cultivo: un renglón
+  en `CULTIVOS` del script, regenerar, y agregar el id en `frontend/src/lib/crops.ts`. Ver `docs/INVESTIGACION-CULTIVOS.md`.
 - `app/data/README.md`: formato e ids obligatorios del catálogo.
 - **Se borraron** `app/database.py`, `app/models.py` (`HistorialConsulta`) y el `create_all` de `main.py`.
   La tabla vieja `historial_consultas` sigue en tu BD local hasta tu primera migración.
@@ -41,8 +44,7 @@ docker-compose.yml (servicio db y el comando del backend)
 2. **Modelos** (§6): `Analysis` (geom `Geography(POLYGON, 4326)` con índice GIST, lat/lon del centroide,
    `result` JSONB…), `Crop` (id texto: `maize`, `bean`…), `ClimateCache` (único `lat_grid, lon_grid, period`).
 3. **Primera migración**: `CREATE EXTENSION IF NOT EXISTS postgis`, crea las 3 tablas y **elimina `historial_consultas`**.
-4. **Catálogo** `app/data/crops.json` con los 8 ids de ARQUITECTURA §5.1 (`maize, wheat, soy, bean, chile,
-   tomato, oat, sorghum`) y los campos de §6 (rangos de FAO ECOCROP/GAEZ, `source` por cultivo). `seed.py`
+4. ✅ **Catálogo** `app/data/crops.json` (hoy: 18 ids de ARQUITECTURA §5.1, generado por `research/build_crops.py`) y los campos de §6 (rangos de FAO ECOCROP/GAEZ, `source` por cultivo). `seed.py`
    idempotente (upsert por `id`). Si agregas cultivos, avisa a Mia para que los agregue en `frontend/src/lib/crops.ts`.
 5. **Repositorios**: `analyses.create(db, ...) / list_recent(db, limit) / get(db, id)`,
    `crops.list_all(db)`, `climate_cache.get_valid(db, lat_grid, lon_grid, period, max_days) / upsert(...)`.
