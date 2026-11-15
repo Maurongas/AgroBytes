@@ -30,6 +30,7 @@ interface State {
   crop: string | null;
   priority: Priority | null;
   soil: Soil | null;
+  irrigated: boolean;
   analysis: AnalysisResponse | null;
   startDrawing: () => void;
   addPoint: (p: LatLng) => void;
@@ -38,6 +39,7 @@ interface State {
   setCrop: (c: string) => void;
   setPriority: (p: Priority) => void;
   setSoil: (s: Soil | null) => void;
+  setIrrigated: (v: boolean) => void;
   setAnalysis: (a: AnalysisResponse) => void;
   backToSelect: () => void;
 }
@@ -53,6 +55,7 @@ export const useStore = create<State>((set, get) => ({
   crop: null,
   priority: null,
   soil: null,
+  irrigated: false,
   analysis: null,
 
   startDrawing: () => set({ drawing: true, points: [], geometry: null, areaHa: null, parcelError: null }),
@@ -78,6 +81,7 @@ export const useStore = create<State>((set, get) => ({
   setCrop: (crop) => set({ crop }),
   setPriority: (priority) => set({ priority }),
   setSoil: (soil) => set({ soil }),
+  setIrrigated: (irrigated) => set({ irrigated }),
   setAnalysis: (analysis) => set({ analysis }),
   backToSelect: () => set({ view: 'select' }),
 }));

@@ -85,7 +85,10 @@ export default function CompareView() {
   const comparar = useMutation({
     mutationFn: async () => {
       if (!geometry) throw new Error('Dibuja una parcela primero.');
-      const pedir = (e: Escenario) => previewAnalysis({ geometry, currentCrop: e.crop, priority: e.priority, soil: soil ?? undefined });
+      // Mismas condiciones de riego que el análisis principal.
+      const { irrigated } = useStore.getState();
+      const pedir = (e: Escenario) =>
+        previewAnalysis({ geometry, currentCrop: e.crop, priority: e.priority, soil: soil ?? undefined, irrigated });
       const [a, b] = await Promise.all([pedir(escA), pedir(escB)]);
       return { a, b };
     },
