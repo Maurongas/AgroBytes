@@ -18,7 +18,7 @@ from app.repositories import analyses as analyses_repo
 from app.schemas.analysis import AnalysisRequest, AnalysisResponse, AnalysisSummary, Location
 from app.services import climate as climate_service
 from app.services import crops as crops_service
-from app.services import geo, recommender
+from app.services import geo, recommender, region
 from app.services import soil as soil_service
 from app.services.crops import CatalogUnavailableError
 from app.services.nasa_power import NasaUnavailableError
@@ -110,7 +110,12 @@ async def create_analysis(
     area = geo.area_ha(ring)
     if area <= 0:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="El polígono no tiene área (puntos en línea)")
+    if (error := region.validate_parcel(ring, area)) is not None:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail=error)
     lat, lon = geo.centroid(ring)
+    # País por el centroide (si el centroide cae fuera, p. ej. una parcela en forma de U en la costa, el del
+    # primer vértice; validate_parcel ya garantizó que todos los vértices están en la región)
+    country = region.country_of(lon, lat) or region.country_of(*ring[0])
 
     # 2. Catálogo de cultivos (tabla crops)
     try:
@@ -133,12 +138,15 @@ async def create_analysis(
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, detail="NASA POWER no disponible") from exc
 
     # 4. Motor de reglas (puro)
+    country_areas = crops_service.load_country_areas(country.code, db) if country else None
     result = recommender.recommend(climate, crops, req, today=datetime.now(timezone.utc).date(),
-                                   detected_soil=detected_soil)
+                                   detected_soil=detected_soil, country_areas=country_areas,
+                                   country_name=country.name if country else None)
     location = Location(lat=round(lat, 5), lon=round(lon, 5))
     body = {
         "area_ha": round(area, 2),
         "location": location.model_dump(),
+        "country": country.code if country else None,
         "metrics": [m.model_dump(mode="json") for m in result.metrics],
         "rotation": [r.model_dump(mode="json") for r in result.rotation],
         "impact": [i.model_dump(mode="json") for i in result.impact],

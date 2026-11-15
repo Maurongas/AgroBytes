@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Polyline, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Polygon, Polyline, CircleMarker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { useStore, type LatLng } from '../store/useStore';
+import { useStore, polygonAreaHa, type LatLng } from '../store/useStore';
 import { rectanguloDesdeEsquinas, seCruza } from '../lib/geo';
+import { REGION_BOUNDS, REGION_LATLNGS, MAX_AREA_HA } from '../lib/region';
 import DrawToolbar, { type Herramienta } from './map/DrawToolbar';
 import EditableParcel from './map/EditableParcel';
+
+// Todo el mundo con un hueco por cada polígono de la región: oscurece lo que queda fuera
+const WORLD: [number, number][] = [[-89, -179], [-89, 179], [89, 179], [89, -179]];
 
 function ClickCapture({ herramienta }: { herramienta: Herramienta }) {
   const drawing = useStore((s) => s.drawing);
@@ -44,7 +48,7 @@ function FlyToParcel() {
 }
 
 export default function ParcelMap() {
-  const { drawing, points, geometry, areaHa, startDrawing, finishDrawing, clearParcel } = useStore();
+  const { drawing, points, geometry, areaHa, parcelError, startDrawing, finishDrawing, clearParcel } = useStore();
   const [herramienta, setHerramienta] = useState<Herramienta>('poligono');
   const [editando, setEditando] = useState(false);
   const [borrarPunto, setBorrarPunto] = useState(false);
@@ -85,7 +89,7 @@ export default function ParcelMap() {
 
   const cambiarHerramienta = (h: Herramienta) => {
     setHerramienta(h);
-    if (drawing) useStore.setState({ points: [] }); // otra forma: se empieza la actual desde cero
+    if (drawing) useStore.setState({ points: [], parcelError: null }); // otra forma: se empieza la actual desde cero
   };
 
   const registrarCambio = (anteriores: LatLng[]) => setHistorial((h) => [...h.slice(-19), anteriores]);
@@ -125,14 +129,22 @@ export default function ParcelMap() {
     : geometry && editando
       ? borrarPunto ? 'Toca un punto para quitarlo' : 'Arrastra los puntos para ajustar la parcela'
       : null;
+  // Área mientras se dibuja, para avisar antes de terminar si se pasa del máximo
+  const liveArea = drawing && points.length >= 3 ? polygonAreaHa(points) : null;
+  const tooBig = liveArea !== null && liveArea > MAX_AREA_HA;
 
   return (
     <div className={`relative h-full w-full ${drawing ? 'cursor-crosshair' : ''}`}>
-      <MapContainer center={[31.8667, -116.5963]} zoom={13} doubleClickZoom={false} zoomControl={false} className="h-full w-full">
+      <MapContainer center={[31.8667, -116.5963]} zoom={13} minZoom={3} maxBounds={REGION_BOUNDS} maxBoundsViscosity={1}
+        doubleClickZoom={false} zoomControl={false} className="h-full w-full">
         <TileLayer
           url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
           attribution="Tiles © Esri"
         />
+        <Polygon positions={[WORLD, ...REGION_LATLNGS]} interactive={false}
+          pathOptions={{ stroke: false, fillColor: '#0B1220', fillOpacity: 0.55 }} />
+        <Polygon positions={REGION_LATLNGS} interactive={false}
+          pathOptions={{ color: '#FFFFFF', weight: 1.5, opacity: 0.7, dashArray: '4 6', fill: false }} />
         <ClickCapture herramienta={herramienta} />
         <FlyToParcel />
 
@@ -147,6 +159,10 @@ export default function ParcelMap() {
         {geometry && (
           <EditableParcel editando={editando} borrarPunto={borrarPunto} onCambio={registrarCambio} onAviso={setAviso} />
         )}
+        {!drawing && !geometry && parcelError && points.length >= 3 && (
+          <Polygon positions={points} interactive={false}
+            pathOptions={{ color: '#D64545', weight: 3, dashArray: '6 6', fillColor: '#D64545', fillOpacity: 0.2 }} />
+        )}
       </MapContainer>
 
       <div className="absolute left-3 top-3 z-[1000] flex max-w-[calc(100%-1.5rem)] flex-col items-start gap-2">
@@ -157,9 +173,29 @@ export default function ParcelMap() {
           puedeDeshacer={puedeDeshacer} onDeshacer={deshacer}
           onIniciar={iniciar} onTerminar={terminar} onBorrarTodo={borrarTodo}
         />
-        {ayuda && <p role="status" className="rounded-full bg-orbit/80 px-4 py-2 text-sm text-paper">{ayuda}</p>}
+        {ayuda && (
+          <p role="status" className="rounded-full bg-orbit/80 px-4 py-2 text-sm text-paper">
+            {ayuda}
+            {liveArea !== null && (
+              <span className={`ml-2 font-mono ${tooBig ? 'font-semibold text-red-300' : ''}`}>
+                · {liveArea.toFixed(1)} ha{tooBig ? ` (máx. ${MAX_AREA_HA})` : ''}
+              </span>
+            )}
+          </p>
+        )}
         {aviso && <p role="alert" className="rounded-xl border border-danger/40 bg-surface-raised px-3 py-2 text-sm text-ink-900 shadow-card">{aviso}</p>}
+        {parcelError && (
+          <p role="alert" className="max-w-md rounded-xl border border-danger/40 bg-surface-raised px-3 py-2 text-sm text-ink-900 shadow-card">
+            {parcelError}
+          </p>
+        )}
       </div>
+
+      {!drawing && !geometry && !parcelError && (
+        <div className="absolute bottom-6 left-4 z-[1000] rounded-lg bg-orbit/80 px-3 py-1.5 text-xs text-paper">
+          Disponible en México, EE. UU. y Canadá · parcelas de hasta {MAX_AREA_HA} ha
+        </div>
+      )}
 
       {geometry && areaHa && (
         <div className="absolute bottom-6 left-4 z-[1000] rounded-lg bg-orbit/80 px-3 py-1.5 font-mono text-xs text-paper">

@@ -9,6 +9,7 @@ import GaugeSoilHealth from '../components/GaugeSoilHealth';
 import ImpactBar from '../components/ImpactBar';
 import { exportarPlanPdf } from '../lib/pdf';
 import { PRIORITY_LABEL } from '../lib/etiquetas';
+import { COUNTRY_NAME } from '../lib/region';
 
 const INCERTIDUMBRE = {
   low: { texto: 'baja', clase: 'bg-leaf-50 text-leaf-900' },
@@ -30,6 +31,9 @@ export default function DiagnosisView() {
           <ArrowLeft size={16} /> Cambiar parcela
         </button>
         <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{analysis.areaHa.toFixed(1)} ha</span>
+        {analysis.country && (
+          <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{COUNTRY_NAME[analysis.country]}</span>
+        )}
         {crop && <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{cropName(crop)}</span>}
         {priority && <span className="rounded-full bg-sky-50 px-3 py-1 text-xs text-sky-700">{PRIORITY_LABEL[priority]}</span>}
         <button onClick={() => exportarPlanPdf(analysis, { crop, priority })}

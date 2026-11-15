@@ -12,10 +12,12 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
+from app.repositories import crop_countries as crop_countries_repo
 from app.repositories import crops as crops_repo
 from app.schemas.analysis import CropRole, Season, SoilTexture
 
 CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "crops.json"
+COUNTRIES_PATH = CATALOG_PATH.with_name("crop_countries.json")
 
 
 class CropParams(BaseModel):
@@ -82,3 +84,22 @@ def load_catalog_file(path: Path = CATALOG_PATH) -> list[CropParams]:
     if not crops:
         raise CatalogUnavailableError("El catálogo de cultivos está vacío")
     return crops
+
+
+def load_country_areas(country_code: str, db: Session | None = None) -> dict[str, float]:
+    """{crop_id: ha cosechadas al año en el país} (tabla crop_countries, FAOSTAT). Sin sesión, del JSON.
+
+    Si no hay datos (tabla vacía o error de BD) devuelve {} y el motor recomienda sin filtrar por país: es mejor
+    una recomendación sin ese filtro que un 503.
+    """
+    if db is None:
+        try:
+            data = json.loads(COUNTRIES_PATH.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+        return {k: float(v) for k, v in data.get("countries", {}).get(country_code, {}).items()}
+    try:
+        return crop_countries_repo.areas_by_country(db, country_code)
+    except SQLAlchemyError:
+        db.rollback()
+        return {}

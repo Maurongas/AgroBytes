@@ -194,3 +194,35 @@ def test_con_riego_no_se_queja_de_la_lluvia(climate, catalog):
     assert any("Requiere riego" in r for s in temporal.rotation for r in s.risks)
     assert not any("Requiere riego" in r for s in riego.rotation for r in s.risks)
     assert all(s.irrigation_mm >= 0 for s in riego.rotation)
+
+
+def test_solo_recomienda_cultivos_que_se_siembran_en_el_pais(climate, catalog):
+    # Como en Canadá: no hay sorgo ni jitomate de campo (área cosechada < 1 000 ha)
+    areas = {"maize": 1_456_400, "wheat": 10_137_760, "bean": 150_080, "sorghum": 0, "tomato": 500}
+    result = recommender.recommend(climate, catalog, req(), today=NOV, country_areas=areas, country_name="Canadá")
+    elegidos = {s.crop_id for s in result.rotation}
+    assert not elegidos & {"sorghum", "tomato"}
+
+
+def test_cobertura_no_se_filtra_por_pais(catalog):
+    areas = {"maize": 1_000_000}  # ningún dato de la avena (cobertura en el catálogo de prueba)
+    ids = {c.id for c in recommender.grown_in_country(catalog, areas)}
+    assert ids == {"maize", "oat"}
+
+
+def test_sin_datos_del_pais_no_filtra(catalog):
+    assert recommender.grown_in_country(catalog, None) == catalog
+    assert recommender.grown_in_country(catalog, {}) == catalog
+
+
+def test_el_cultivo_actual_puede_no_sembrarse_en_el_pais(climate, catalog):
+    # El usuario dice que siembra sorgo aunque en el país casi no haya: no truena, solo no se le recomienda
+    areas = {"maize": 1_000_000, "wheat": 1_000_000, "bean": 1_000_000}
+    result = recommender.recommend(climate, catalog, req(current="sorghum"), today=NOV, country_areas=areas)
+    assert "sorghum" not in {s.crop_id for s in result.rotation}
+
+
+def test_razon_de_cultivo_popular_en_el_pais(climate, catalog):
+    areas = {c.id: 1_000_000 for c in catalog}
+    result = recommender.recommend(climate, catalog, req(), today=NOV, country_areas=areas, country_name="México")
+    assert any("más sembrados en México" in r for s in result.rotation for r in s.reasons)

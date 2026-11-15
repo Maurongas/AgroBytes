@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Marker, Polygon } from 'react-leaflet';
 import L from 'leaflet';
-import { useStore, type LatLng } from '../../store/useStore';
+import { useStore, polygonAreaHa, type LatLng } from '../../store/useStore';
 import { seCruza } from '../../lib/geo';
+import { validateParcel } from '../../lib/region';
 
 const crearIcono = (borde: string) =>
   L.divIcon({
@@ -27,10 +28,17 @@ export default function EditableParcel({ editando, borrarPunto, onCambio, onAvis
   const [vivo, setVivo] = useState<LatLng[] | null>(null); // forma mientras se arrastra
   const [version, setVersion] = useState(0);                // fuerza a un punto a volver a su sitio
 
-  const aplicar = (siguiente: LatLng[]) => {
+  /** Aplica el cambio si la parcela sigue siendo válida (región y tamaño, ver lib/region.ts). */
+  const aplicar = (siguiente: LatLng[]): boolean => {
+    const error = validateParcel(siguiente, polygonAreaHa(siguiente));
+    if (error) {
+      onAviso(error);
+      return false;
+    }
     onCambio(points);
     useStore.setState({ points: siguiente });
     useStore.getState().finishDrawing(); // recalcula geometry y areaHa, igual que hoy
+    return true;
   };
 
   const quitar = (i: number) => {
@@ -70,7 +78,7 @@ export default function EditableParcel({ editando, borrarPunto, onCambio, onAvis
                   setVersion((v) => v + 1);
                   return;
                 }
-                aplicar(siguiente);
+                if (!aplicar(siguiente)) setVersion((v) => v + 1); // fuera de la región o de tamaño: vuelve
               },
               click() {
                 if (borrarPunto) quitar(i);

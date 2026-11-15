@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function QuickPanel({ onAnalyze, pending, error }: Props) {
-  const { geometry, areaHa, crop, priority, setCrop, setPriority } = useStore();
+  const { geometry, areaHa, parcelError, crop, priority, setCrop, setPriority } = useStore();
   const ready = !!geometry && !!crop && !!priority;
   const missing = !geometry ? 'Dibuja tu parcela en el mapa' : !crop ? 'Elige tu cultivo actual' : !priority ? 'Elige tu prioridad' : '';
 
@@ -31,7 +31,9 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
           <span className={`flex h-5 w-5 items-center justify-center rounded-full ${geometry ? 'bg-leaf-600 text-paper' : 'bg-surface-sunken text-ink-400'}`}>
             {geometry && <Check size={13} />}
           </span>
-          <span className="text-ink-700">{geometry && areaHa ? `${areaHa.toFixed(1)} hectáreas marcadas` : 'Aún no has dibujado tu parcela'}</span>
+          <span className={parcelError ? 'text-danger' : 'text-ink-700'}>
+            {parcelError ?? (geometry && areaHa ? `${areaHa.toFixed(1)} hectáreas marcadas` : 'Aún no has dibujado tu parcela')}
+          </span>
         </div>
       </section>
 

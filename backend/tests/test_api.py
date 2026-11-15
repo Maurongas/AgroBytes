@@ -277,3 +277,28 @@ def test_borrar_permite_cors_con_device_id():
         "Origin": "http://localhost:3000", "Access-Control-Request-Method": "DELETE",
         "Access-Control-Request-Headers": "x-device-id"})
     assert r.status_code == 200
+
+
+def test_parcela_fuera_de_la_region_da_422(monkeypatch, catalog):
+    falsear(monkeypatch, catalog)
+    guatemala = [[[-90.51, 14.60], [-90.49, 14.60], [-90.49, 14.62], [-90.51, 14.60]]]
+    r = client.post("/api/v1/analyses", json={**BODY, "geometry": {"type": "Polygon", "coordinates": guatemala}})
+    assert r.status_code == 422
+    assert "México, Estados Unidos o Canadá" in r.json()["detail"]
+
+
+def test_el_analisis_dice_el_pais(monkeypatch, catalog):
+    falsear(monkeypatch, catalog)
+    assert client.post("/api/v1/analyses", json=BODY).json()["country"] == "MX"
+    iowa = [[[-93.61, 41.85], [-93.59, 41.85], [-93.59, 41.87], [-93.61, 41.85]]]
+    r = client.post("/api/v1/analyses", json={**BODY, "geometry": {"type": "Polygon", "coordinates": iowa}})
+    assert r.status_code == 201
+    assert r.json()["country"] == "US"
+
+
+def test_parcela_gigante_da_422(monkeypatch, catalog):
+    falsear(monkeypatch, catalog)
+    gigante = [[[-116.0, 31.0], [-115.5, 31.0], [-115.5, 31.5], [-116.0, 31.5], [-116.0, 31.0]]]
+    r = client.post("/api/v1/analyses", json={**BODY, "geometry": {"type": "Polygon", "coordinates": gigante}})
+    assert r.status_code == 422
+    assert "muy grande" in r.json()["detail"]
