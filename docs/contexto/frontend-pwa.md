@@ -22,6 +22,9 @@ frontend/src/lib/offline.ts   (por crear) guardar/leer último análisis
 frontend/src/main.tsx         QueryClient y registro del service worker
 frontend/vite.config.ts       plugins (aquí va VitePWA)
 frontend/public/              íconos PWA
+frontend/pwa-assets.config.ts      genera los íconos PNG desde favicon.svg
+frontend/src/components/InstallButton.tsx  botón "Instalar app" (vista Cuenta)
+
 ```
 
 ## Lo que ya existe
