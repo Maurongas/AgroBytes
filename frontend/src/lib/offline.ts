@@ -52,6 +52,26 @@ export function guardarAnalisis(a: AnalysisResponse): void {
 }
 export const leerAnalisis = (id: string) => leer<Record<string, AnalysisResponse>>(K_ANALISIS)?.[id] ?? null;
 
+/** Quita un análisis de lo guardado en el dispositivo (historial, copia completa y "última"). */
+export function quitarAnalisis(id: string): void {
+  const filas = leerHistorial();
+  if (filas) guardarHistorial(filas.filter((f) => f.id !== id));
+
+  const todos = leer<Record<string, AnalysisResponse>>(K_ANALISIS);
+  if (todos && id in todos) {
+    delete todos[id];
+    guardar(K_ANALISIS, todos);
+  }
+
+  if (leerUltima()?.analysis.id === id) {
+    try {
+      localStorage.removeItem(K_ULTIMA);
+    } catch {
+      /* bloqueado: se ignora */
+    }
+  }
+}
+
 // --- ¿hay red? ---
 function suscribir(avisar: () => void) {
   window.addEventListener('online', avisar);

@@ -144,15 +144,15 @@ NasaSpaceApp/
         ├── store/useStore.ts    # estado global (Zustand)                    [Mapa; otros agregan campos avisando]
         ├── lib/
         │   ├── crops.ts         # catálogo de cultivos para la UI            [Mapa]
-        │   └── offline.ts       # guardar/leer último análisis               [PWA · pendiente]
+        │   └── offline.ts       # guardar/leer último análisis               [PWA]
         ├── views/
         │   ├── SelectView.tsx   # mapa + panel                               [Mapa]
         │   ├── DiagnosisView.tsx# resultados                                 [Layout]
-        │   └── HistoryView.tsx  # historial                                  [Layout · pendiente]
+        │   └── HistoryView.tsx  # historial                                  [Layout]
         └── components/
             ├── ParcelMap.tsx  QuickPanel.tsx  ScanOverlay.tsx                [Mapa]
             ├── NasaMetricCard.tsx  ImpactBar.tsx  GaugeSoilHealth.tsx  CountUp.tsx [Layout]
-            └── Navbar.tsx                                                    [Layout · pendiente]
+            └── Navbar.tsx                                                    [Layout]
 ```
 
 ---

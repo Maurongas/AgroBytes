@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { LogOut } from 'lucide-react';
 import { iniciarSesion, useSession } from '../lib/session';
 import { useStore } from '../store/useStore';
+import InstallButton from '../components/InstallButton';
 
 const CAMPO =
   'mt-1 w-full rounded-xl border border-line bg-surface-raised px-3 py-2 text-sm normal-case tracking-normal text-ink-900 focus-visible:outline-2 focus-visible:outline-leaf-600';
@@ -32,6 +33,10 @@ export default function AccountView() {
         <p className="mt-2 rounded-xl border border-line bg-surface-raised p-3 text-sm text-ink-700">
           Perfil local: tus datos se guardan solo en este navegador. No hay contraseña ni servidor.
         </p>
+
+                <div className="mt-4">
+          <InstallButton />
+        </div>
 
         {usuario ? (
           <div className="mt-6 rounded-card border border-line bg-surface-raised p-5 shadow-card">

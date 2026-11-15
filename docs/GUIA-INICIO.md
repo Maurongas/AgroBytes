@@ -192,13 +192,17 @@ Si tienes un disco `D:` o una USB rápida: Docker Desktop → ⚙️ **Settings 
 
 ---
 
-## 9. 🌐 Versión publicada
+## 9. 🌐 Versión publicada (opcional)
 
-| Pieza | URL | Dónde |
+> **La entrega se corre en local.** El proyecto no está publicado en internet: se usa con
+> `docker compose up --build` (app en http://localhost:3000, API en http://localhost:8000/docs), como explica
+> esta guía. Lo que sigue queda solo como referencia por si más adelante se quiere publicar.
+
+| Pieza | URL | Dónde se publicaría |
 |---|---|---|
-| Backend (API) | `https://<por-publicar>.onrender.com` · `/docs` · `/health` | Render (Web Service con Docker) |
-| Base de datos | (privada) | Render Postgres (con PostGIS) |
-| Frontend | `https://<por-publicar>` | Lo publica menaxmn (Netlify, Vercel o Cloudflare Pages) |
+| Backend (API) | No publicado | Render (Web Service con Docker) |
+| Base de datos | No publicada | Render Postgres (con PostGIS) |
+| Frontend | No publicado | Netlify, Vercel o Cloudflare Pages |
 
 **Nunca subas contraseñas ni la `DATABASE_URL` al repo:** van en el dashboard del servicio.
 
@@ -223,6 +227,8 @@ Cada merge a `main` vuelve a publicar el backend (`autoDeploy`).
 
 ### Antes de presentar
 
+- **En local:** con `docker compose up` corriendo, pre-calienta el clima de la demo con
+  `docker compose exec backend python -m app.db.precalentar`. Los puntos de abajo aplican solo si se publica.
 - **El plan gratis se duerme** tras ~15 min sin uso y tarda ~1 min en despertar. Abre `/health` antes de empezar.
 - Pre-calienta el clima de la demo contra la URL pública (desde `backend/`, con Python y `httpx`):
   `API=https://<backend> python -m app.db.precalentar` (en PowerShell: `$env:API="https://<backend>"; python -m app.db.precalentar`).
