@@ -57,7 +57,7 @@ def test_prioridad_nitrogeno_prefiere_leguminosas(climate, catalog):
 
 def test_impacto_y_metricas_en_orden_del_contrato(climate, catalog):
     r = recommender.recommend(climate, catalog, req(), NOV)
-    assert [i.label for i in r.impact] == ["Balance hídrico", "Riego necesario", "Nitrógeno en suelo (estimado)"]
+    assert [i.label for i in r.impact] == ["Balance hídrico", "Riego necesario", "Balance de nitrógeno (estimado)"]
     assert [m.id for m in r.metrics] == ["soilMoisture", "rain90d", "tempMean", "solarRadiation"]
     assert all(len(m.series) == 12 for m in r.metrics)
     assert len(r.climate) == 12 and r.climate[0].month == "Ene"

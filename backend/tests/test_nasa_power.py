@@ -159,3 +159,94 @@ def test_cache_evita_volver_a_llamar_a_nasa(monkeypatch):
     asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=hoy))
     asyncio.run(climate_service.get_climate_summary(31.9, -116.7, today=hoy))  # misma celda
     assert llamadas == [(32.0, -116.875)]
+
+
+# ---------------------------------------------------------------- caché en la tabla climate_cache (repo falso)
+
+
+class SesionFalsa:
+    def rollback(self):
+        pass
+
+
+@pytest.fixture
+def tabla_falsa(monkeypatch):
+    """Reemplaza repositories.climate_cache por un dict {(lat_g, lon_g, period): payload}."""
+    from types import SimpleNamespace
+
+    from app.repositories import climate_cache as cache_repo
+
+    tabla: dict = {}
+    vencidos: set = set()
+
+    def get_valid(db, lat_g, lon_g, period, max_days=None):
+        key = (lat_g, lon_g, period)
+        if key not in tabla or (key in vencidos and (max_days or 0) < 3650):
+            return None
+        return SimpleNamespace(payload=tabla[key])
+
+    def upsert(db, lat_g, lon_g, period, payload):
+        tabla[(lat_g, lon_g, period)] = payload
+        vencidos.discard((lat_g, lon_g, period))
+
+    monkeypatch.setattr(cache_repo, "get_valid", get_valid)
+    monkeypatch.setattr(cache_repo, "upsert", upsert)
+    return SimpleNamespace(tabla=tabla, vencidos=vencidos)
+
+
+def test_cache_de_bd_sobrevive_reinicio(monkeypatch, tabla_falsa):
+    llamadas = []
+
+    async def falso_monthly(lat, lon, start, end, client=None):
+        llamadas.append((lat, lon))
+        return serie_mensual({y: 1.0 for y in range(start, end + 1)})
+
+    monkeypatch.setattr(nasa_power, "fetch_monthly", falso_monthly)
+    hoy, db = date(2026, 11, 14), SesionFalsa()
+    primero = asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=hoy, db=db))
+    # Se guarda con la malla de POWER (0.5° × 0.625°), no con la de 0.5° × 0.5°
+    assert list(tabla_falsa.tabla) == [(32.0, -116.875, "2016-2025")]
+
+    climate_service._long_term_cache.clear()  # simula reiniciar el backend
+    segundo = asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=hoy, db=db))
+    assert llamadas == [(32.0, -116.875)]  # la segunda vez salió de la tabla
+    assert segundo == primero
+
+
+def test_nasa_caida_usa_cache_vencida(monkeypatch, tabla_falsa):
+    async def bien(lat, lon, start, end, client=None):
+        return serie_mensual({y: 1.0 for y in range(start, end + 1)})
+
+    async def caida(*args, **kwargs):
+        raise NasaUnavailableError("caído")
+
+    hoy, db = date(2026, 11, 14), SesionFalsa()
+    monkeypatch.setattr(nasa_power, "fetch_monthly", bien)
+    guardado = asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=hoy, db=db))
+
+    climate_service._long_term_cache.clear()
+    tabla_falsa.vencidos.add((32.0, -116.875, "2016-2025"))
+    monkeypatch.setattr(nasa_power, "fetch_monthly", caida)
+    assert asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=hoy, db=db)) == guardado
+
+    # Sin nada guardado, NASA caída sí es un error
+    with pytest.raises(NasaUnavailableError):
+        asyncio.run(climate_service.get_climate_summary(10.0, 10.0, today=hoy, db=db))
+
+
+def test_bd_caida_no_tumba_el_clima(monkeypatch):
+    from sqlalchemy.exc import OperationalError
+
+    from app.repositories import climate_cache as cache_repo
+
+    def explota(*args, **kwargs):
+        raise OperationalError("SELECT", {}, Exception("sin conexión"))
+
+    async def bien(lat, lon, start, end, client=None):
+        return serie_mensual({y: 1.0 for y in range(start, end + 1)})
+
+    monkeypatch.setattr(cache_repo, "get_valid", explota)
+    monkeypatch.setattr(cache_repo, "upsert", explota)
+    monkeypatch.setattr(nasa_power, "fetch_monthly", bien)
+    s = asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=date(2026, 11, 14), db=SesionFalsa()))
+    assert s.period == "2016-2025"

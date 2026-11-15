@@ -1,8 +1,8 @@
 """Catálogo de cultivos para el motor de reglas.
 
-Hoy se lee de `app/data/crops.json` (dueño: DBA, formato en ARQUITECTURA §6). Cuando exista la tabla
-`crops`, `load_catalog` pasará a usar `repositories.crops.list_all(db)`; `CropParams` acepta también
-objetos ORM (`from_attributes=True`), así que el motor de reglas no cambia.
+Fuente oficial: la tabla `crops` (la siembra `app/db/seed.py` desde `app/data/crops.json` al arrancar el
+contenedor). `load_catalog(db)` la lee con `repositories.crops.list_all`. Sin sesión (`db=None`) se lee el
+JSON directamente; eso solo lo usan scripts y pruebas.
 """
 
 import json
@@ -10,7 +10,10 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
+from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
 
+from app.repositories import crops as crops_repo
 from app.schemas.analysis import Season, SoilTexture
 
 CATALOG_PATH = Path(__file__).resolve().parents[1] / "data" / "crops.json"
@@ -43,7 +46,24 @@ class CatalogUnavailableError(Exception):
 _catalog_adapter = TypeAdapter(list[CropParams])
 
 
-def load_catalog(path: Path = CATALOG_PATH) -> list[CropParams]:
+def load_catalog(db: Session | None = None) -> list[CropParams]:
+    """Catálogo desde la BD (o desde el JSON si no hay sesión). Lanza `CatalogUnavailableError` → 503."""
+    if db is None:
+        return load_catalog_file()
+    try:
+        rows = crops_repo.list_all(db)
+    except SQLAlchemyError as exc:
+        db.rollback()
+        raise CatalogUnavailableError("Catálogo de cultivos no disponible (error de base de datos)") from exc
+    if not rows:
+        raise CatalogUnavailableError("La tabla crops está vacía (corre: python -m app.db.seed)")
+    try:
+        return [CropParams.model_validate(row) for row in rows]
+    except ValidationError as exc:
+        raise CatalogUnavailableError(f"El catálogo de cultivos tiene errores de formato: {exc.error_count()}") from exc
+
+
+def load_catalog_file(path: Path = CATALOG_PATH) -> list[CropParams]:
     try:
         raw = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
