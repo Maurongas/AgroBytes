@@ -189,3 +189,41 @@ Si tienes un disco `D:` o una USB rápida: Docker Desktop → ⚙️ **Settings 
 | Cambié código y no se actualiza | Guarda el archivo. Si sigue igual: `docker compose restart frontend` (o `backend`). |
 | Algo está muy roto y nada funciona | Último recurso: `docker compose down -v` y `docker compose up --build` (borra la BD local). |
 | WSL / virtualización deshabilitada (Windows) | Activa "Virtualización" en la BIOS y corre `wsl --install` en PowerShell como administrador. |
+
+---
+
+## 9. 🌐 Versión publicada
+
+| Pieza | URL | Dónde |
+|---|---|---|
+| Backend (API) | `https://<por-publicar>.onrender.com` · `/docs` · `/health` | Render (Web Service con Docker) |
+| Base de datos | (privada) | Render Postgres (con PostGIS) |
+| Frontend | `https://<por-publicar>` | Lo publica menaxmn (Netlify, Vercel o Cloudflare Pages) |
+
+**Nunca subas contraseñas ni la `DATABASE_URL` al repo:** van en el dashboard del servicio.
+
+### Publicar el backend (una sola vez)
+
+1. En [dashboard.render.com](https://dashboard.render.com): **New → Blueprint** → elige este repo. Render lee
+   `render.yaml` y crea la BD `agridb` y el servicio `dss-agricola-api`.
+2. Te pide `CORS_ORIGINS`: pon el dominio del frontend (`https://...`, sin `/` al final). Si aún no existe,
+   pon `http://localhost:3000` y cámbialo después en *Environment* (el servicio se reinicia solo).
+3. Al arrancar, el contenedor corre las migraciones (que activan PostGIS) y el seed de cultivos.
+4. Prueba `https://<backend>/health` → `{"status":"ok","db":"ok"}` y `https://<backend>/docs`.
+5. Pásale la URL al frontend: `VITE_API_URL=https://<backend>` y `VITE_USE_MOCK=false`.
+
+Cada merge a `main` vuelve a publicar el backend (`autoDeploy`).
+
+| Variable | Valor en producción |
+|---|---|
+| `DATABASE_URL` | La pone Render desde la BD (`postgresql://...`; el backend le agrega el driver `psycopg` solo) |
+| `CORS_ORIGINS` | `https://<dominio-del-frontend>` |
+| `RATE_LIMIT_ANALYSES_PER_MIN` | `30` |
+| `REQUIRE_DEVICE_ID` | `false` hasta que el frontend en `main` mande `X-Device-Id`; luego `true` |
+
+### Antes de presentar
+
+- **El plan gratis se duerme** tras ~15 min sin uso y tarda ~1 min en despertar. Abre `/health` antes de empezar.
+- Pre-calienta el clima de la demo contra la URL pública (desde `backend/`, con Python y `httpx`):
+  `API=https://<backend> python -m app.db.precalentar` (en PowerShell: `$env:API="https://<backend>"; python -m app.db.precalentar`).
+- La BD gratis de Render caduca a los 30 días: sirve para el concurso, no para dejarla para siempre.

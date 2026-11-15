@@ -1,5 +1,6 @@
 """Configuración desde variables de entorno (ver .env.example en la raíz). Dueño: DBA."""
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,6 +18,15 @@ class Settings(BaseSettings):
     # true = el historial, el detalle y el borrado exigen el header X-Device-Id (activar cuando el
     # frontend ya lo mande; mientras, sin header se ve todo como antes)
     REQUIRE_DEVICE_ID: bool = False
+
+    @field_validator("DATABASE_URL")
+    @classmethod
+    def usar_psycopg(cls, url: str) -> str:
+        """Render, Neon y Supabase dan la URL como postgres:// o postgresql://; SQLAlchemy necesita el driver."""
+        for prefijo in ("postgres://", "postgresql://"):
+            if url.startswith(prefijo):
+                return "postgresql+psycopg://" + url[len(prefijo):]
+        return url
 
     @property
     def cors_origins_list(self) -> list[str]:

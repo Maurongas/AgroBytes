@@ -1,0 +1,30 @@
+# Blueprint de Render: crea la BD (PostgreSQL + PostGIS) y la API con Docker.
+# Uso: dashboard.render.com → New → Blueprint → elige este repo. Ver docs/GUIA-INICIO.md §9.
+# Las variables con `sync: false` se piden en el dashboard (no se suben valores al repo).
+databases:
+  - name: agridb
+    databaseName: agridb
+    plan: free
+
+services:
+  - type: web
+    name: dss-agricola-api
+    runtime: docker
+    plan: free
+    dockerContext: ./backend
+    dockerfilePath: ./backend/Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL # Render la da como postgresql://; config.py le pone el driver psycopg
+        fromDatabase:
+          name: agridb
+          property: connectionString
+      - key: CORS_ORIGINS # https://<dominio-del-frontend> (varios separados por coma)
+        sync: false
+      - key: RATE_LIMIT_ANALYSES_PER_MIN
+        value: "30"
+      # Pasar a "true" solo cuando el frontend en main mande el header X-Device-Id (PR A de menaxmn);
+      # antes de eso, el historial de la app deja de cargar.
+      - key: REQUIRE_DEVICE_ID
+        value: "false"
