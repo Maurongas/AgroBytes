@@ -33,6 +33,19 @@ export async function createAnalysis(req: AnalysisRequest): Promise<AnalysisResp
   return request<AnalysisResponse>('/api/v1/analyses', { method: 'POST', body: JSON.stringify(req) });
 }
 
+/**
+ * Analiza sin guardar en el historial (POST /api/v1/analyses?guardar=false, ARQUITECTURA §5.2).
+ * Para comparar escenarios. Función aparte (no una opción de createAnalysis) porque createAnalysis se
+ * pasa directo como mutationFn y React Query v5 le manda un segundo argumento propio.
+ */
+export async function previewAnalysis(req: AnalysisRequest): Promise<AnalysisResponse> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 1200));
+    return mockAnalysis;
+  }
+  return request<AnalysisResponse>('/api/v1/analyses?guardar=false', { method: 'POST', body: JSON.stringify(req) });
+}
+
 /** Historial (GET /api/v1/analyses). */
 export async function listAnalyses(limit = 20): Promise<AnalysisSummary[]> {
   if (USE_MOCK) return mockHistory;
