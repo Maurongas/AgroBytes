@@ -1,18 +1,18 @@
-import { motion } from 'framer-motion';
+import BrandMark from '@app/components/BrandMark';
 import { deck } from '../content';
-import { EASE } from './ui';
 
-/** Marca: una parcela dibujada + el punto rojo de NASA. */
+/** Marca: el mismo logo que la app (frontend/src/components/BrandMark.tsx). */
 export function Mark({ size = 96, draw = true }: { size?: number; draw?: boolean }) {
+  return <BrandMark size={size} draw={draw} />;
+}
+
+/** «Agro» + «Bytes» en verde, como en la barra lateral de la app. */
+export function Wordmark({ className = '', dark = false }: { className?: string; dark?: boolean }) {
+  const [a, b] = [deck.name.slice(0, 4), deck.name.slice(4)];
   return (
-    <svg viewBox="0 0 64 64" width={size} height={size} aria-hidden>
-      <rect width="64" height="64" rx="16" className="fill-orbit" />
-      <motion.path d="M14 46 L24 16 L48 22 L44 48 Z" fill="#4E9F3D" fillOpacity={0.85} stroke="#FBF8F1" strokeWidth="3.5" strokeLinejoin="round"
-        initial={draw ? { pathLength: 0, fillOpacity: 0 } : false} animate={{ pathLength: 1, fillOpacity: 0.85 }}
-        transition={{ duration: 1.2, ease: EASE }} />
-      <motion.circle cx="50" cy="13" r="6" fill="#E03C21" initial={draw ? { scale: 0 } : false} animate={{ scale: 1 }}
-        transition={{ delay: 1, type: 'spring', stiffness: 400, damping: 14 }} />
-    </svg>
+    <span className={`font-display font-semibold tracking-tight ${dark ? 'text-paper' : 'text-ink-900'} ${className}`}>
+      {a}<span className={dark ? 'text-leaf-300' : 'text-leaf-600'}>{b}</span>
+    </span>
   );
 }
 
@@ -20,7 +20,7 @@ export default function Logo({ size = 'text-8xl', dark = false, mark = 112 }: { 
   return (
     <div className="flex items-center gap-6">
       <Mark size={mark} />
-      <span className={`font-display font-semibold tracking-tight ${size} ${dark ? 'text-paper' : 'text-ink-900'}`}>{deck.name}</span>
+      <Wordmark className={size} dark={dark} />
     </div>
   );
 }

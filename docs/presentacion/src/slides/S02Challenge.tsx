@@ -1,11 +1,11 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { CloudRain, Layers, Lock, Thermometer, type LucideIcon } from 'lucide-react';
+import { CloudRain, Layers, Lightbulb, Lock, Thermometer, type LucideIcon } from 'lucide-react';
 import CountUp from '@app/components/CountUp';
 import { nasaYears, problems, slide } from '../content';
 import { EASE, NasaDot, Title } from '../components/ui';
 import type { SlideProps } from './types';
 
-const T = slide('problem');
+const T = slide('challenge');
 const ICON: Record<(typeof problems)[number]['id'], { icon: LucideIcon; tone: string; bg: string }> = {
   heat: { icon: Thermometer, tone: 'text-danger', bg: 'bg-sun-100' },
   rain: { icon: CloudRain, tone: 'text-sky-500', bg: 'bg-sky-50' },
@@ -43,10 +43,10 @@ function BrokenLock({ instant }: { instant: boolean }) {
   );
 }
 
-export default function S02Problem({ step, preview }: SlideProps) {
+export default function S02Challenge({ step, preview }: SlideProps) {
   return (
     <div className="absolute inset-0 flex flex-col bg-canvas px-24 py-20">
-      <Title>{T.title}</Title>
+      <Title eyebrow={T.eyebrow}>{T.title}</Title>
 
       <motion.div className="mt-14 grid grid-cols-3 gap-10" initial="hidden" animate="show"
         variants={{ hidden: {}, show: { transition: { staggerChildren: preview ? 0 : 0.35, delayChildren: preview ? 0 : 0.3 } } }}>
@@ -77,8 +77,13 @@ export default function S02Problem({ step, preview }: SlideProps) {
         </AnimatePresence>
         <AnimatePresence>
           {step >= 2 && (
-            <motion.div key="gap" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div key="gap" className="flex flex-col items-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
               <BrokenLock instant={!!preview} />
+              <motion.p className="mt-6 flex items-center gap-3 rounded-full bg-orbit px-7 py-4 text-2xl text-paper shadow-lift"
+                initial={{ opacity: 0, y: 20, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ delay: preview ? 0 : 1.8, duration: 0.6, ease: EASE }}>
+                <Lightbulb size={28} className="text-sun-300" /> {nasaYears.insight}
+              </motion.p>
             </motion.div>
           )}
         </AnimatePresence>

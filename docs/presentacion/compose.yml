@@ -1,7 +1,7 @@
 # Presentación (pitch) en Docker, sin instalar Node:
 #   docker compose -f docs/presentacion/compose.yml up --build      → http://localhost:3001
 # Reutiliza la imagen y los node_modules del frontend; monta el código de la app y de esta carpeta.
-name: fieldshift-pitch
+name: agrobytes-pitch
 services:
   pitch:
     build:

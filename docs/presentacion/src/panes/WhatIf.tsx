@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, LayoutGroup, animate, motion, useReducedMotion } from 'framer-motion';
 import { CloudRain, Thermometer } from 'lucide-react';
-import { slide, ui, whatIfTarget } from '../content';
+import { panes, ui, whatIfTarget } from '../content';
 import { SEASON_EN, cropEn } from '../i18n';
 import ClimateChart from '../components/ClimateChart';
-import { RAIN_MAX, TEMP_RANGE, scenario, shiftedClimate, type Shift } from '../components/scenario';
+import { RAIN_MAX, TEMP_RANGE, scenario, shiftedClimate, type ScenarioStep, type Shift } from '../components/scenario';
+import { analysis, isLiveData } from '../data';
+import { whatIf } from '../live';
 import { CropIcon, Title } from '../components/ui';
-import type { SlideProps } from './types';
+import type { SlideProps } from '../slides/types';
 
-const T = slide('whatif');
+const T = panes.whatif;
 const ZERO: Shift = { rainPct: 0, tempC: 0 };
+const toSteps = (rot: typeof analysis.rotation): ScenarioStep[] =>
+  rot.map((s) => ({ season: s.season, cropId: s.cropId, score: s.score, irrigationMm: Math.round(s.irrigationMm ?? 0) }));
+const BASE_PLAN = toSteps(analysis.rotation);
 const SEASON_TONE = { autumn: 'bg-clay-100', winter: 'bg-sky-50', spring: 'bg-leaf-50', summer: 'bg-sun-100' } as const;
 
 function Slider({ icon: Icon, label, value, min, max, step, unit, onChange, tone }: {
@@ -30,9 +35,9 @@ function Slider({ icon: Icon, label, value, min, max, step, unit, onChange, tone
   );
 }
 
-export default function S08WhatIf({ step, preview }: SlideProps) {
+export default function WhatIfPane({ step, preview }: SlideProps) {
   const reduce = useReducedMotion();
-  const [shift, setShift] = useState<Shift>(step >= 1 ? whatIfTarget : ZERO);
+  const [shift, setShift] = useState<Shift>(preview && step >= 1 ? whatIfTarget : ZERO);
   const live = useRef(shift);
   live.current = shift;
 
@@ -53,14 +58,29 @@ export default function S08WhatIf({ step, preview }: SlideProps) {
 
   const rounded = { rainPct: Math.round(shift.rainPct), tempC: Math.round(shift.tempC * 10) / 10 };
   const climate = useMemo(() => shiftedClimate(rounded), [rounded.rainPct, rounded.tempC]); // eslint-disable-line react-hooks/exhaustive-deps
-  const plan = scenario(rounded);
+  // En vivo: el backend recalcula la rotación con climateShift (POST /analyses?guardar=false). Se pide 450 ms
+  // después de que el slider se detiene; las respuestas viejas se ignoran. Sin backend: escenarios precalculados.
+  const [livePlan, setLivePlan] = useState<ScenarioStep[] | null>(null);
+  const reqId = useRef(0);
+  useEffect(() => {
+    if (!isLiveData || preview) return;
+    if (rounded.rainPct === 0 && rounded.tempC === 0) { reqId.current++; setLivePlan(null); return; }
+    const t = setTimeout(() => {
+      const id = ++reqId.current;
+      whatIf(rounded).then((r) => { if (id === reqId.current) setLivePlan(toSteps(r.rotation)); }).catch(() => {});
+    }, 450);
+    return () => clearTimeout(t);
+  }, [rounded.rainPct, rounded.tempC, preview]); // eslint-disable-line react-hooks/exhaustive-deps
+  const plan = isLiveData ? (livePlan ?? BASE_PLAN) : scenario(rounded);
   const irrigation = plan.reduce((s, p) => s + p.irrigationMm, 0);
+  const baseIrrigation = (isLiveData ? BASE_PLAN : scenario(ZERO)).reduce((s, p) => s + p.irrigationMm, 0);
+  const diff = irrigation - baseIrrigation;
 
   return (
     <div className="absolute inset-0 flex flex-col bg-canvas px-20 py-16">
       <div className="flex items-end justify-between">
         <Title>{T.title}</Title>
-        <p className="text-sm uppercase tracking-widest text-ink-400">{ui.simulated}</p>
+        <p className={`text-sm uppercase tracking-widest ${isLiveData ? 'font-semibold text-danger' : 'text-ink-400'}`}>{isLiveData ? ui.liveWhatIf : ui.simulated}</p>
       </div>
 
       <div className="mt-10 grid flex-1 grid-cols-5 gap-8">
@@ -71,7 +91,8 @@ export default function S08WhatIf({ step, preview }: SlideProps) {
             onChange={(v) => setShift((s) => ({ ...s, tempC: v }))} />
           <div className="mt-auto rounded-panel bg-orbit p-6 text-paper">
             <p className="text-sm uppercase tracking-widest text-paper/60">{ui.irrigation3}</p>
-            <p className="font-display text-5xl font-semibold">{irrigation} <span className="font-sans text-2xl text-paper/60">mm</span></p>
+            <p className="font-display text-5xl font-semibold">{irrigation} <span className="font-sans text-2xl text-paper/60">mm</span>
+              {diff !== 0 && <span className={`ml-4 rounded-full px-3 py-1 font-mono text-xl ${diff > 0 ? "bg-danger/25 text-sun-300" : "bg-ok/25 text-leaf-300"}`}>{diff > 0 ? "+" : ""}{diff} mm</span>}</p>
           </div>
         </div>
 

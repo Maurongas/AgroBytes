@@ -17,12 +17,32 @@ import httpx
 
 from app.core.config import settings
 
-# Variables que pedimos (todas en una sola petición):
-#   T2M / T2M_MAX / T2M_MIN  temperatura a 2 m (°C): media, máxima y mínima
+# Variables del endpoint mensual (todas en una sola petición):
+#   T2M                      temperatura media a 2 m (°C)
+#   T2M_MAX / T2M_MIN        OJO: en el endpoint MENSUAL son los EXTREMOS del mes (la máxima más alta y la mínima
+#                            más baja de todos los días), no el promedio de las máximas/mínimas diarias.
+#   T2M_RANGE                rango diario PROMEDIO del mes (°C) → máxima diaria media ≈ T2M + rango/2 y mínima
+#                            diaria media ≈ T2M − rango/2 (verificado contra los datos diarios de POWER)
 #   PRECTOTCORR              lluvia corregida (mm/día)
 #   GWETROOT                 humedad del suelo en la zona de raíces (0 = seco, 1 = saturado)
 #   ALLSKY_SFC_SW_DWN        radiación solar que llega al suelo (MJ/m²/día con community=AG)
-PARAMETERS = ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT", "ALLSKY_SFC_SW_DWN")
+#   T2MDEW                   punto de rocío a 2 m (°C)      ┐ con la radiación y la altitud permiten calcular
+#   WS2M                     viento a 2 m (m/s)             ┘ ET₀ por FAO Penman-Monteith (FAO-56 ec. 6)
+#   FROST_DAYS               días con helada en el mes (riesgo de helada medido, no supuesto)
+PARAMETERS = ("T2M", "T2M_MAX", "T2M_MIN", "PRECTOTCORR", "GWETROOT", "ALLSKY_SFC_SW_DWN",
+              "T2M_RANGE", "T2MDEW", "WS2M", "FROST_DAYS")
+# Estas llegaron después: si un registro viejo del caché no las tiene, se vuelve a pedir a NASA
+OPTIONAL_PARAMETERS = ("T2M_RANGE", "T2MDEW", "WS2M", "FROST_DAYS")
+# El endpoint diario solo se usa para comparar lo reciente contra lo normal
+DAILY_PARAMETERS = ("T2M", "PRECTOTCORR", "GWETROOT")
+# POWER devuelve la altitud de la celda en geometry.coordinates[2]; se guarda dentro de la serie con esta llave
+# para que viaje junto con los datos en el caché (Penman-Monteith la usa para la presión atmosférica).
+ELEVATION_KEY = "_elevation_m"
+# header.sources = modelos de donde salieron los datos (p. ej. ["MERRA2"] o ["GEOSIT"]). Desde oct-2026 los días
+# recientes vienen de GEOS-IT y la humedad del suelo NO es continua con el histórico de MERRA-2 (Mexicali pasó de
+# 0.45 a 0.14 y Iowa de 0.45 a 0.70 de un mes a otro). Se guarda para no comparar variables de modelos distintos.
+SOURCES_KEY = "_sources"
+CLIMATOLOGY_MODELS = {"MERRA2", "POWER"}  # de donde sale el histórico mensual
 COMMUNITY = "AG"  # comunidad "agricultura": unidades pensadas para agronomía
 TIMEOUT_S = 20.0
 RETRIES = 2  # reintentos además del primer intento
@@ -48,14 +68,30 @@ def parse_response(payload: dict) -> Series:
         series[param] = {
             key: float(value) for key, value in values.items() if value is not None and float(value) != fill
         }
+    elevation = elevation_of(payload)
+    if elevation is not None:
+        series[ELEVATION_KEY] = {"m": elevation}
+    sources = payload.get("header", {}).get("sources")
+    if isinstance(sources, list) and sources:
+        series[SOURCES_KEY] = {str(s): 1.0 for s in sources}
     return series
 
 
-async def _get(client: httpx.AsyncClient, temporal: str, lat: float, lon: float, extra: dict) -> Series:
+def elevation_of(payload: dict) -> float | None:
+    """Altitud (m) de la celda: geometry.coordinates = [lon, lat, altitud]. None si no viene."""
+    try:
+        z = float(payload["geometry"]["coordinates"][2])
+    except (KeyError, IndexError, TypeError, ValueError):
+        return None
+    return z if z != DEFAULT_FILL_VALUE else None
+
+
+async def _get(client: httpx.AsyncClient, temporal: str, lat: float, lon: float, extra: dict,
+               parameters: tuple[str, ...] = PARAMETERS) -> Series:
     """GET a /temporal/<temporal>/point con reintentos. Errores 4xx no se reintentan (la petición está mal)."""
     url = f"{settings.NASA_POWER_BASE_URL}/temporal/{temporal}/point"
     params = {
-        "parameters": ",".join(PARAMETERS),
+        "parameters": ",".join(parameters),
         "community": COMMUNITY,
         "latitude": round(lat, 4),
         "longitude": round(lon, 4),
@@ -98,6 +134,6 @@ async def fetch_daily(
     """Serie diaria (llaves "YYYYMMDD"). Sirve para comparar lo reciente contra lo normal."""
     extra = {"start": start.strftime("%Y%m%d"), "end": end.strftime("%Y%m%d")}
     if client is not None:
-        return await _get(client, "daily", lat, lon, extra)
+        return await _get(client, "daily", lat, lon, extra, DAILY_PARAMETERS)
     async with httpx.AsyncClient(timeout=TIMEOUT_S) as own:
-        return await _get(own, "daily", lat, lon, extra)
+        return await _get(own, "daily", lat, lon, extra, DAILY_PARAMETERS)

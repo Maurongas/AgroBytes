@@ -41,6 +41,24 @@ def test_parse_respuesta_sin_datos_falla():
         nasa_power.parse_response({"messages": ["error"]})
 
 
+def test_parse_guarda_la_altitud_de_la_celda():
+    payload = {**respuesta({"T2M": {"202401": 15.0}}),
+               "geometry": {"type": "Point", "coordinates": [-115.0, 32.5, 42.36]}}
+    serie = nasa_power.parse_response(payload)
+    assert serie[nasa_power.ELEVATION_KEY] == {"m": 42.36}
+
+
+def test_diario_pide_solo_lo_necesario():
+    pedidos = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        pedidos.append(request.url.params["parameters"])
+        return httpx.Response(200, json=respuesta({"T2M": {"20260101": 15.0}}))
+
+    correr(handler, lambda c: nasa_power.fetch_daily(31.5, -116.5, date(2026, 1, 1), date(2026, 1, 2), c))
+    assert pedidos == [",".join(nasa_power.DAILY_PARAMETERS)]
+
+
 def test_reintenta_si_nasa_falla_y_luego_responde(sin_espera):
     llamadas = []
 
@@ -97,7 +115,12 @@ def serie_mensual(rain_by_year: dict[int, float]) -> dict:
             params["PRECTOTCORR"][k] = rain
             params["GWETROOT"][k] = 0.4
             params["ALLSKY_SFC_SW_DWN"][k] = 18.0  # MJ/m²/día
+            params["T2M_RANGE"][k] = 10.0  # rango diario promedio → máx. diaria = T2M + 5, mín. = T2M − 5
+            params["T2MDEW"][k] = 2.0 + m
+            params["WS2M"][k] = 2.0
+            params["FROST_DAYS"][k] = 3.0 if m in (12, 1, 2) else 0.0
         params["T2M"][f"{year}13"] = 99.0  # promedio anual de POWER: se ignora
+    params[nasa_power.ELEVATION_KEY] = {"m": 120.0}
     return params
 
 
@@ -111,6 +134,32 @@ def test_resumen_convierte_unidades_y_calcula_variabilidad():
     assert s.rain_annual_mm == pytest.approx((366 + 365 * 2) / 2, abs=0.1)
     assert s.rain_cv_pct > 40
     assert s.period == "2024-2025"
+
+
+def test_maxima_y_minima_diarias_salen_del_rango_no_de_los_extremos():
+    """En el endpoint mensual de POWER, T2M_MAX/T2M_MIN son los extremos del mes (mayo 2024 en Iowa: 28.96 y
+    5.63 °C, cuando las diarias promediaron 23.6 y 11.1 °C). La media diaria sale de T2M ± T2M_RANGE/2."""
+    s = climate_service.build_summary(serie_mensual({2024: 1.0, 2025: 2.0}), 31.5, -116.5, 2024, 2025)
+    enero = s.monthly[0]  # T2M 11, extremos 21 y 1, rango diario 10
+    assert (enero.temp_max_c, enero.temp_min_c) == (16.0, 6.0)
+    assert (enero.temp_max_abs_c, enero.temp_min_abs_c) == (21.0, 1.0)
+
+
+def test_resumen_trae_rocio_viento_heladas_y_altitud():
+    s = climate_service.build_summary(serie_mensual({2024: 1.0, 2025: 2.0}), 31.5, -116.5, 2024, 2025)
+    enero = s.monthly[0]
+    assert (enero.dewpoint_c, enero.wind_ms, enero.frost_days) == (3.0, 2.0, 3.0)
+    assert s.monthly[5].frost_days == 0.0
+    assert s.elevation_m == 120.0
+
+
+def test_resumen_sin_variables_nuevas_las_deja_en_none():
+    serie = serie_mensual({2024: 1.0, 2025: 1.0})
+    for p in nasa_power.OPTIONAL_PARAMETERS:
+        serie[p] = {}
+    s = climate_service.build_summary(serie, 31.5, -116.5, 2024, 2025)
+    assert s.monthly[0].dewpoint_c is None and s.monthly[0].wind_ms is None and s.monthly[0].frost_days is None
+    assert not climate_service.has_all_parameters(serie)
 
 
 def test_resumen_con_meses_faltantes_falla():
@@ -138,6 +187,47 @@ def test_reciente_compara_contra_lo_normal():
     assert r.temp_30d_c == 15.0
     assert r.temp_30d_normal_c == pytest.approx(13.0)  # marzo = 10 + 3
     assert r.soil_moisture_30d == 0.2
+    # Variabilidad normal entre años: en la serie de prueba los dos años son idénticos → desviación 0
+    assert r.soil_moisture_30d_normal == pytest.approx(0.4)
+    assert r.temp_30d_sd_c == 0.0
+    assert r.soil_moisture_30d_percentile is None  # con menos de 5 años no se calcula percentil
+    assert r.recent_model_change is None  # la serie de prueba no dice de qué modelo viene
+
+
+def test_percentil_de_la_humedad_frente_a_10_anios():
+    mensual = serie_mensual({y: 1.0 for y in range(2016, 2026)})
+    for i, y in enumerate(range(2016, 2026)):  # marzo de cada año: 0.30, 0.31, … 0.39
+        mensual["GWETROOT"][f"{y}03"] = 0.30 + i / 100
+    dias = [date(2026, 3, d) for d in range(1, 31)]
+    assert climate_service.window_percentile(mensual, "GWETROOT", 2016, 2025, dias, 0.25) == 0.0
+    assert climate_service.window_percentile(mensual, "GWETROOT", 2016, 2025, dias, 0.345) == 50.0
+    assert climate_service.window_percentile(mensual, "GWETROOT", 2016, 2025, dias, 0.50) == 100.0
+
+
+def test_dias_recientes_de_otro_modelo_se_marcan():
+    mensual = serie_mensual({2024: 1.0, 2025: 1.0})
+    s = climate_service.build_summary(mensual, 31.5, -116.5, 2024, 2025)
+    inicio, fin = date(2026, 1, 1), date(2026, 3, 31)
+    diaria: dict = {"PRECTOTCORR": {}, "T2M": {}, "GWETROOT": {}, nasa_power.SOURCES_KEY: {"GEOSIT": 1.0}}
+    d = inicio
+    while d <= fin:
+        k = d.strftime("%Y%m%d")
+        diaria["PRECTOTCORR"][k], diaria["T2M"][k], diaria["GWETROOT"][k] = 1.0, 13.0, 0.4
+        d += timedelta(days=1)
+    assert climate_service.build_recent(diaria, mensual, s, inicio, fin).recent_model_change == "GEOSIT"
+
+
+def test_parse_guarda_los_modelos_de_origen():
+    payload = {**respuesta({"T2M": {"20261001": 20.0}}), "header": {"fill_value": -999.0, "sources": ["GEOSIT"]}}
+    assert nasa_power.parse_response(payload)[nasa_power.SOURCES_KEY] == {"GEOSIT": 1.0}
+
+
+def test_variabilidad_mensual_entre_anios():
+    mensual = serie_mensual({2024: 1.0, 2025: 1.0})
+    mensual["T2M"]["202401"], mensual["T2M"]["202501"] = 10.0, 14.0
+    spread = climate_service.monthly_spread(mensual, "T2M", 2024, 2025)
+    assert spread[1][0] == pytest.approx(12.0)
+    assert spread[1][1] == pytest.approx(2.828, abs=0.01)  # desviación estándar muestral de (10, 14)
 
 
 def test_malla_y_periodo():
@@ -232,6 +322,36 @@ def test_nasa_caida_usa_cache_vencida(monkeypatch, tabla_falsa):
     # Sin nada guardado, NASA caída sí es un error
     with pytest.raises(NasaUnavailableError):
         asyncio.run(climate_service.get_climate_summary(10.0, 10.0, today=hoy, db=db))
+
+
+def test_registro_viejo_sin_variables_nuevas_se_vuelve_a_pedir(monkeypatch, tabla_falsa):
+    """Un registro guardado antes de pedir rocío/viento/heladas no sirve para Penman-Monteith: si NASA responde,
+    se descarga de nuevo; si NASA está caída, se usa igual (mejor un dato viejo que un 503)."""
+    viejo = serie_mensual({y: 1.0 for y in range(2016, 2026)})
+    for p in nasa_power.OPTIONAL_PARAMETERS:
+        viejo[p] = {}
+    resumen_viejo = climate_service.build_summary(viejo, 32.0, -116.875, 2016, 2025)
+    tabla_falsa.tabla[(32.0, -116.875, "2016-2025")] = {"summary": resumen_viejo.model_dump(mode="json"),
+                                                        "monthly": viejo}
+    llamadas = []
+
+    async def bien(lat, lon, start, end, client=None):
+        llamadas.append((lat, lon))
+        return serie_mensual({y: 1.0 for y in range(start, end + 1)})
+
+    hoy, db = date(2026, 11, 14), SesionFalsa()
+    monkeypatch.setattr(nasa_power, "fetch_monthly", bien)
+    nuevo = asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=hoy, db=db))
+    assert llamadas == [(32.0, -116.875)] and nuevo.monthly[0].dewpoint_c is not None
+
+    async def caida(*args, **kwargs):
+        raise NasaUnavailableError("caído")
+
+    climate_service._long_term_cache.clear()
+    tabla_falsa.tabla[(32.0, -116.875, "2016-2025")] = {"summary": resumen_viejo.model_dump(mode="json"),
+                                                        "monthly": viejo}
+    monkeypatch.setattr(nasa_power, "fetch_monthly", caida)
+    assert asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=hoy, db=db)) == resumen_viejo
 
 
 def test_bd_caida_no_tumba_el_clima(monkeypatch):

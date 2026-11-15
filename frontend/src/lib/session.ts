@@ -6,7 +6,7 @@ export interface Usuario {
   granja: string;
 }
 
-const CLAVE = 'fieldshift:usuario';
+const CLAVE = 'agrobytes:usuario';
 
 function leer(): Usuario | null {
   try {

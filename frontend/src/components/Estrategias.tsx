@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import CropIcon from './CropIcon';
 import { motion } from 'framer-motion';
 import { AlertTriangle, Check, FileText, Lightbulb } from 'lucide-react';
 import type { Strategy } from '../api/types';
@@ -46,7 +47,7 @@ function Tarjeta({ s, base, activa, onElegir }: { s: Strategy; base?: Strategy; 
         {s.steps.map((p) => (
           <li key={p.season} className={`flex items-center justify-between gap-2 rounded-lg px-2.5 py-1 text-xs ${SEASON_BG[p.season]}`}>
             <span className="text-ink-500">{SEASON_LABEL[p.season]}</span>
-            <span className="truncate font-medium text-ink-900">{cropName(p.cropId)}</span>
+            <span className="flex min-w-0 items-center gap-1.5 font-medium text-ink-900"><CropIcon id={p.cropId} size={14} /><span className="truncate">{cropName(p.cropId)}</span></span>
           </li>
         ))}
       </ol>
@@ -87,7 +88,7 @@ export default function Estrategias({ lista, elegida, onElegir }: {
     <section className="px-6 pt-6" aria-labelledby="titulo-estrategias">
       <h2 id="titulo-estrategias" className="font-display text-2xl font-semibold">Compara estrategias</h2>
       <p className="mt-1 text-sm text-ink-500">
-        Seguir como hoy contra {lista.length - 1} rotaciones posibles para las próximas tres temporadas. Toca una para ver su detalle.
+        Seguir como hoy contra {lista.length - 1} rotaciones posibles para los próximos 12 meses. Toca una para ver su detalle.
       </p>
       <div className={`-mx-6 mt-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-6 pb-2 lg:mx-0 lg:grid lg:overflow-visible lg:px-0 ${COLUMNAS[lista.length] ?? 'lg:grid-cols-4'}`}>
         {lista.map((s) => (

@@ -142,9 +142,11 @@ async def create_analysis(
 
     # 4. Motor de reglas (puro)
     country_areas = crops_service.load_country_areas(country.code, db) if country else None
+    country_nitrogen = crops_service.load_country_nitrogen(country.code, db) if country else None
     result = recommender.recommend(climate, crops, req, today=datetime.now(timezone.utc).date(),
                                    detected_soil=detected_soil, country_areas=country_areas,
-                                   country_name=country.name if country else None)
+                                   country_name=country.name if country else None,
+                                   country_nitrogen=country_nitrogen)
     location = Location(lat=round(lat, 5), lon=round(lon, 5))
     body = {
         "area_ha": round(area, 2),

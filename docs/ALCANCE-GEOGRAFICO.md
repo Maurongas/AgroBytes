@@ -29,7 +29,7 @@ que la recomendación es orientativa.
 | Clima (NASA POWER) | ✅ | Malla 0.5° × 0.625° (~55 km). Temperatura confiable; **la lluvia es el punto débil**, sobre todo en zonas áridas y montaña ([validación en Omán](https://arxiv.org/pdf/2210.16111)). NASA ofrece IMERG (GPM) como alternativa de lluvia ([POWER, precipitación](https://power.larc.nasa.gov/docs/methodology/meteorology/precipitation/)). |
 | Suelo (ISRIC SoilGrids) | ✅ con límites | ~250 m, todo el mundo, licencia CC BY 4.0. API en **beta**, sin garantía de disponibilidad, **5 consultas/min** ([FAQ ISRIC](https://docs.isric.org/globaldata/soilgrids/SoilGrids_faqs_02.html)). Sin dato en ciudades y agua. |
 | Rangos de cultivos (ECOCROP) | ✅ | ~2 500 especies de todo el mundo; FAO lo descontinuó (~2015) pero los datos siguen disponibles ([OpenCLIM](https://github.com/openclim/ecocrop)). |
-| Agua (FAO-56 + Hargreaves) | ✅ | Método estándar mundial; solo necesita Tmax/Tmin y latitud. |
+| Agua (FAO-56 Penman-Monteith) | ✅ | Método de referencia mundial; NASA POWER da todo lo que pide (temperatura, rocío, viento, radiación, altitud) en cualquier punto. Hargreaves queda como plan B. |
 | Hemisferios | ✅ | Las temporadas se invierten si `lat < 0`. |
 | **Catálogo de cultivos** | ❌ | 18 cultivos templados. Faltan arroz, caña, yuca, café, plátano, remolacha, girasol, etc. |
 | **Relevancia local** | ❌ | Hoy puede recomendar canola en Chiapas o algodón en un lugar donde nadie lo siembra. |

@@ -54,7 +54,7 @@ export function exportarPlanPdf(a: AnalysisResponse, { crop, priority }: Extra):
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(20);
   doc.setTextColor(...VERDE);
-  doc.text('Field Shift - Plan de rotación', 14, y);
+  doc.text('AgroBytes - Plan de rotación', 14, y);
   y += 8;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(10);

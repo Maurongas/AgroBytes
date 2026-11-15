@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.db.database import engine
 
 app = FastAPI(
-    title="DSS Agrícola — API",
+    title="AgroBytes — API",
     description="Clima de NASA POWER + reglas agronómicas para recomendar rotaciones de cultivo.",
     version="2.1.0",
 )

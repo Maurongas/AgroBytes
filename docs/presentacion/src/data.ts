@@ -1,10 +1,13 @@
 // Todo número que sale en pantalla o en el guion se calcula aquí a partir de mockAnalysis.
 // Si el mock cambia, la presentación y las notas del orador cambian con él.
 import { mockAnalysis } from '@app/api/mock';
+import { liveAnalysis } from './live';
 import type { NasaMetric, Strategy, StrategyId } from '@app/api/types';
 import { METRIC_EN, SOIL_EN, STRATEGY_EN, STRATEGY_WHY_EN, UNCERTAINTY_EN, en, impactLabelEn } from './i18n';
 
-export const analysis = mockAnalysis;
+/** Respuesta REAL del backend si respondió al abrir el deck (live.ts); si no, el mock de la app. */
+export const analysis = liveAnalysis ?? mockAnalysis;
+export const isLiveData = liveAnalysis !== null;
 
 const STRATEGY_ORDER: StrategyId[] = ['current', 'water', 'nitrogen', 'yield'];
 export const strategies: Strategy[] = [...(analysis.strategies ?? [])].sort(
@@ -60,9 +63,13 @@ export const soil = analysis.soilDetected
 
 export const uncertaintyEn = UNCERTAINTY_EN[analysis.uncertainty.level];
 
-const pct = (a: number, b: number) => Math.round(((b - a) / Math.abs(a || 1)) * 100);
-const waterItem = analysis.impact.find((i) => i.betterWhen === 'lower');
 const nitroItem = analysis.impact.find((i) => /nitr/i.test(i.label));
+const nitroDelta = nitroItem ? nitroItem.recommended - nitroItem.current : 0;
+// Riego POR CICLO de cultivo: la rotación puede tener más ciclos que «seguir como hoy» (que deja temporadas sin
+// cultivo), así que comparar el total confunde. El signo decide la palabra: nunca se dice "menos" si es "más".
+const cycles = (s?: Strategy) => (s ? s.steps.filter((p) => p.cropId !== 'fallow').length : 0);
+const perCycle = (s?: Strategy) => (s && cycles(s) > 0 ? s.irrigationMm / cycles(s) : 0);
+const waterDelta = perCycle(current) > 0 ? Math.round((1 - perCycle(recommended) / perCycle(current)) * 100) : 0;
 
 /** Valores que el guion puede citar ({{clave}} en content.ts). */
 export const facts: Record<string, string | number> = {
@@ -70,8 +77,10 @@ export const facts: Record<string, string | number> = {
   soil: soil ?? 'unknown',
   soilNow: analysis.soilHealth.current,
   soilNew: analysis.soilHealth.recommended,
-  waterPct: waterItem ? Math.abs(pct(waterItem.current, waterItem.recommended)) : 0,
-  nitroGain: nitroItem ? nitroItem.recommended - nitroItem.current : 0,
+  waterPct: Math.abs(waterDelta),
+  waterWord: waterDelta >= 0 ? 'less' : 'more',
+  nitroGain: Math.abs(nitroDelta),
+  nitroWord: nitroDelta >= 0 ? 'better' : 'worse',
   strategies: strategies.length,
   uncertainty: uncertaintyEn,
   checks: analysis.localChecks?.length ?? 0,

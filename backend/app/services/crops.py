@@ -37,12 +37,18 @@ class CropParams(BaseModel):
     frost_kill_c: float | None = Field(default=None, description="ECOCROP KTMP; None = sensible a helada (0 °C)")
     ph_min: float | None = None
     ph_max: float | None = None
-    water_need_mm: float = Field(gt=0, description="Agua que necesita en un ciclo (FAO, valor típico)")
-    kc_mid: float | None = Field(default=None, description="FAO-56: con ET₀ da el agua según el clima local")
+    water_need_mm: float = Field(gt=0, description="Agua que necesita en un ciclo (FAO, valor típico; plan B)")
+    # Curva Kc de FAO-56 (Tablas 11 y 12). Sin kc_mid el motor usa water_need_mm; sin el resto, Kc constante.
+    kc_ini: float | None = Field(default=None, description="FAO-56 Tabla 12, etapa inicial")
+    kc_mid: float | None = Field(default=None, description="FAO-56 Tabla 12, etapa media")
+    kc_end: float | None = Field(default=None, description="FAO-56 Tabla 12, al cosechar")
+    crop_height_m: float | None = Field(default=None, description="FAO-56 Tabla 12, para ajustar Kc al clima")
+    kc_stages: tuple[float, float, float, float] | None = Field(
+        default=None, description="FAO-56 Tabla 11: fracción del ciclo de las etapas inicial/desarrollo/media/final")
     cycle_days: int = Field(gt=0)
     seasons: list[Season]
     soils: list[SoilTexture]
-    nitrogen_delta_kg_ha: float = Field(description="Positivo = aporta nitrógeno al suelo")
+    nitrogen_delta_kg_ha: float = Field(description="Balance parcial de N por ciclo (estimado); positivo = aporta")
     source: str
 
 
@@ -100,6 +106,22 @@ def load_country_areas(country_code: str, db: Session | None = None) -> dict[str
         return {k: float(v) for k, v in data.get("countries", {}).get(country_code, {}).items()}
     try:
         return crop_countries_repo.areas_by_country(db, country_code)
+    except SQLAlchemyError:
+        db.rollback()
+        return {}
+
+
+def load_country_nitrogen(country_code: str, db: Session | None = None) -> dict[str, float]:
+    """{crop_id: balance de N (kg/ha por ciclo)} con el rendimiento FAOSTAT del país. Sin dato → {} y el motor usa
+    el valor por defecto del catálogo (`nitrogen_delta_kg_ha`)."""
+    if db is None:
+        try:
+            data = json.loads(COUNTRIES_PATH.read_text(encoding="utf-8"))
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {}
+        return {k: float(v) for k, v in data.get("nitrogen_kg_ha", {}).get(country_code, {}).items()}
+    try:
+        return crop_countries_repo.nitrogen_by_country(db, country_code)
     except SQLAlchemyError:
         db.rollback()
         return {}

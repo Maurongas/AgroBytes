@@ -1,9 +1,9 @@
 import { useSyncExternalStore } from 'react';
 import type { AnalysisResponse, AnalysisSummary, Priority } from '../api/types';
 
-const K_ULTIMA = 'fieldshift:ultima';
-const K_HISTORIAL = 'fieldshift:historial';
-const K_ANALISIS = 'fieldshift:analisis';
+const K_ULTIMA = 'agrobytes:ultima';
+const K_HISTORIAL = 'agrobytes:historial';
+const K_ANALISIS = 'agrobytes:analisis';
 const MAX_ANALISIS = 5; // cuántos análisis completos se guardan
 
 export interface Ultima {

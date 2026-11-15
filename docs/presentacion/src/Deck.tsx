@@ -7,12 +7,14 @@ import Stage from './Stage';
 import { TOTAL, isTyping, useDeck } from './useDeck';
 import { toggleTheme } from './theme';
 
+/** ?still: cada diapositiva en su estado final, sin animaciones (capturas, respaldo en PDF). */
+const STILL = new URLSearchParams(location.search).has('still');
 const INTERACTIVE = '[data-interactive], button, a, input, select, textarea, label, .leaflet-control';
 
 export default function Deck() {
   const { slide, step, dir, next, prev, goto } = useDeck();
   const [jump, setJump] = useState('');
-  const [hint, setHint] = useState(true);
+  const [hint, setHint] = useState(!STILL);
   const touch = useRef<{ x: number; y: number } | null>(null);
   const Slide = SLIDE_COMPONENTS[slide];
   const builds = slides[slide].builds;
@@ -37,7 +39,7 @@ export default function Deck() {
       else if (['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace'].includes(k)) { e.preventDefault(); prev(); }
       else if (k === 'Home') goto(0);
       else if (k === 'End') goto(TOTAL - 1);
-      else if (k === 's' || k === 'S') window.open(`${location.pathname}?presenter${location.hash}`, 'fieldshift-notes', 'width=1180,height=760');
+      else if (k === 's' || k === 'S') window.open(`${location.pathname}?presenter${location.hash}`, 'agrobytes-notes', 'width=1180,height=760');
       else if (k === 'f' || k === 'F') {
         if (document.fullscreenElement) void document.exitFullscreen();
         else void document.documentElement.requestFullscreen?.();
@@ -86,7 +88,7 @@ export default function Deck() {
               exit: (d: number) => ({ opacity: 0, x: d * -60 }),
             }}
             initial="enter" animate="center" exit="exit" transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}>
-            <SlideBoundary title={slides[slide].title}><Slide step={step} /></SlideBoundary>
+            <SlideBoundary title={slides[slide].title}><Slide step={step} preview={STILL} /></SlideBoundary>
           </motion.div>
         </AnimatePresence>
       </Stage>

@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useStore } from '../../store/useStore';
 import { useSession } from '../../lib/session';
 import ThemeToggle from '../ThemeToggle';
+import BrandMark from '../BrandMark';
 import { ACCOUNT_ITEM, NAV_ITEMS, type NavItem } from './navItems';
 
 function Item({ item, label }: { item: NavItem; label?: string }) {
@@ -35,8 +36,8 @@ export default function Sidebar() {
     <aside aria-label="Menú principal"
       className="hidden w-60 shrink-0 flex-col border-r border-line-soft bg-surface-raised p-4 md:flex">
       <div className="mb-6 flex items-center gap-2 px-2">
-        <span className="h-3 w-3 rounded-full bg-leaf-600" />
-        <span className="font-display text-xl font-semibold text-ink-900">Field Shift</span>
+        <BrandMark size={30} />
+        <span className="font-display text-xl font-semibold text-ink-900">Agro<span className="text-leaf-600">Bytes</span></span>
       </div>
 
       <nav className="flex flex-1 flex-col gap-1">

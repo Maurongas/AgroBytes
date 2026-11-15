@@ -4,7 +4,7 @@ Nov 14, 2026 · @Mia
 
 ## Qué te toca y en qué orden
 
-La PWA todavía no existe: no hay manifest, service worker ni íconos propios (el favicon sigue siendo el logo morado de Vite). Tu trabajo es que Field Shift se instale en el celular y abra sin internet, y que el cliente de la API mande el `X-Device-Id` que el backend ya espera.
+La PWA todavía no existe: no hay manifest, service worker ni íconos propios (el favicon sigue siendo el logo morado de Vite). Tu trabajo es que AgroBytes se instale en el celular y abra sin internet, y que el cliente de la API mande el `X-Device-Id` que el backend ya espera.
 
 Hazlo en **dos PRs separados**, en este orden, porque los demás esperan el primero:
 
@@ -30,7 +30,7 @@ git switch -c feature/api-cliente-device
 ```ts
 // Identificador anónimo del dispositivo. El backend lo pide en el header X-Device-Id
 // (8–64 caracteres, solo letras, números, _ y -). Ver docs/ARQUITECTURA.md.
-const KEY = 'fieldshift:deviceId';
+const KEY = 'agrobytes:deviceId';
 const VALIDO = /^[A-Za-z0-9_-]{8,64}$/;
 
 let enMemoria: string | null = null; // por si localStorage no está disponible
@@ -183,8 +183,8 @@ export default defineConfig({
       registerType: 'autoUpdate', // el SW nuevo se activa solo al recargar
       includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-180x180.png'],
       manifest: {
-        name: 'Field Shift',
-        short_name: 'Field Shift',
+        name: 'AgroBytes',
+        short_name: 'AgroBytes',
         description: 'Rotación de cultivos con datos de NASA para adaptar tu parcela al clima.',
         lang: 'es-MX',
         start_url: '/',
@@ -211,7 +211,7 @@ export default defineConfig({
             urlPattern: ({ url }) => url.pathname.startsWith('/api/'),
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'fieldshift-api',
+              cacheName: 'agrobytes-api',
               networkTimeoutSeconds: 6,
               expiration: { maxEntries: 40, maxAgeSeconds: 60 * 60 * 24 * 7 },
               cacheableResponse: { statuses: [200] },
@@ -221,14 +221,14 @@ export default defineConfig({
             // Tipografías de Google Fonts (index.html las pide)
             urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com' || url.origin === 'https://fonts.gstatic.com',
             handler: 'StaleWhileRevalidate',
-            options: { cacheName: 'fieldshift-fonts', expiration: { maxEntries: 12 } },
+            options: { cacheName: 'agrobytes-fonts', expiration: { maxEntries: 12 } },
           },
           {
             // Mosaicos del mapa: solo los que ya viste, con tope bajo (no descargamos mapas enteros)
             urlPattern: ({ url }) => /tile\.openstreetmap\.org|arcgisonline\.com/.test(url.hostname),
             handler: 'CacheFirst',
             options: {
-              cacheName: 'fieldshift-tiles',
+              cacheName: 'agrobytes-tiles',
               expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 3 },
               cacheableResponse: { statuses: [0, 200] },
             },
@@ -354,9 +354,9 @@ npm run preview
 
 Abre http://localhost:4173 en Chrome y revisa en DevTools → *Application*:
 
-1. **Manifest**: sin errores rojos, con el nombre "Field Shift" y los 4 íconos visibles.
+1. **Manifest**: sin errores rojos, con el nombre "AgroBytes" y los 4 íconos visibles.
 2. **Service workers**: estado *activated and is running*.
-3. **Cache Storage**: aparece `workbox-precache-...` y, tras navegar por las vistas, `fieldshift-fonts`.
+3. **Cache Storage**: aparece `workbox-precache-...` y, tras navegar por las vistas, `agrobytes-fonts`.
 4. En la barra de direcciones aparece el ícono de instalar (o tu botón "Instalar app" en Cuenta). Instálala: debe abrir en ventana propia, sin barra del navegador.
 5. **Sin conexión**: marca *Offline* en DevTools → *Network* y recarga. La app debe abrir, cambiar de vista (las vistas lazy están precacheadas) y, con el modo oscuro, verse igual. Crear un análisis nuevo debe fallar con su mensaje de error normal.
 6. **API en caché** (solo con backend real: `VITE_USE_MOCK=false` y `VITE_API_URL` en `frontend/.env` *antes* del build): abre Historial con internet, apaga la red y recarga: la lista sigue ahí.

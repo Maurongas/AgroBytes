@@ -1,21 +1,16 @@
 import type { ComponentType } from 'react';
 import { slides } from '../content';
 import type { SlideProps } from './types';
-import S01Hook from './S01Hook';
-import S02Problem from './S02Problem';
-import S03Meet from './S03Meet';
-import S04Draw from './S04Draw';
-import S05Nasa from './S05Nasa';
-import S06Compare from './S06Compare';
-import S07Impact from './S07Impact';
-import S08WhatIf from './S08WhatIf';
-import S09Field from './S09Field';
-import S10Close from './S10Close';
+import S01Cover from './S01Cover';
+import S02Challenge from './S02Challenge';
+import S03Build from './S03Build';
+import S04Prototype from './S04Prototype';
+import S05Impact from './S05Impact';
+import S06Close from './S06Close';
 
 /** id de content.ts → componente. El orden lo decide `slides` en content.ts. */
 const BY_ID: Record<string, ComponentType<SlideProps>> = {
-  hook: S01Hook, problem: S02Problem, meet: S03Meet, draw: S04Draw, nasa: S05Nasa,
-  compare: S06Compare, impact: S07Impact, whatif: S08WhatIf, field: S09Field, close: S10Close,
+  cover: S01Cover, challenge: S02Challenge, build: S03Build, prototype: S04Prototype, impact: S05Impact, close: S06Close,
 };
 
 export const SLIDE_COMPONENTS: ComponentType<SlideProps>[] = slides.map((s) => {

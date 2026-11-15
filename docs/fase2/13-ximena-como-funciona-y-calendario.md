@@ -270,7 +270,7 @@ export default function MethodView() {
 1. **README**: además de lo del doc 08, agrega una sección **"Cómo cumple el reto"**, con esta tabla corta
    (ajústala a lo que de verdad quede mergeado):
 
-   | El reto pide | Field Shift |
+   | El reto pide | AgroBytes |
    | --- | --- |
    | Datos de observación de la Tierra de NASA | NASA POWER: 10 años de clima + últimos 90 días |
    | Suelo local, cultivos y prioridades | SoilGrids, FAO ECOCROP/FAOSTAT, prioridad y riego |

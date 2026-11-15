@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { slides } from './content';
 
 /** Canal entre la presentación y la ventana de notas (misma origin, misma máquina). */
-export const CHANNEL = 'fieldshift-pitch';
+export const CHANNEL = 'agrobytes-pitch';
 
 export interface Pos { slide: number; step: number }
 export interface DeckState extends Pos {

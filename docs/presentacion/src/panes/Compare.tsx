@@ -2,13 +2,13 @@ import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, Check, TriangleExclamationPoint, CircleQuestionMark, ThumbsUp, type LucideIcon } from 'lucide-react';
 import type { Strategy } from '@app/api/types';
-import { slide, ui } from '../content';
+import { panes, ui } from '../content';
 import { strategies, strategyEn } from '../data';
 import { SEASON_EN, cropEn } from '../i18n';
 import { CropIcon, EASE, Title } from '../components/ui';
-import type { SlideProps } from './types';
+import type { SlideProps } from '../slides/types';
 
-const T = slide('compare');
+const T = panes.compare;
 const CARDS = strategies.slice(0, 4);
 
 const CHIPS: { key: 'why' | 'evidence' | 'benefits' | 'risks'; icon: LucideIcon; tone: string }[] = [
@@ -79,7 +79,7 @@ function Card({ s, forceFlip }: { s: Strategy; forceFlip: boolean }) {
   );
 }
 
-export default function S06Compare({ step }: SlideProps) {
+export default function ComparePane({ step }: SlideProps) {
   const shown = Math.min(step, CARDS.length);
   const flipRecommended = step > CARDS.length;
   return (
@@ -99,7 +99,7 @@ export default function S06Compare({ step }: SlideProps) {
             <AnimatePresence>
               {i < shown && (
                 <motion.div key={s.id} initial={{ opacity: 0, y: 60, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 40 }} transition={{ duration: 0.55, ease: EASE }}>
+                  exit={{ opacity: 0, y: 40 }} transition={{ duration: 0.55, delay: i * 0.15, ease: EASE }}>
                   <Card s={s} forceFlip={flipRecommended && s.isRecommended} />
                 </motion.div>
               )}
