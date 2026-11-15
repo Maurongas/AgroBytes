@@ -31,6 +31,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     const detail = typeof body?.detail === 'string' ? body.detail : `Error ${res.status}`;
     throw new ErrorApi(detail, res.status);
   }
+  if (res.status === 204) return undefined as T; // sin cuerpo (p. ej. DELETE)
   return res.json() as Promise<T>;
 }
 
@@ -82,4 +83,13 @@ export async function listAnalyses(limit = 20): Promise<AnalysisSummary[]> {
 export async function getAnalysis(id: string): Promise<AnalysisResponse> {
   if (USE_MOCK) return mockAnalysis;
   return request<AnalysisResponse>(`/api/v1/analyses/${encodeURIComponent(id)}`);
+}
+
+/** Borra un análisis del historial (DELETE /api/v1/analyses/{id}, responde 204 sin cuerpo; ARQUITECTURA §5.4b). */
+export async function deleteAnalysis(id: string): Promise<void> {
+  if (USE_MOCK) {
+    await new Promise((r) => setTimeout(r, 400));
+    return;
+  }
+  await request<void>(`/api/v1/analyses/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }
