@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 
 export type Tema = 'light' | 'dark';
 
-const CLAVE = 'fieldshift:tema';
+const CLAVE = 'agrobytes:tema';
 const oyentes = new Set<() => void>();
 
 export function temaActual(): Tema {

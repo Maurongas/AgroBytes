@@ -1,4 +1,4 @@
-# NasaSpaceApp — DSS Agrícola (NASA Space Apps · "Cambio de campo")
+# AgroBytes — DSS Agrícola (NASA Space Apps · reto «Field Shift»)
 
 Sistema de apoyo a la decisión agrícola: el usuario **dibuja su parcela en el mapa**, elige cultivo actual y
 prioridad → el backend obtiene el clima de **NASA POWER** → un **motor de reglas** recomienda una **rotación
@@ -6,6 +6,8 @@ de cultivos por temporada** con puntaje, razones, riesgos, impacto estimado e in
 
 - **Arquitectura y contrato de API (fuente de verdad):** `docs/ARQUITECTURA.md` (v2.0)
 - **Qué cambió en la v2.0 y cómo actualizarse:** `docs/CAMBIOS-ARQUITECTURA.md`
+- **De dónde sale cada número (fuentes, qué es calibrado y qué es diseño propio):** `docs/METODOLOGIA.md` ·
+  **validación contra calendarios oficiales:** `docs/VALIDACION.md`. No agregues un número al motor sin su fuente.
 - **Contexto por rol:** `docs/contexto/` → `backend.md`, `backend-dba.md`, `frontend-layout.md`, `frontend-mapa.md`, `frontend-pwa.md`
 - Cómo correr: `docker compose up --build` (ver `docs/GUIA-INICIO.md`). Frontend :3000, API :8000/docs, BD :5432.
 

@@ -46,7 +46,9 @@ def test_rotacion_tiene_3_pasos_validos(climate, catalog):
     for step in r.rotation:
         assert 0 <= step.score <= 100
         assert step.reasons
-    assert r.rotation[0].planting_window == "Dic – Ene"
+    # La ventana de siembra es la mejor fecha dentro de la temporada (dic, ene o feb en invierno)
+    meses = r.rotation[0].planting_window.split(" – ")
+    assert all(m in ("Dic", "Ene", "Feb") for m in meses)
 
 
 def test_prioridad_nitrogeno_prefiere_leguminosas(climate, catalog):
@@ -82,18 +84,71 @@ def test_materia_organica_mueve_el_indice_de_suelo(climate, catalog):
 
 def test_metricas_reflejan_datos_recientes(climate, catalog):
     m = {x.id: x for x in recommender.recommend(climate, catalog, req(), NOV).metrics}
-    assert m["soilMoisture"].status == "danger"  # 0.25 < 0.3
-    assert m["rain90d"].status == "danger"  # 10 mm vs 30 normales = -67 %
-    assert m["rain90d"].meaning == "67 % menos que el promedio"
-    assert m["tempMean"].status == "warn"  # +1.5 °C
+    assert m["soilMoisture"].status == "danger"  # percentil 0: la más seca de los 10 años (USDM D2 o peor)
+    assert m["soilMoisture"].meaning.startswith("Muy seca: más seca que en 10 de los últimos 10 años")
+    assert m["rain90d"].status == "danger"  # 10 mm vs 40 normales = −75 % → IMD "muy deficiente"
+    assert m["rain90d"].meaning == "75 % menos que el promedio (muy deficiente)"
+    assert m["tempMean"].status == "warn"  # +1.5 °C con desviación de 0.8 °C → 1.9 desviaciones
+
+
+def test_lluvia_por_categorias_del_imd(climate, catalog):
+    import dataclasses
+
+    maiz = catalog[0]
+
+    def estado(lluvia: float, normal: float = 100) -> str:
+        reciente = dataclasses.replace(climate.recent, rain_90d_mm=lluvia, rain_90d_normal_mm=normal)
+        m = {x.id: x for x in recommender.metrics_for(dataclasses.replace(climate, recent=reciente), maiz)}
+        return m["rain90d"].status
+
+    assert estado(81) == "ok"  # −19 %: normal
+    assert estado(80) == "warn"  # −20 %: deficiente
+    assert estado(41) == "warn"  # −59 %
+    assert estado(40) == "danger"  # −60 %: muy deficiente
+    assert estado(0, normal=25) == "ok"  # temporada seca: < 10 mm/mes no es lluvia aprovechable (FAO Tabla 6)
+
+
+def test_sin_variabilidad_no_hay_alarma(climate, catalog):
+    """Sin desviación estándar de referencia no se inventa un umbral: la métrica se muestra sin alerta."""
+    import dataclasses
+
+    reciente = dataclasses.replace(climate.recent, temp_30d_sd_c=None, soil_moisture_30d_percentile=None)
+    m = {x.id: x for x in recommender.metrics_for(dataclasses.replace(climate, recent=reciente), catalog[0])}
+    assert m["tempMean"].status == "ok" and m["soilMoisture"].status == "ok"
+
+
+def test_humedad_por_percentiles_del_drought_monitor(climate, catalog):
+    import dataclasses
+
+    def estado(percentil: float) -> str:
+        reciente = dataclasses.replace(climate.recent, soil_moisture_30d_percentile=percentil)
+        m = {x.id: x for x in recommender.metrics_for(dataclasses.replace(climate, recent=reciente), catalog[0])}
+        return m["soilMoisture"].status
+
+    assert estado(50) == "ok"
+    assert estado(25) == "ok"  # D0 ("anormalmente seco") no es alerta
+    assert estado(20) == "warn"  # D1
+    assert estado(10) == "danger"  # D2 o peor
+
+
+def test_cambio_de_modelo_de_nasa_no_se_compara(climate, catalog):
+    """Desde oct-2026 NASA POWER calcula los días recientes con GEOS-IT; su humedad del suelo no es continua con
+    el histórico de MERRA-2. No se debe alarmar con esa comparación."""
+    import dataclasses
+
+    reciente = dataclasses.replace(climate.recent, recent_model_change="GEOSIT")
+    m = {x.id: x for x in recommender.metrics_for(dataclasses.replace(climate, recent=reciente), catalog[0])}
+    assert m["soilMoisture"].status == "ok" and "GEOSIT" in m["soilMoisture"].meaning
 
 
 def test_incertidumbre():
-    assert recommender.uncertainty_for(make_climate(rain_cv=10)).level == "low"
+    # Abdul Talib et al. (2024), Tabla 2: CV < 20 % baja, 20–30 % media, > 30 % alta
+    assert recommender.uncertainty_for(make_climate(rain_cv=19.9)).level == "low"
     assert recommender.uncertainty_for(make_climate(rain_cv=20)).level == "medium"
-    assert recommender.uncertainty_for(make_climate(rain_cv=38)).level == "high"
-    # Suelo seco sube un nivel
-    assert recommender.uncertainty_for(make_climate(rain_cv=10, soil_root=0.2)).level == "medium"
+    assert recommender.uncertainty_for(make_climate(rain_cv=30)).level == "medium"
+    assert recommender.uncertainty_for(make_climate(rain_cv=30.1)).level == "high"
+    # La humedad del suelo ya no sube el nivel (no había fuente para ese umbral)
+    assert recommender.uncertainty_for(make_climate(rain_cv=10, soil_root=0.2)).level == "low"
 
 
 def test_reciente_estimado_lo_dice_y_sube_la_incertidumbre():
@@ -139,20 +194,105 @@ def test_barbecho_si_nada_tolera_el_invierno(catalog):
     invierno = r.rotation[0]
     assert invierno.season == "winter" and invierno.crop_id == "fallow"
     assert invierno.score == 0 and "tolera" in invierno.reasons[0]
-    assert all(s.crop_id != "fallow" for s in r.rotation[1:])
+    # Después del invierno sí hay un ciclo de cultivo (una cosecha al año, como en el Medio Oeste)
+    assert any(s.crop_id != "fallow" for s in r.rotation[1:])
+
+
+def test_la_rotacion_es_una_linea_de_tiempo_sin_traslapes(climate, catalog):
+    """Cada cultivo se siembra después de cosechar el anterior y las temporadas no se repiten."""
+    seasons = recommender.seasons_ahead(NOV, climate)
+    assert [s.season for s in seasons] == ["winter", "spring", "summer", "autumn"]
+    assert seasons[0].first_year + 1 == seasons[1].first_year  # dic de un año → mar del siguiente
+    for prioridad in ("water", "nitrogen", "yield"):
+        slots = recommender.plan(catalog, seasons, req(priority=prioridad), catalog[0],
+                                 recommender.SoilInput(None, None))
+        assert len(slots) == 3
+        assert len({s.sc.season for s in slots}) == 3  # temporadas únicas (el frontend las usa como llave)
+        ciclos = [s.candidate.cycle for s in slots if s.candidate]
+        for antes, despues in zip(ciclos, ciclos[1:]):
+            assert despues.planting >= antes.harvest, "un cultivo no puede sembrarse antes de cosechar el anterior"
+
+
+def test_seguir_como_hoy_tampoco_se_traslapa(climate, catalog):
+    seasons = recommender.seasons_ahead(NOV, climate)
+    slots = recommender.plan(catalog, seasons, req(), catalog[0], recommender.SoilInput(None, None),
+                             monoculture=True)
+    ciclos = [s.candidate.cycle for s in slots if s.candidate]
+    assert all(s.candidate is None or s.candidate.crop.id == "maize" for s in slots)
+    for antes, despues in zip(ciclos, ciclos[1:]):
+        assert despues.planting >= antes.harvest
 
 
 def test_helada_descarta_cultivos_sensibles():
+    """EcoCrop: un mes es letal si su mínima media − KILL_MARGIN_C (2.5 °C, calibrado) ≤ KTMP. Jitomate (sin KTMP
+    → 0 °C) muere con mínimas medias de 2 °C; la avena (KTMP −1 °C) las aguanta."""
     tomate = crop("tomato", "vegetable", (20, 27), (7, 35), 600, ["winter"], -90)
     avena = crop("oat", "cereal", (16, 20), (5, 30), 550, ["winter"], -55).model_copy(update={"frost_kill_c": -1})
     previo = crop("bean", "legume", (16, 25), (7, 32), 400, ["summer"], 18)
     suelo = recommender.SoilInput(None, None)
-    cerca = recommender.SeasonClimate("winter", (12, 1, 2), temp_c=12, rain_mm=100, temp_min_c=0.5)
-    ctx = recommender.season_context([tomate, avena], cerca)
-    assert recommender.evaluate(tomate, cerca, req(), previo, ctx, suelo).frost_risk
-    helada = recommender.SeasonClimate("winter", (12, 1, 2), temp_c=12, rain_mm=100, temp_min_c=-0.5)
-    assert recommender.evaluate(tomate, helada, req(), previo, ctx, suelo).temp_f == 0  # mata al jitomate
-    assert recommender.evaluate(avena, helada, req(), previo, ctx, suelo).temp_f > 0  # la avena aguanta −1 °C
+    templado = recommender.SeasonClimate("winter", (12, 1, 2), temp_c=12, rain_mm=100, temp_min_c=6)
+    ctx = recommender.season_context([tomate, avena], templado)
+    assert recommender.evaluate(tomate, templado, req(), previo, ctx, suelo).temp_f > 0
+    frio = recommender.SeasonClimate("winter", (12, 1, 2), temp_c=12, rain_mm=100, temp_min_c=2.0)
+    assert recommender.evaluate(tomate, frio, req(), previo, ctx, suelo).temp_f == 0  # mata al jitomate
+    assert recommender.evaluate(avena, frio, req(), previo, ctx, suelo).temp_f > 0  # la avena aguanta
+
+
+def test_riesgo_de_helada_con_dias_de_helada_de_nasa(catalog):
+    """El aviso de helada sale de FROST_DAYS de NASA POWER durante el ciclo, no de un margen supuesto."""
+    base = make_climate()
+    con_heladas = base.__class__(summary=base.summary.model_copy(update={"monthly": [
+        p.model_copy(update={"frost_days": 4.0 if p.month in (12, 1, 2) else 0.0, "dewpoint_c": 5.0,
+                             "wind_ms": 2.0})
+        for p in base.summary.monthly]}), recent=base.recent)
+    avena = next(c for c in catalog if c.id == "oat")
+    previo = catalog[0]
+    suelo = recommender.SoilInput(None, None)
+    invierno = recommender.season_climate("winter", con_heladas)
+    ctx = recommender.season_context([avena], invierno)
+    cand = recommender.evaluate(avena, invierno, req(), previo, ctx, suelo)
+    assert cand.frost_risk and cand.cycle.frost_days >= 1
+    riesgos = recommender.risks_for(cand, invierno, False, False, True, suelo)
+    assert any("día(s) con helada" in r and "NASA POWER" in r for r in riesgos)
+    verano = recommender.season_climate("summer", con_heladas)
+    ctx_v = recommender.season_context([avena], verano)
+    assert not recommender.evaluate(avena, verano, req(), previo, ctx_v, suelo).frost_risk
+
+
+def test_ecocrop_toma_el_peor_mes_del_ciclo():
+    """El ciclo completo cuenta: si el último mes del ciclo es demasiado caliente, la aptitud baja aunque la
+    temporada de siembra sea perfecta."""
+    trigo = crop("wheat", "cereal", (15, 23), (5, 27), 550, ["winter"], -105).model_copy(
+        update={"cycle_days": 135, "frost_kill_c": 0.0})
+    temps = [16, 18, 21, 25, 30, 33, 35, 34, 31, 26, 20, 16]  # tipo Mexicali
+    clima = clima_con(temps)
+    invierno = recommender.season_climate("winter", clima)
+    ciclo = recommender.cycle_for(trigo, invierno)
+    # La mejor siembra es temprano (diciembre): así cosecha antes del calor de mayo
+    assert ciclo.planting.month == 12
+    assert 0 < ciclo.temp_f <= 1
+    assert recommender.planting_window(ciclo).startswith("Dic")
+
+
+def test_mejor_fecha_de_siembra_en_primavera_fria():
+    """Maíz en primavera tipo Iowa: marzo es demasiado frío, mayo sí funciona → la ventana es mayo."""
+    maiz = crop("maize", "cereal", (18, 33), (10, 47), 650, ["spring", "summer"], -47).model_copy(
+        update={"cycle_days": 152})
+    clima = clima_con([-6, -4, 2, 10, 16, 21.5, 23.5, 22.5, 18, 11, 3, -4])
+    primavera = recommender.season_climate("spring", clima)
+    ciclo = recommender.cycle_for(maiz, primavera)
+    assert ciclo.temp_f > 0 and ciclo.planting.month == 5
+    assert recommender.planting_window(ciclo) == "May"
+
+
+def test_nitrogeno_del_pais_reemplaza_el_del_catalogo(climate, catalog):
+    r = recommender.recommend(climate, catalog, req(priority="nitrogen"), NOV,
+                              country_nitrogen={c.id: 0.0 for c in catalog} | {"bean": 77.0})
+    pasos_frijol = [s for s in r.rotation if s.crop_id == "bean"]
+    assert pasos_frijol and all(s.nitrogen_delta == 77.0 for s in pasos_frijol)
+    # Sin base inventada: el balance de la estrategia es la suma de los balances de sus cultivos
+    rec = next(s for s in r.strategies if s.is_recommended)
+    assert rec.nitrogen_kg_ha == sum(s.nitrogen_delta for s in rec.steps)
 
 
 def test_familia_botanica_castiga_solanaceas_seguidas():
@@ -314,13 +454,17 @@ def test_escenario_neutro_no_cambia_nada(climate, catalog):
 
 
 def test_calor_aparece_como_riesgo():
+    """Temperatura media del ciclo por arriba del óptimo de ECOCROP (32 °C maíz, 28 °C frijol), la misma escala
+    que usa EcoCrop. Siguen siendo viables (34 °C < máximo absoluto), pero con aviso."""
     calido = make_climate()
     calido = calido.__class__(summary=calido.summary.model_copy(update={"monthly": [
-        p.model_copy(update={"temp_max_c": 44}) for p in calido.summary.monthly]}), recent=calido.recent)
+        p.model_copy(update={"temp_c": 34, "temp_max_c": 42, "temp_min_c": 26}) for p in calido.summary.monthly]}),
+        recent=calido.recent)
     maiz = crop("maize", "cereal", (18, 32), (10, 46), 600, ["spring", "summer"], -30)
     frijol = crop("bean", "legume", (16, 28), (8, 45), 350, ["spring", "summer"], 40)
     r = recommender.recommend(calido, [maiz, frijol], req(), NOV)
-    assert any("calor" in risk for step in r.rotation for risk in step.risks)
+    riesgos = [risk for step in r.rotation for risk in step.risks]
+    assert any(risk.startswith("Calor:") and "ECOCROP" in risk for risk in riesgos)
 
 
 def test_siempre_hay_algo_que_confirmar(climate, catalog):

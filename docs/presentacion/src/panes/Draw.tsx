@@ -6,14 +6,13 @@ import CountUp from '@app/components/CountUp';
 import EditableParcel from '@app/components/map/EditableParcel';
 import { useStore } from '@app/store/useStore';
 import type { Priority } from '@app/api/types';
-import { slide, ui } from '../content';
+import { ui } from '../content';
 import { analysis, current, recommended, soil } from '../data';
 import { cropEn } from '../i18n';
 import FieldMap, { FIELD, FIELD_CENTER } from '../components/FieldMap';
 import { CropIcon, EASE } from '../components/ui';
-import type { SlideProps } from './types';
+import type { SlideProps } from '../slides/types';
 
-const T = slide('draw');
 const STEP_MS = 520;
 const noop = () => {};
 // Parcela a la izquierda: el panel ocupa la derecha
@@ -109,11 +108,11 @@ function Panel({ animate }: { animate: boolean }) {
   );
 }
 
-export default function S04Draw({ step, preview }: SlideProps) {
+export default function DrawPane({ step, preview }: SlideProps) {
   const reduce = useReducedMotion();
   const instant = !!preview || !!reduce;
   // Si se entra ya con el paso 1 o más (al retroceder), la parcela aparece completa
-  const [animateDraw] = useState(() => step === 0 && !instant);
+  const [animateDraw] = useState(() => step <= 2 && !instant);
   const [count, setCount] = useState(step >= 1 && !animateDraw ? FIELD.length : 0);
   const [panelAnimates] = useState(() => step < 3 && !instant);
 
@@ -139,11 +138,6 @@ export default function S04Draw({ step, preview }: SlideProps) {
         {step >= 1 && <Drawing count={count} />}
         {step >= 1 && !done && <Cursor index={count} />}
       </FieldMap>
-
-      <motion.div className="absolute left-8 top-8 z-[1000] rounded-full bg-orbit/85 px-7 py-3 font-display text-4xl font-semibold text-paper backdrop-blur"
-        initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }}>
-        {T.title}
-      </motion.div>
 
       <div className="absolute bottom-10 left-8 z-[1000] flex flex-col items-start gap-4">
         <AnimatePresence>

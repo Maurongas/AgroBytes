@@ -9,6 +9,14 @@
 > con SoilGrids (`GET /api/v1/soil`). La temporada pasó de filtro a preferencia y se agregó la regla de sistema de
 > producción (granos ↔ hortalizas). Lo que falta en la UI: `FRONTEND-PENDIENTES.md`. Alcance mundial: `ALCANCE-GEOGRAFICO.md`.
 
+> **Actualización (2026-11-15, v2.3):** este documento es el **diagnóstico histórico**. Lo vigente está en
+> [`METODOLOGIA.md`](METODOLOGIA.md) (fuente y nivel de respaldo de cada número) y [`VALIDACION.md`](VALIDACION.md)
+> (contraste con calendarios oficiales). Cambios respecto a lo que dice abajo: el nitrógeno ya no es "40 % de lo
+> fijado" sino fijación (Herridge et al. 2022) − extracción por la cosecha (Ludemann et al. 2024) con el rendimiento
+> FAOSTAT del país; la ET₀ es Penman-Monteith (Hargreaves solo como plan B); el Kc sigue la curva de 4 etapas de
+> FAO-56; la lluvia efectiva sale de la Tabla 6 de la FAO; la aptitud por temperatura es el modelo EcoCrop sobre
+> todo el ciclo; y la rotación es una línea de tiempo sin ciclos encimados.
+
 ---
 
 ## 1. Diagnóstico: de dónde salieron los 8 cultivos actuales

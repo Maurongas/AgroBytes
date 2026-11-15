@@ -58,10 +58,19 @@ const PHRASES: Record<string, string> = {
   'El garbanzo y la veza tienen menos mercado que el maíz en la zona': 'Chickpea and vetch have a smaller local market',
   'Usa casi la misma agua que hoy: depende del riego en verano': 'Almost the same water as today: relies on summer irrigation',
   'Ya conoces el cultivo, tienes el equipo y sabes dónde venderlo': 'You know the crop, have the gear and the buyers',
+  // Frases de la respuesta real del backend
+  'Suelo seco: las raíces tienen poca agua': 'Dry soil: roots have little water',
+  'Alta: buena para cultivos de sol': 'High: good for sun-loving crops',
+  'Fuera de su temporada habitual de siembra; confirma las fechas locales': 'Outside its usual season: check local dates',
+  'Cada temporada cambia de familia botánica: corta ciclos de plagas': 'New crop family each season: breaks pest cycles',
 };
 
 const PATTERNS: [RegExp, (...m: string[]) => string][] = [
   [/^(\d+(?:\.\d+)?) % menos que el promedio$/, (n) => `${n}% below average`],
+  [/^(\d+(?:\.\d+)?) % más que el promedio$/, (n) => `${n}% above average`],
+  [/^(\d+(?:\.\d+)?) °C bajo lo normal$/, (n) => `${n} °C below normal`],
+  [/^pH del suelo \((.+)\) fuera de su rango óptimo \((.+)\)$/, (a, b) => `Soil pH ${a} is outside its best range (${b})`],
+  [/^Estrés por calor: máximas de ~(\d+) °C \(su óptimo llega a (\d+) °C\).*$/, (a, b) => `Heat stress: highs of ~${a} °C (best up to ${b} °C)`],
   [/^(\d+(?:\.\d+)?) °C sobre lo normal$/, (n) => `${n} °C above normal`],
   [/^Requiere riego: la lluvia cubre ~(\d+) % de lo que necesita$/, (n) => `Needs irrigation: rain covers ~${n}%`],
   [/^(.+?), (otoño|invierno|primavera|verano): necesita ~(\d+) mm y la lluvia aporta ~(\d+) mm \(FAO-56 con clima de NASA POWER\)$/,

@@ -67,7 +67,8 @@ export interface ClimateShift {
   tempC: number;   // −3 a 5: °C que se suman a cada mes
 }
 
-// Una forma de usar la parcela las próximas 3 temporadas. 'current' = seguir como hoy.
+// Una forma de usar la parcela los próximos 12 meses: 3 pasos sin ciclos encimados (pueden saltarse una temporada
+// que el cultivo anterior todavía ocupa; las temporadas pueden diferir entre estrategias). 'current' = seguir como hoy.
 export interface Strategy {
   id: StrategyId;
   title: string;            // «Ahorrar agua»; si dos coinciden: «Ahorrar agua · Regenerar el suelo»

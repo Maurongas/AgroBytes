@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useSession } from '../../lib/session';
 import ThemeToggle from '../ThemeToggle';
+import BrandMark from '../BrandMark';
 import { ACCOUNT_ITEM, NAV_ITEMS, type NavItem } from './navItems';
 
 /*
@@ -80,8 +81,8 @@ export default function Sidebar() {
       className={`hidden shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-line-soft bg-surface-raised transition-[width] duration-200 md:flex ${
         plegado ? 'w-16 p-2' : 'w-60 p-4'}`}>
       <div className={`mb-6 flex items-center gap-2 ${plegado ? 'flex-col' : 'px-2'}`}>
-        <span className="h-3 w-3 shrink-0 rounded-full bg-leaf-600" aria-hidden />
-        {!plegado && <span className="flex-1 truncate font-display text-xl font-semibold text-ink-900">Field Shift</span>}
+        <BrandMark size={30} />
+        {!plegado && <span className="flex-1 truncate font-display text-xl font-semibold text-ink-900">Agro<span className="text-leaf-600">Bytes</span></span>}
         <button onClick={alternar} aria-expanded={!plegado}
           aria-label={plegado ? 'Desplegar menú' : 'Plegar menú'} title={plegado ? 'Desplegar menú' : 'Plegar menú'}
           className="flex min-h-9 min-w-9 items-center justify-center rounded-lg text-ink-500 hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-leaf-600">

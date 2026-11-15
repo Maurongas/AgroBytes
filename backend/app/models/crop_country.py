@@ -15,5 +15,9 @@ class CropCountry(Base):
     country_code: Mapped[str] = mapped_column(String(2), primary_key=True)
     # Promedio anual del periodo (ha); 0 = no se siembra en ese país
     harvested_area_ha: Mapped[float] = mapped_column(Float, nullable=False)
+    # Rendimiento promedio del país (t/ha, producción / área de FAOSTAT) y balance parcial de N (kg/ha por ciclo)
+    # calculado con él (research/nitrogen.py). None = el país no reporta el cultivo → se usa el del catálogo.
+    yield_t_ha: Mapped[float | None] = mapped_column(Float, nullable=True)
+    nitrogen_kg_ha: Mapped[float | None] = mapped_column(Float, nullable=True)
     period: Mapped[str] = mapped_column(String(20), nullable=False)
     source: Mapped[str] = mapped_column(String(200), nullable=False)

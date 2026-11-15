@@ -45,8 +45,10 @@ def make_climate(lat: float = 31.86, rain_cv: float = 38.0, soil_root: float = 0
     ]
     summary = ClimateSummary(lat=lat, lon=-116.5, period="2016-2025", temp_mean_c=17.5, rain_annual_mm=251,
                              rain_cv_pct=rain_cv, soil_moisture_root=soil_root, monthly=monthly)
-    recent = RecentClimate(start=date(2026, 8, 10), end=date(2026, 11, 7), rain_90d_mm=10, rain_90d_normal_mm=30,
-                           temp_30d_c=21, temp_30d_normal_c=19.5, soil_moisture_30d=0.25)
+    # Reciente: 1.5 °C sobre lo normal con desviación de 0.8 °C (z ≈ 1.9) y el suelo más seco de los 10 años
+    recent = RecentClimate(start=date(2026, 8, 10), end=date(2026, 11, 7), rain_90d_mm=10, rain_90d_normal_mm=40,
+                           temp_30d_c=21, temp_30d_normal_c=19.5, soil_moisture_30d=0.25, temp_30d_sd_c=0.8,
+                           soil_moisture_30d_normal=0.40, soil_moisture_30d_percentile=0.0)
     return ClimateData(summary=summary, recent=recent)
 
 

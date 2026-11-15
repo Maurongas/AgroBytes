@@ -303,7 +303,7 @@ Y debajo de "Suelo de la parcela" (tu tarjeta del doc 07), la lista de qué conf
       <aside className="mx-6 mb-6 flex gap-3 rounded-card border border-line bg-canvas-subtle p-4 text-sm text-ink-700">
         <Users size={20} className="mt-0.5 shrink-0 text-leaf-700" aria-hidden />
         <p>
-          <strong className="text-ink-900">Tú decides.</strong> Field Shift te ayuda a explorar opciones con clima de
+          <strong className="text-ink-900">Tú decides.</strong> AgroBytes te ayuda a explorar opciones con clima de
           NASA POWER y reglas agronómicas; no reemplaza tu experiencia ni la de un agrónomo de tu zona. El nitrógeno y
           la salud del suelo son <Termino id="estimado">estimaciones</Termino>.
         </p>

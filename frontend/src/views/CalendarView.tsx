@@ -1,4 +1,5 @@
 import { useStore } from '../store/useStore';
+import CropIcon from '../components/CropIcon';
 import { cropName, SEASON_LABEL } from '../lib/crops';
 import { MESES, mesesDeVentana } from '../lib/calendario';
 import SinAnalisis from '../components/SinAnalisis';
@@ -30,7 +31,7 @@ export default function CalendarView() {
               return (
                 <div key={step.season} className="contents">
                   <div className="pr-2 text-left">
-                    <p className="text-sm font-semibold text-ink-900">{cropName(step.cropId)}</p>
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"><CropIcon id={step.cropId} size={15} />{cropName(step.cropId)}</p>
                     <p className="text-[11px] text-ink-500">{SEASON_LABEL[step.season]} · {step.plantingWindow}</p>
                   </div>
                   {MESES.map((m, i) => (

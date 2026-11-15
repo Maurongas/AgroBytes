@@ -1,8 +1,25 @@
-# Field Shift — presentación web (pitch de 4 min)
+# AgroBytes — presentación web (pitch de 4 min)
 
-Presentación tipo PowerPoint, en inglés, para Mia y Mauro. Usa los **componentes reales** de la app y los datos de
-`frontend/src/api/mock.ts`: si el frontend cambia, el pitch se actualiza solo (o con cambios mínimos).
-No necesita backend; sin internet solo se pierden las teselas del mapa (queda un fondo de respaldo) y las fuentes de Google.
+Presentación tipo PowerPoint, en inglés, para Mia y Mauro. Usa los **componentes reales** de la app y, si el backend
+está corriendo, **datos reales de la API** (si no, el mock de `frontend/src/api/mock.ts`). Speech para practicar:
+[`SPEECH.md`](SPEECH.md).
+
+## En vivo con la API
+
+Al abrir, la presentación muestra una pantalla de arranque con las peticiones reales (`GET /health` y
+`POST /api/v1/analyses?guardar=false` con la parcela del valle de Mexicali). Después usa esa respuesta en todas las
+diapositivas ([`src/live.ts`](src/live.ts)). Durante la diapositiva 4:
+
+- Insignia roja **LIVE · NASA POWER API** + enlace **API docs ↗** (Swagger del backend).
+- La barra de la ventana muestra la última petición real: método, ruta, estado, ms y kB.
+- **NASA data** vuelve a pedir el análisis al entrar; el escaneo muestra el registro real.
+- **What if?** manda `climateShift` al backend cada vez que se sueltan los sliders (450 ms) y pinta la rotación y el
+  riego que devuelve.
+
+Requisitos: backend en `http://localhost:8000` (o `VITE_PITCH_API`) con `http://localhost:3001` en `CORS_ORIGINS`
+(ya viene por defecto en `docker-compose.yml`). Si el backend no responde en 25 s, todo sigue con el mock y dice
+«offline · sample data». **Abre la presentación una vez antes de presentar:** la primera consulta a NASA POWER tarda
+~10 s; después queda en caché.
 
 ## Cómo abrirla
 
@@ -24,6 +41,18 @@ npx tsc -p ../docs/presentacion/tsconfig.json                                   
 
 `dist/` es estático: se puede abrir con `npx vite preview --config ...` o subir a cualquier hosting.
 
+## Estructura (6 diapositivas, ~4 min)
+
+1. **Portada** — iconos flotando, satélite en órbita, título y equipo → clic: se dibuja la parcela + «Every season is a bet.»
+2. **The challenge** — problemas → 40+ años de datos NASA → «Gap» + nuestra idea.
+3. **How we built it** — diagrama: parcela + NASA POWER + SoilGrids + catálogo de cultivos → motor de reglas → estrategias.
+4. **Live, on real NASA data** — la app en una ventana con pestañas (Draw · NASA data · Options · What if? · In the field).
+   Cada clic avanza una parte (`prototypeSteps` en `content.ts`); las pestañas también se pueden pulsar a mano.
+   Los paneles están en `src/panes/`.
+5. **Impact & validation** — gauges + barras de impacto → «How we keep it honest».
+6. **Cierre** — la parcela se aleja hasta Norteamérica y vuelve la portada: equipo y, discretos, los logos de UABC y FIAD
+   (`public/uabc.png`, `public/fiad.png`; los nombres están en `team` de `content.ts`).
+
 ## Atajos
 
 | Tecla | Acción |
@@ -36,6 +65,8 @@ npx tsc -p ../docs/presentacion/tsconfig.json                                   
 | **F** | Pantalla completa |
 | **T** | Modo claro / oscuro (claro por defecto) |
 
+- **`?still`** (p. ej. `http://localhost:3001/?still#/4/3`): cada diapositiva en su estado final, sin animaciones. Sirve para
+  capturas o para imprimir un respaldo en PDF.
 - La URL guarda la posición (`#/4` o `#/4/2` = diapositiva 4, paso 2): recargar no la pierde.
 - Las notas se sincronizan con `BroadcastChannel` (misma computadora y navegador). Desde las notas también se puede
   avanzar (flechas o botones) y **R** reinicia el cronómetro, que arranca con el primer avance.
@@ -63,12 +94,12 @@ cuántos pasos (`builds`) tiene cada diapositiva, notas de cada paso y etiquetas
 |---|---|---|
 | `index.css` (tokens, fuentes, modo oscuro, animación `scan`) | todo | importado en `src/pitch.css` |
 | `api/mock.ts`, `api/types.ts` | todo | datos y tipos |
-| `components/NasaMetricCard.tsx` | 5 · NASA data | tal cual (etiquetas traducidas; en S05Nasa, CSS por fuera: texto más grande y `vector-effect` del sparkline) |
-| `components/GaugeSoilHealth.tsx` | 7 · Impact | tal cual |
+| `components/NasaMetricCard.tsx` | 4 · Prototipo (pestaña NASA data) | tal cual (etiquetas traducidas; en S05Nasa, CSS por fuera: texto más grande y `vector-effect` del sparkline) |
+| `components/GaugeSoilHealth.tsx` | 5 · Impact | tal cual |
 | `components/CountUp.tsx` | 2, 4 | tal cual |
-| `components/map/EditableParcel.tsx` + `store/useStore.ts` | 4 · Draw | la parcela terminada se pinta con el componente real |
-| `lib/region.ts` (`REGION_LATLNGS`) | 10 · Close | contorno de México, EE. UU. y Canadá |
-| Teselas Esri de `ParcelMap.tsx` | 4, 10 | misma URL |
+| `components/map/EditableParcel.tsx` + `store/useStore.ts` | 4 · Prototipo (pestaña Draw) | la parcela terminada se pinta con el componente real |
+| `lib/region.ts` (`REGION_LATLNGS`) | 6 · Close | contorno de México, EE. UU. y Canadá |
+| Teselas Esri de `ParcelMap.tsx` | 4, 6 | misma URL |
 
 Copias con texto en inglés (tienen texto fijo en español en la app; si cambias el original, revisa la copia):
 `components/PitchScan.tsx` ← `ScanOverlay`, `components/PitchImpactBar.tsx` ← `ImpactBar`, `components/ClimateChart.tsx` ← gráfica

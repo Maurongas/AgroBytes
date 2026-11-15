@@ -62,6 +62,13 @@ class RecentClimate:
     temp_30d_normal_c: float
     soil_moisture_30d: float
     estimated: bool = False  # True = NASA no dio los datos diarios y se usó el promedio (plan B)
+    # Variabilidad normal de esas fechas en los 10 años, para medir anomalías sin umbrales fijos. None = sin dato.
+    temp_30d_sd_c: float | None = None  # desviación estándar de la temperatura de esos meses entre años
+    soil_moisture_30d_normal: float | None = None  # humedad promedio de esas fechas
+    soil_moisture_30d_percentile: float | None = None  # en qué percentil cae lo reciente frente a los 10 años
+    # Modelo de NASA de los días recientes distinto al del histórico (p. ej. GEOS-IT vs MERRA-2): la humedad del
+    # suelo no es comparable. None = mismo modelo.
+    recent_model_change: str | None = None
 
 
 @dataclass(frozen=True)
@@ -137,6 +144,10 @@ def build_summary(monthly: Series, lat: float, lon: float, start_year: int, end_
     def value(param: str, year: int, month: int) -> float | None:
         return monthly.get(param, {}).get(f"{year}{month:02d}")
 
+    def optional_mean(param: str, month: int) -> float | None:
+        vals = [v for y in range(start_year, end_year + 1) if (v := value(param, y, month)) is not None]
+        return _mean(vals) if vals else None
+
     points: list[MonthlyClimatePoint] = []
     for month in range(1, 13):
         temps, tmax, tmin, rain, soil, solar = [], [], [], [], [], []
@@ -156,15 +167,26 @@ def build_summary(monthly: Series, lat: float, lon: float, start_year: int, end_
                 solar.append(v * MJ_TO_KWH)
         if not (temps and tmax and tmin and rain and soil and solar):
             raise NasaUnavailableError(f"NASA POWER no tiene datos completos para el mes {month}")
+        dew, wind, frost, rng = (optional_mean(p, month) for p in ("T2MDEW", "WS2M", "FROST_DAYS", "T2M_RANGE"))
+        t_mean = _mean(temps)
+        # En el endpoint mensual T2M_MAX/T2M_MIN son extremos; la máxima/mínima diaria PROMEDIO sale del rango
+        # diario promedio. Sin T2M_RANGE (registros viejos) se usan los extremos, como antes.
+        day_max = t_mean + rng / 2 if rng is not None else _mean(tmax)
+        day_min = t_mean - rng / 2 if rng is not None else _mean(tmin)
         points.append(
             MonthlyClimatePoint(
                 month=month,
-                temp_c=round(_mean(temps), 2),
-                temp_max_c=round(_mean(tmax), 2),
-                temp_min_c=round(_mean(tmin), 2),
+                temp_c=round(t_mean, 2),
+                temp_max_c=round(day_max, 2),
+                temp_min_c=round(day_min, 2),
+                temp_max_abs_c=round(_mean(tmax), 2),
+                temp_min_abs_c=round(_mean(tmin), 2),
                 rain_mm=round(_mean(rain), 1),
                 soil_moisture_root=round(_mean(soil), 3),
                 solar_radiation=round(_mean(solar), 2),
+                dewpoint_c=round(dew, 2) if dew is not None else None,
+                wind_ms=round(wind, 2) if wind is not None else None,
+                frost_days=round(frost, 2) if frost is not None else None,
             )
         )
 
@@ -180,9 +202,11 @@ def build_summary(monthly: Series, lat: float, lon: float, start_year: int, end_
     # CV = desviación estándar / promedio: cuánto cambia la lluvia de un año a otro, en %
     rain_cv = statistics.stdev(annual_rain) / rain_mean * 100 if rain_mean > 0 else 0.0
 
+    elevation = monthly.get(nasa_power.ELEVATION_KEY, {}).get("m")
     return ClimateSummary(
         lat=lat,
         lon=lon,
+        elevation_m=round(elevation, 1) if elevation is not None else None,
         source=f"NASA POWER (community={nasa_power.COMMUNITY})",
         period=f"{start_year}-{end_year}",
         temp_mean_c=round(_mean([p.temp_c for p in points]), 2),
@@ -191,6 +215,26 @@ def build_summary(monthly: Series, lat: float, lon: float, start_year: int, end_
         soil_moisture_root=round(_mean([p.soil_moisture_root for p in points]), 3),
         monthly=points,
     )
+
+
+def monthly_spread(monthly: Series, param: str, start_year: int, end_year: int
+                   ) -> dict[int, tuple[float, float | None]]:
+    """{mes: (promedio, desviación estándar entre años)} de un parámetro mensual. Sin 2 años → sd None."""
+    out: dict[int, tuple[float, float | None]] = {}
+    for month in range(1, 13):
+        vals = [v for y in range(start_year, end_year + 1)
+                if (v := monthly.get(param, {}).get(f"{y}{month:02d}")) is not None]
+        if vals:
+            out[month] = (_mean(vals), statistics.stdev(vals) if len(vals) >= 2 else None)
+    return out
+
+
+def _window_normal(spread: dict[int, tuple[float, float | None]], days: list[date]
+                   ) -> tuple[float | None, float | None]:
+    """Promedio y desviación estándar normales de una ventana de días (ponderados por los días de cada mes)."""
+    means = [spread[d.month][0] for d in days if d.month in spread]
+    sds = [sd for d in days if d.month in spread and (sd := spread[d.month][1]) is not None]
+    return (_mean(means) if means else None, _mean(sds) if sds else None)
 
 
 def build_recent(daily: Series, monthly: Series, summary: ClimateSummary, start: date, end: date) -> RecentClimate:
@@ -221,6 +265,10 @@ def build_recent(daily: Series, monthly: Series, summary: ClimateSummary, start:
 
     # Si faltan algunos días, se escala la suma a 90 días con el promedio de los días que sí hay
     rain_90d = sum(rain) * len(days) / len(rain)
+    _, temp_sd = _window_normal(monthly_spread(monthly, "T2M", start_year, end_year), last_30)
+    soil_now = _mean(soil)
+    soil_normal, _ = _window_normal(monthly_spread(monthly, "GWETROOT", start_year, end_year), last_30)
+    new_models = set(daily.get(nasa_power.SOURCES_KEY, {})) - nasa_power.CLIMATOLOGY_MODELS
     return RecentClimate(
         start=start,
         end=end,
@@ -228,8 +276,31 @@ def build_recent(daily: Series, monthly: Series, summary: ClimateSummary, start:
         rain_90d_normal_mm=round(sum(normal_rain_rate[d.month] for d in days), 1),
         temp_30d_c=round(_mean(temps), 2),
         temp_30d_normal_c=round(_mean([normal_temp[d.month] for d in last_30]), 2),
-        soil_moisture_30d=round(_mean(soil), 3),
+        soil_moisture_30d=round(soil_now, 3),
+        temp_30d_sd_c=round(temp_sd, 2) if temp_sd is not None else None,
+        soil_moisture_30d_normal=round(soil_normal, 3) if soil_normal is not None else None,
+        soil_moisture_30d_percentile=window_percentile(monthly, "GWETROOT", start_year, end_year, last_30, soil_now),
+        recent_model_change=", ".join(sorted(new_models)) or None,
     )
+
+
+def window_percentile(monthly: Series, param: str, start_year: int, end_year: int, days: list[date],
+                      value: float) -> float | None:
+    """Percentil (0-100) de `value` frente al mismo periodo de cada uno de los 10 años (rango medio en empates).
+    El valor de cada año es el promedio de sus meses ponderado por los días de la ventana en cada mes."""
+    weights: dict[int, int] = {}
+    for d in days:
+        weights[d.month] = weights.get(d.month, 0) + 1
+    per_year = []
+    for y in range(start_year, end_year + 1):
+        vals = {m: monthly.get(param, {}).get(f"{y}{m:02d}") for m in weights}
+        if all(v is not None for v in vals.values()):
+            per_year.append(sum(vals[m] * w for m, w in weights.items()) / sum(weights.values()))
+    if len(per_year) < 5:
+        return None
+    below = sum(v < value for v in per_year)
+    ties = sum(v == value for v in per_year)
+    return round(100 * (below + ties / 2) / len(per_year), 1)
 
 
 def recent_from_normals(monthly: Series, summary: ClimateSummary, start: date, end: date) -> RecentClimate:
@@ -251,6 +322,7 @@ def recent_from_normals(monthly: Series, summary: ClimateSummary, start: date, e
         raise NasaUnavailableError("Sin datos normales de humedad de suelo")
     rain_normal = round(sum(normal("PRECTOTCORR", d.month) or 0.0 for d in days), 1)
     temp_normal = round(_mean([normal_temp[d.month] for d in last_30]), 2)
+    soil_normal = round(_mean(soil), 3)
     return RecentClimate(
         start=start,
         end=end,
@@ -258,8 +330,9 @@ def recent_from_normals(monthly: Series, summary: ClimateSummary, start: date, e
         rain_90d_normal_mm=rain_normal,
         temp_30d_c=temp_normal,
         temp_30d_normal_c=temp_normal,
-        soil_moisture_30d=round(_mean(soil), 3),
+        soil_moisture_30d=soil_normal,
         estimated=True,
+        soil_moisture_30d_normal=soil_normal,
     )
 
 
@@ -275,11 +348,20 @@ def _from_payload(payload: dict) -> tuple[ClimateSummary, Series]:
     return ClimateSummary.model_validate(payload["summary"]), payload["monthly"]
 
 
-def _db_get(db: Session, lat_g: float, lon_g: float, period: str, max_days: int | None = None
-            ) -> tuple[ClimateSummary, Series] | None:
+def has_all_parameters(monthly: Series) -> bool:
+    """¿El registro trae las variables que se agregaron después (rocío, viento, heladas)? Si no, se vuelve a pedir
+    a NASA (los registros viejos solo se usan como plan B cuando NASA está caído)."""
+    return all(monthly.get(p) for p in nasa_power.OPTIONAL_PARAMETERS)
+
+
+def _db_get(db: Session, lat_g: float, lon_g: float, period: str, max_days: int | None = None,
+            require_complete: bool = True) -> tuple[ClimateSummary, Series] | None:
     try:
         row = cache_repo.get_valid(db, lat_g, lon_g, period, max_days)
-        return _from_payload(row.payload) if row is not None else None
+        if row is None:
+            return None
+        stored = _from_payload(row.payload)
+        return stored if not require_complete or has_all_parameters(stored[1]) else None
     except (SQLAlchemyError, KeyError, TypeError, ValidationError):
         log.warning("No se pudo leer climate_cache; se sigue sin caché de BD", exc_info=True)
         db.rollback()
@@ -309,7 +391,8 @@ async def _long_term(client: httpx.AsyncClient, lat_g: float, lon_g: float, toda
         result = (build_summary(monthly, lat_g, lon_g, start_year, end_year), monthly)
     except NasaUnavailableError:
         # NASA caído: si hay un registro vencido en la tabla, se usa (ARQUITECTURA §5.7: 503 solo "sin caché")
-        if db is not None and (stale := _db_get(db, lat_g, lon_g, period, STALE_MAX_DAYS)) is not None:
+        if db is not None and (stale := _db_get(db, lat_g, lon_g, period, STALE_MAX_DAYS,
+                                                require_complete=False)) is not None:
             log.warning("NASA POWER no disponible; se usa caché vencida de (%s, %s)", lat_g, lon_g)
             return stale
         raise

@@ -31,17 +31,22 @@ def seed_crop_countries(db: Session) -> int:
     """Necesita los cultivos ya sembrados (llave foránea). Ignora cultivos que no estén en el catálogo."""
     data = json.loads(COUNTRIES_PATH.read_text(encoding="utf-8"))
     known = set(db.scalars(select(Crop.id)))
+    yields = data.get("yields_t_ha", {})
+    nitrogen = data.get("nitrogen_kg_ha", {})
     count = 0
     for country, areas in data["countries"].items():
         for crop_id, area in areas.items():
             if crop_id not in known:
                 continue
             values = {"crop_id": crop_id, "country_code": country, "harvested_area_ha": area,
+                      "yield_t_ha": yields.get(country, {}).get(crop_id),
+                      "nitrogen_kg_ha": nitrogen.get(country, {}).get(crop_id),
                       "period": data["period"], "source": data["source"][:200]}
             stmt = insert(CropCountry).values(**values)
             stmt = stmt.on_conflict_do_update(
                 index_elements=["crop_id", "country_code"],
-                set_={k: stmt.excluded[k] for k in ("harvested_area_ha", "period", "source")},
+                set_={k: stmt.excluded[k] for k in
+                      ("harvested_area_ha", "yield_t_ha", "nitrogen_kg_ha", "period", "source")},
             )
             db.execute(stmt)
             count += 1

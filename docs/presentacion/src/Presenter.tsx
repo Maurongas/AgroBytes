@@ -57,7 +57,7 @@ export default function Presenter() {
   const bc = useRef<BroadcastChannel | null>(null);
 
   useEffect(() => {
-    document.title = `${notesUi.title} · Field Shift`;
+    document.title = `${notesUi.title} · AgroBytes`;
     const ch = new BroadcastChannel(CHANNEL);
     bc.current = ch;
     ch.onmessage = (e: MessageEvent<Msg>) => {

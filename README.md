@@ -1,4 +1,4 @@
-# 🌱 Field Shift
+# 🌱 AgroBytes
 
 ## Transformando datos de observación terrestre de la NASA en decisiones agrícolas inteligentes
 
@@ -8,7 +8,7 @@
 
 Los agricultores enfrentan condiciones cada vez más impredecibles debido al cambio climático, la escasez de agua y la degradación del suelo. Aunque la NASA proporciona una enorme cantidad de datos ambientales de alta calidad, convertir esa información en decisiones prácticas para el campo sigue siendo un desafío.
 
-**Field Shift** cierra esa brecha al transformar datos climáticos y ambientales en recomendaciones agrícolas claras, comprensibles y accionables. Nuestra plataforma ayuda a los productores a seleccionar rotaciones de cultivos más resilientes, optimizar el uso del agua y mejorar la salud del suelo, fortaleciendo su capacidad de adaptación frente a condiciones cambiantes.
+**AgroBytes** cierra esa brecha al transformar datos climáticos y ambientales en recomendaciones agrícolas claras, comprensibles y accionables. Nuestra plataforma ayuda a los productores a seleccionar rotaciones de cultivos más resilientes, optimizar el uso del agua y mejorar la salud del suelo, fortaleciendo su capacidad de adaptación frente a condiciones cambiantes.
 
 ---
 
@@ -39,7 +39,7 @@ Al mismo tiempo, existen valiosos datos de observación terrestre que podrían a
 
 ## 💡 Nuestra Solución
 
-Field Shift convierte datos ambientales complejos en recomendaciones prácticas para agricultores.
+AgroBytes convierte datos ambientales complejos en recomendaciones prácticas para agricultores.
 
 A partir de la ubicación de una parcela y los objetivos del productor, el sistema analiza las condiciones ambientales disponibles y propone estrategias de rotación de cultivos orientadas a:
 
@@ -61,7 +61,7 @@ A partir de la ubicación de una parcela y los objetivos del productor, el siste
 
 ## 🛰️ Integración de Datos de la NASA
 
-Field Shift aprovecha los recursos de observación terrestre de la NASA para comprender mejor las condiciones que afectan a los sistemas agrícolas.
+AgroBytes aprovecha los recursos de observación terrestre de la NASA para comprender mejor las condiciones que afectan a los sistemas agrícolas.
 
 ### NASA POWER
 
@@ -93,7 +93,7 @@ Estas integraciones permitirán recomendaciones cada vez más precisas y adaptad
 
 ## 🎯 Cómo Respondemos al Desafío
 
-Field Shift contribuye directamente al objetivo del desafío al:
+AgroBytes contribuye directamente al objetivo del desafío al:
 
 - Utilizar datos de la NASA para apoyar decisiones agrícolas.
 - Mejorar la eficiencia en el uso del agua.
@@ -107,7 +107,7 @@ Nuestro objetivo es acercar la ciencia y la tecnología espacial a quienes más 
 
 ## 🔍 Motor de Recomendaciones Explicable
 
-Field Shift prioriza la transparencia.
+AgroBytes prioriza la transparencia.
 
 Cada recomendación puede rastrearse hasta condiciones ambientales específicas, características de los cultivos y principios agronómicos conocidos.
 
@@ -136,7 +136,7 @@ En lugar de proporcionar respuestas opacas, el sistema permite que los agriculto
 
 ## 🌍 Impacto Potencial
 
-Field Shift busca democratizar el acceso a la información ambiental avanzada.
+AgroBytes busca democratizar el acceso a la información ambiental avanzada.
 
 Entre sus beneficios potenciales se encuentran:
 
@@ -153,7 +153,7 @@ Creemos que las decisiones agrícolas más inteligentes comienzan con informaci�
 
 ## 🚀 Visión a Futuro
 
-Nuestra visión es convertir Field Shift en una plataforma integral de agricultura resiliente que combine observaciones de la Tierra, análisis ambiental y recomendaciones agronómicas accesibles para cualquier productor.
+Nuestra visión es convertir AgroBytes en una plataforma integral de agricultura resiliente que combine observaciones de la Tierra, análisis ambiental y recomendaciones agronómicas accesibles para cualquier productor.
 
 A medida que se incorporen nuevas fuentes de datos, el sistema podrá ofrecer recomendaciones aún más precisas para enfrentar los desafíos agrícolas del futuro.
 
@@ -161,7 +161,7 @@ A medida que se incorporen nuevas fuentes de datos, el sistema podrá ofrecer re
 
 ## 👨‍🌾 Porque el futuro de la agricultura también se observa desde el espacio
 
-Field Shift demuestra cómo los datos de observación terrestre de la NASA pueden transformarse en herramientas prácticas que ayuden a los agricultores a producir más inteligentemente, conservar recursos y adaptarse a un entorno cada vez más cambiante.
+AgroBytes demuestra cómo los datos de observación terrestre de la NASA pueden transformarse en herramientas prácticas que ayuden a los agricultores a producir más inteligentemente, conservar recursos y adaptarse a un entorno cada vez más cambiante.
 
 ---
 

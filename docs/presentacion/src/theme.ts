@@ -1,5 +1,5 @@
 // Tema del pitch: claro por defecto (no sigue al sistema), T alterna. Usa los mismos tokens [data-theme] de la app.
-const KEY = 'fieldshift:pitch-tema';
+const KEY = 'agrobytes:pitch-tema';
 
 export function initTheme(fallback: 'light' | 'dark' = 'light') {
   let t: string | null = null;

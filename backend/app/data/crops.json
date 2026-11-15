@@ -13,7 +13,16 @@
     "ph_min": 5.0,
     "ph_max": 7.0,
     "water_need_mm": 650.0,
+    "kc_ini": 0.3,
     "kc_mid": 1.2,
+    "kc_end": 0.35,
+    "crop_height_m": 2.0,
+    "kc_stages": [
+      0.2,
+      0.267,
+      0.333,
+      0.2
+    ],
     "cycle_days": 152,
     "seasons": [
       "spring",
@@ -24,8 +33,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -104.0,
-    "source": "FAO ECOCROP (Zea mays); FAO IWM T4-T5; FAO-56 T12; N: 17.4 kg/t × 6 t"
+    "nitrogen_delta_kg_ha": -47.0,
+    "source": "FAO ECOCROP (Zea mays); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "sorghum",
@@ -41,7 +50,16 @@
     "ph_min": 5.5,
     "ph_max": 7.5,
     "water_need_mm": 550.0,
+    "kc_ini": 0.3,
     "kc_mid": 1.05,
+    "kc_end": 0.55,
+    "crop_height_m": 1.5,
+    "kc_stages": [
+      0.16,
+      0.28,
+      0.32,
+      0.24
+    ],
     "cycle_days": 125,
     "seasons": [
       "spring",
@@ -52,8 +70,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -87.0,
-    "source": "FAO ECOCROP (Sorghum bicolor); FAO IWM T4-T5; FAO-56 T12; N: 17.4 kg/t (maíz) × 5 t"
+    "nitrogen_delta_kg_ha": -52.0,
+    "source": "FAO ECOCROP (Sorghum bicolor); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "wheat",
@@ -69,7 +87,16 @@
     "ph_min": 6.0,
     "ph_max": 7.0,
     "water_need_mm": 550.0,
+    "kc_ini": 0.3,
     "kc_mid": 1.15,
+    "kc_end": 0.325,
+    "crop_height_m": 1.0,
+    "kc_stages": [
+      0.125,
+      0.312,
+      0.375,
+      0.188
+    ],
     "cycle_days": 135,
     "seasons": [
       "autumn",
@@ -79,8 +106,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -105.0,
-    "source": "FAO ECOCROP (Triticum aestivum); FAO IWM T4-T5; FAO-56 T12; N: 21 kg/t × 5 t"
+    "nitrogen_delta_kg_ha": -123.0,
+    "source": "FAO ECOCROP (Triticum aestivum); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "barley",
@@ -96,7 +123,16 @@
     "ph_min": 6.5,
     "ph_max": 7.5,
     "water_need_mm": 550.0,
+    "kc_ini": 0.3,
     "kc_mid": 1.15,
+    "kc_end": 0.25,
+    "crop_height_m": 1.0,
+    "kc_stages": [
+      0.125,
+      0.312,
+      0.375,
+      0.188
+    ],
     "cycle_days": 135,
     "seasons": [
       "autumn",
@@ -107,8 +143,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -81.0,
-    "source": "FAO ECOCROP (Hordeum vulgare); FAO IWM T4-T5; FAO-56 T12; N: 20.3 kg/t × 4 t"
+    "nitrogen_delta_kg_ha": -52.0,
+    "source": "FAO ECOCROP (Hordeum vulgare); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "oat",
@@ -124,7 +160,16 @@
     "ph_min": 5.0,
     "ph_max": 6.0,
     "water_need_mm": 550.0,
+    "kc_ini": 0.3,
     "kc_mid": 1.15,
+    "kc_end": 0.25,
+    "crop_height_m": 1.0,
+    "kc_stages": [
+      0.125,
+      0.312,
+      0.375,
+      0.188
+    ],
     "cycle_days": 135,
     "seasons": [
       "autumn",
@@ -135,8 +180,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -55.0,
-    "source": "FAO ECOCROP (Avena sativa); FAO IWM T4-T5; FAO-56 T12; N: 18.3 kg/t × 3 t"
+    "nitrogen_delta_kg_ha": -47.0,
+    "source": "FAO ECOCROP (Avena sativa); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "bean",
@@ -152,7 +197,16 @@
     "ph_min": 5.5,
     "ph_max": 7.5,
     "water_need_mm": 400.0,
+    "kc_ini": 0.4,
     "kc_mid": 1.15,
+    "kc_end": 0.35,
+    "crop_height_m": 0.4,
+    "kc_stages": [
+      0.182,
+      0.273,
+      0.364,
+      0.182
+    ],
     "cycle_days": 102,
     "seasons": [
       "spring",
@@ -163,8 +217,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": 18.0,
-    "source": "FAO ECOCROP (Phaseolus vulgaris); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 16–72 fijado"
+    "nitrogen_delta_kg_ha": 7.0,
+    "source": "FAO ECOCROP (Phaseolus vulgaris); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "soy",
@@ -180,7 +234,16 @@
     "ph_min": 5.5,
     "ph_max": 6.5,
     "water_need_mm": 575.0,
+    "kc_ini": 0.4,
     "kc_mid": 1.15,
+    "kc_end": 0.5,
+    "crop_height_m": 0.75,
+    "kc_stages": [
+      0.143,
+      0.25,
+      0.429,
+      0.179
+    ],
     "cycle_days": 142,
     "seasons": [
       "spring",
@@ -191,8 +254,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": 37.0,
-    "source": "FAO ECOCROP (Glycine max); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 90–95 fijado"
+    "nitrogen_delta_kg_ha": 41.0,
+    "source": "FAO ECOCROP (Glycine max); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "chickpea",
@@ -208,7 +271,16 @@
     "ph_min": 6.0,
     "ph_max": 8.5,
     "water_need_mm": 425.0,
+    "kc_ini": 0.4,
     "kc_mid": 1.0,
+    "kc_end": 0.35,
+    "crop_height_m": 0.4,
+    "kc_stages": [
+      0.2,
+      0.3,
+      0.35,
+      0.15
+    ],
     "cycle_days": 135,
     "seasons": [
       "autumn",
@@ -219,8 +291,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": 25.0,
-    "source": "FAO ECOCROP (Cicer arietinum); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 21–104 fijado"
+    "nitrogen_delta_kg_ha": 81.0,
+    "source": "FAO ECOCROP (Cicer arietinum); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "pea",
@@ -236,7 +308,16 @@
     "ph_min": 5.5,
     "ph_max": 7.0,
     "water_need_mm": 425.0,
+    "kc_ini": 0.4,
     "kc_mid": 1.15,
+    "kc_end": 0.3,
+    "crop_height_m": 0.5,
+    "kc_stages": [
+      0.2,
+      0.3,
+      0.35,
+      0.15
+    ],
     "cycle_days": 95,
     "seasons": [
       "autumn",
@@ -247,8 +328,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": 15.0,
-    "source": "FAO ECOCROP (Pisum sativum); FAO IWM T4-T5; FAO-56 T12; N: 40 % de 30–40 fijado"
+    "nitrogen_delta_kg_ha": 8.0,
+    "source": "FAO ECOCROP (Pisum sativum); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "vetch",
@@ -264,7 +345,16 @@
     "ph_min": 6.0,
     "ph_max": 7.0,
     "water_need_mm": 425.0,
-    "kc_mid": 1.0,
+    "kc_ini": 0.4,
+    "kc_mid": 1.15,
+    "kc_end": 0.3,
+    "crop_height_m": 0.5,
+    "kc_stages": [
+      0.2,
+      0.3,
+      0.35,
+      0.15
+    ],
     "cycle_days": 125,
     "seasons": [
       "autumn",
@@ -276,7 +366,7 @@
       "clay"
     ],
     "nitrogen_delta_kg_ha": 119.0,
-    "source": "FAO ECOCROP (Vicia sativa ssp. sativa); FAO IWM T4-T5; FAO-56 T12; N: 107–131 fijado, se incorpora"
+    "source": "FAO ECOCROP (Vicia sativa ssp. sativa); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "canola",
@@ -292,7 +382,16 @@
     "ph_min": 6.5,
     "ph_max": 7.6,
     "water_need_mm": 550.0,
-    "kc_mid": 1.1,
+    "kc_ini": 0.35,
+    "kc_mid": 1.075,
+    "kc_end": 0.35,
+    "crop_height_m": 0.6,
+    "kc_stages": [
+      0.16,
+      0.28,
+      0.36,
+      0.2
+    ],
     "cycle_days": 132,
     "seasons": [
       "autumn",
@@ -303,8 +402,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -77.0,
-    "source": "FAO ECOCROP (Brassica napus); FAO IWM T4-T5; FAO-56 T12; N: 38.7 kg/t × 2 t"
+    "nitrogen_delta_kg_ha": -23.0,
+    "source": "FAO ECOCROP (Brassica napus); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "safflower",
@@ -320,7 +419,16 @@
     "ph_min": 6.5,
     "ph_max": 7.5,
     "water_need_mm": 800.0,
-    "kc_mid": 1.1,
+    "kc_ini": 0.35,
+    "kc_mid": 1.075,
+    "kc_end": 0.25,
+    "crop_height_m": 0.8,
+    "kc_stages": [
+      0.16,
+      0.28,
+      0.36,
+      0.2
+    ],
     "cycle_days": 150,
     "seasons": [
       "autumn",
@@ -331,8 +439,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -50.0,
-    "source": "FAO ECOCROP (Carthamus tinctorius); FAO IWM T4-T5; FAO-56 T12; N aprox."
+    "nitrogen_delta_kg_ha": -52.0,
+    "source": "FAO ECOCROP (Carthamus tinctorius); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "cotton",
@@ -348,7 +456,16 @@
     "ph_min": 6.0,
     "ph_max": 7.5,
     "water_need_mm": 1000.0,
-    "kc_mid": 1.18,
+    "kc_ini": 0.35,
+    "kc_mid": 1.175,
+    "kc_end": 0.6,
+    "crop_height_m": 1.35,
+    "kc_stages": [
+      0.154,
+      0.256,
+      0.308,
+      0.282
+    ],
     "cycle_days": 188,
     "seasons": [
       "spring",
@@ -359,8 +476,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -60.0,
-    "source": "FAO ECOCROP (Gossypium hirsutum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+    "nitrogen_delta_kg_ha": -139.0,
+    "source": "FAO ECOCROP (Gossypium hirsutum); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "tomato",
@@ -376,7 +493,16 @@
     "ph_min": 5.5,
     "ph_max": 6.8,
     "water_need_mm": 600.0,
+    "kc_ini": 0.6,
     "kc_mid": 1.15,
+    "kc_end": 0.8,
+    "crop_height_m": 0.6,
+    "kc_stages": [
+      0.207,
+      0.276,
+      0.31,
+      0.207
+    ],
     "cycle_days": 158,
     "seasons": [
       "spring",
@@ -387,8 +513,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -90.0,
-    "source": "FAO ECOCROP (Lycopersicon esculentum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+    "nitrogen_delta_kg_ha": -68.0,
+    "source": "FAO ECOCROP (Lycopersicon esculentum); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "chile",
@@ -404,7 +530,16 @@
     "ph_min": 5.5,
     "ph_max": 6.8,
     "water_need_mm": 750.0,
+    "kc_ini": 0.6,
     "kc_mid": 1.05,
+    "kc_end": 0.9,
+    "crop_height_m": 0.7,
+    "kc_stages": [
+      0.208,
+      0.292,
+      0.333,
+      0.167
+    ],
     "cycle_days": 165,
     "seasons": [
       "spring",
@@ -414,8 +549,8 @@
       "sandy",
       "loam"
     ],
-    "nitrogen_delta_kg_ha": -70.0,
-    "source": "FAO ECOCROP (Capsicum annuum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+    "nitrogen_delta_kg_ha": -40.0,
+    "source": "FAO ECOCROP (Capsicum annuum); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "potato",
@@ -431,7 +566,16 @@
     "ph_min": 5.0,
     "ph_max": 6.2,
     "water_need_mm": 600.0,
+    "kc_ini": 0.5,
     "kc_mid": 1.15,
+    "kc_end": 0.75,
+    "crop_height_m": 0.6,
+    "kc_stages": [
+      0.192,
+      0.231,
+      0.346,
+      0.231
+    ],
     "cycle_days": 125,
     "seasons": [
       "spring",
@@ -444,7 +588,7 @@
       "clay"
     ],
     "nitrogen_delta_kg_ha": -80.0,
-    "source": "FAO ECOCROP (Solanum tuberosum); FAO IWM T4-T5; FAO-56 T12; N aprox."
+    "source": "FAO ECOCROP (Solanum tuberosum); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "onion",
@@ -460,7 +604,16 @@
     "ph_min": 6.0,
     "ph_max": 7.0,
     "water_need_mm": 450.0,
+    "kc_ini": 0.7,
     "kc_mid": 1.05,
+    "kc_end": 0.75,
+    "crop_height_m": 0.4,
+    "kc_stages": [
+      0.1,
+      0.167,
+      0.467,
+      0.267
+    ],
     "cycle_days": 180,
     "seasons": [
       "autumn",
@@ -471,8 +624,8 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -50.0,
-    "source": "FAO ECOCROP (Allium cepa); FAO IWM T4-T5; FAO-56 T12; N aprox."
+    "nitrogen_delta_kg_ha": -74.0,
+    "source": "FAO ECOCROP (Allium cepa); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   },
   {
     "id": "squash",
@@ -488,7 +641,16 @@
     "ph_min": 5.5,
     "ph_max": 6.8,
     "water_need_mm": 500.0,
-    "kc_mid": 1.0,
+    "kc_ini": 0.5,
+    "kc_mid": 0.95,
+    "kc_end": 0.75,
+    "crop_height_m": 0.3,
+    "kc_stages": [
+      0.25,
+      0.35,
+      0.25,
+      0.15
+    ],
     "cycle_days": 108,
     "seasons": [
       "spring",
@@ -499,7 +661,7 @@
       "loam",
       "clay"
     ],
-    "nitrogen_delta_kg_ha": -40.0,
-    "source": "FAO ECOCROP (Cucurbita pepo); FAO IWM T4-T5; FAO-56 T12; N aprox."
+    "nitrogen_delta_kg_ha": -57.0,
+    "source": "FAO ECOCROP (Cucurbita pepo); FAO IWM T4-T5; FAO-56 T11-T12; N: Ludemann 2024 + Herridge 2022, rendimiento FAOSTAT MX"
   }
 ]

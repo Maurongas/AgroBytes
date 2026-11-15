@@ -1,5 +1,5 @@
 {
-  "source": "FAOSTAT QCL, área cosechada (ha), promedio 2020–2024 (CC BY 4.0)",
+  "source": "FAOSTAT QCL, área cosechada (ha) y producción (t), promedio 2020–2024 (CC BY 4.0)",
   "period": "2020-2024",
   "countries": {
     "MX": {
@@ -61,6 +61,121 @@
       "vetch": 0,
       "safflower": 0,
       "cotton": 0
+    }
+  },
+  "yields_t_ha": {
+    "MX": {
+      "maize": 3.91,
+      "sorghum": 3.46,
+      "wheat": 5.86,
+      "barley": 2.9,
+      "oat": 2.14,
+      "bean": 0.74,
+      "soy": 1.74,
+      "chickpea": 1.92,
+      "pea": 4.91,
+      "vetch": 12.05,
+      "canola": 0.73,
+      "safflower": 1.75,
+      "cotton": 4.65,
+      "tomato": 48.24,
+      "chile": 16.61,
+      "potato": 31.95,
+      "onion": 28.47,
+      "squash": 21.11
+    },
+    "US": {
+      "maize": 11.03,
+      "sorghum": 3.76,
+      "wheat": 3.24,
+      "barley": 3.86,
+      "oat": 2.43,
+      "bean": 2.22,
+      "soy": 3.41,
+      "chickpea": 1.31,
+      "pea": 2.28,
+      "canola": 1.92,
+      "safflower": 1.26,
+      "cotton": 2.8,
+      "tomato": 97.61,
+      "chile": 31.9,
+      "potato": 50.57,
+      "onion": 60.6,
+      "squash": 22.66
+    },
+    "CA": {
+      "maize": 10.09,
+      "wheat": 3.2,
+      "barley": 3.29,
+      "oat": 3.25,
+      "bean": 2.57,
+      "soy": 3.12,
+      "chickpea": 1.44,
+      "pea": 2.28,
+      "canola": 2.1,
+      "tomato": 85.27,
+      "chile": 28.4,
+      "potato": 40.22,
+      "onion": 45.92,
+      "squash": 18.65
+    }
+  },
+  "nitrogen_source": "Balance parcial de N (kg/ha por ciclo) = fijación (Herridge et al. 2022) − extracción por cosecha (Ludemann et al. 2024, ESSD 16:525) con el rendimiento FAOSTAT del país",
+  "nitrogen_kg_ha": {
+    "MX": {
+      "maize": -47,
+      "sorghum": -52,
+      "wheat": -123,
+      "barley": -52,
+      "oat": -47,
+      "bean": 7,
+      "soy": 41,
+      "chickpea": 81,
+      "pea": 8,
+      "vetch": 119,
+      "canola": -23,
+      "safflower": -52,
+      "cotton": -139,
+      "tomato": -68,
+      "chile": -40,
+      "potato": -80,
+      "onion": -74,
+      "squash": -57
+    },
+    "US": {
+      "maize": -132,
+      "sorghum": -56,
+      "wheat": -68,
+      "barley": -70,
+      "oat": -53,
+      "bean": -8,
+      "soy": 3,
+      "chickpea": 64,
+      "pea": 51,
+      "canola": -60,
+      "safflower": -38,
+      "cotton": -84,
+      "tomato": -137,
+      "chile": -70,
+      "potato": -126,
+      "onion": -158,
+      "squash": -61
+    },
+    "CA": {
+      "maize": -121,
+      "wheat": -67,
+      "barley": -59,
+      "oat": -72,
+      "bean": -13,
+      "soy": 11,
+      "chickpea": 68,
+      "pea": 55,
+      "canola": -65,
+      "tomato": -119,
+      "chile": -62,
+      "potato": -101,
+      "onion": -119,
+      "squash": -50
     }
   }
 }

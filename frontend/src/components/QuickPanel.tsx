@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
+import CropIcon from './CropIcon';
 import { useQuery } from '@tanstack/react-query';
 import * as turf from '@turf/turf';
 import { motion } from 'framer-motion';
@@ -214,9 +215,9 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
           <div className="mt-2 flex flex-wrap gap-2">
             {CROPS.map((c) => (
               <motion.button key={c.id} whileTap={{ scale: 0.96 }} onClick={() => setCrop(c.id)}
-                className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors ${
                   crop === c.id ? 'border-leaf-600 bg-leaf-50 font-medium text-leaf-900' : 'border-line bg-surface-raised text-ink-700 hover:border-leaf-300'}`}>
-                {c.name}
+                <CropIcon id={c.id} size={16} /> {c.name}
               </motion.button>
             ))}
           </div>

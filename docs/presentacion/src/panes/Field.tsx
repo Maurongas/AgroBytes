@@ -1,13 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { CalendarDays, Check, FileText, ShieldCheck, Snowflake, ThermometerSun, Wifi, WifiOff, type LucideIcon } from 'lucide-react';
-import { features, slide, ui } from '../content';
-import { analysis, current, uncertaintyEn } from '../data';
+import { CalendarDays, Check, FileText, Snowflake, ThermometerSun, Wifi, WifiOff, type LucideIcon } from 'lucide-react';
+import { features, panes, ui } from '../content';
+import { current } from '../data';
 import { MONTHS_EN, SEASON_MONTHS } from '../i18n';
 import { Title } from '../components/ui';
-import type { SlideProps } from './types';
+import type { SlideProps } from '../slides/types';
 
-const T = slide('field');
+const T = panes.field;
 
 /** Alterna entre `n` estados cada `ms` (se detiene con prefers-reduced-motion). */
 function useTick(n: number, ms: number) {
@@ -95,7 +95,7 @@ const LOOPS: Record<(typeof features)[number]['id'], { icon: LucideIcon; body: R
   pdf: { icon: FileText, body: <PdfLoop /> },
 };
 
-export default function S09Field({ preview }: SlideProps) {
+export default function FieldPane({ preview }: SlideProps) {
   return (
     <div className="absolute inset-0 flex flex-col bg-canvas px-24 py-16">
       <Title>{T.title}</Title>
@@ -112,12 +112,6 @@ export default function S09Field({ preview }: SlideProps) {
             </motion.article>
           );
         })}
-      </motion.div>
-      <motion.div className="mt-8 flex items-center gap-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: preview ? 0 : 1.4 }}>
-        <span className="rounded-full bg-clay-100 px-5 py-2 text-lg text-ink-900">{ui.uncertainty}: <strong>{uncertaintyEn}</strong></span>
-        <span className="flex items-center gap-2 rounded-full bg-leaf-50 px-5 py-2 text-lg text-leaf-900">
-          <ShieldCheck size={20} /> {ui.checkLocally} · {analysis.localChecks?.length ?? 0}
-        </span>
       </motion.div>
     </div>
   );

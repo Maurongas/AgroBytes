@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import CropIcon from '../components/CropIcon';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ChevronDown, ClipboardCheck, Download, Users } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
@@ -91,7 +92,7 @@ export default function DiagnosisView() {
                   <motion.span layoutId="season-pill" className="absolute inset-0 rounded-full bg-leaf-100"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                 )}
-                <span className="relative">{SEASON_LABEL[r.season]} · {cropName(r.cropId)}</span>
+                <span className="relative flex items-center gap-1.5"><CropIcon id={r.cropId} size={15} />{SEASON_LABEL[r.season]} · {cropName(r.cropId)}</span>
               </button>
             ))}
           </div>
@@ -104,7 +105,7 @@ export default function DiagnosisView() {
               <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between text-left">
                 <div>
                   <p className="text-xs uppercase tracking-widest text-ink-500">{SEASON_LABEL[step.season]} · siembra {step.plantingWindow}</p>
-                  <h3 className="font-display text-2xl font-semibold">{cropName(step.cropId)}</h3>
+                  <h3 className="flex items-center gap-2 font-display text-2xl font-semibold"><CropIcon id={step.cropId} size={26} />{cropName(step.cropId)}</h3>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="rounded-full bg-leaf-600 px-3 py-1 text-sm font-medium text-paper">{step.score} / 100</span>
@@ -205,7 +206,7 @@ export default function DiagnosisView() {
       <aside className="mx-6 mb-6 flex gap-3 rounded-card border border-line bg-canvas-subtle p-4 text-sm text-ink-700">
         <Users size={20} className="mt-0.5 shrink-0 text-leaf-700" aria-hidden />
         <p>
-          <strong className="text-ink-900">Tú decides.</strong> Field Shift te ayuda a explorar opciones con clima de
+          <strong className="text-ink-900">Tú decides.</strong> AgroBytes te ayuda a explorar opciones con clima de
           NASA POWER y reglas agronómicas; no reemplaza tu experiencia ni la de un agrónomo de tu zona. El nitrógeno y
           la salud del suelo son estimaciones.
         </p>
