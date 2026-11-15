@@ -1,14 +1,15 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import type { ComponentType } from 'react';
+import { lazy, Suspense, type ComponentType } from 'react';
 import { useStore, type ViewId } from './store/useStore';
 import AppShell from './components/AppShell';
+// SelectView es la vista inicial: se carga de inmediato. El resto se descarga al abrirse.
 import SelectView from './views/SelectView';
-import DiagnosisView from './views/DiagnosisView';
-import HistoryView from './views/HistoryView';
-import AlertsView from './views/AlertsView';
-import CalendarView from './views/CalendarView';
-import CompareView from './views/CompareView';
-import AccountView from './views/AccountView';
+const DiagnosisView = lazy(() => import('./views/DiagnosisView'));
+const HistoryView = lazy(() => import('./views/HistoryView'));
+const AlertsView = lazy(() => import('./views/AlertsView'));
+const CalendarView = lazy(() => import('./views/CalendarView'));
+const CompareView = lazy(() => import('./views/CompareView'));
+const AccountView = lazy(() => import('./views/AccountView'));
 
 const VIEWS: Record<ViewId, ComponentType> = {
   select: SelectView,
@@ -28,7 +29,9 @@ export default function App() {
       <AnimatePresence mode="wait">
         <motion.main key={view} className="h-full" initial={{ opacity: 0 }} animate={{ opacity: 1 }}
           exit={{ opacity: 0 }} transition={{ duration: 0.3 }}>
-          <View />
+          <Suspense fallback={null}>
+            <View />
+          </Suspense>
         </motion.main>
       </AnimatePresence>
     </AppShell>
