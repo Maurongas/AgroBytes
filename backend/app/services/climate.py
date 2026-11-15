@@ -61,6 +61,7 @@ class RecentClimate:
     temp_30d_c: float
     temp_30d_normal_c: float
     soil_moisture_30d: float
+    estimated: bool = False  # True = NASA no dio los datos diarios y se usó el promedio (plan B)
 
 
 @dataclass(frozen=True)
@@ -258,6 +259,7 @@ def recent_from_normals(monthly: Series, summary: ClimateSummary, start: date, e
         temp_30d_c=temp_normal,
         temp_30d_normal_c=temp_normal,
         soil_moisture_30d=round(_mean(soil), 3),
+        estimated=True,
     )
 
 
@@ -336,19 +338,24 @@ async def get_climate(lat: float, lon: float, today: date | None = None, db: Ses
     async with httpx.AsyncClient(timeout=nasa_power.TIMEOUT_S) as client:
         recent = _recent_cache.get((lat_g, lon_g, end))
         if recent is None:
+            # asyncio.gather lanza las dos peticiones a la vez: tarda lo que la más lenta, no la suma.
+            # return_exceptions=True: si falla lo diario, el largo plazo ya descargado no se vuelve a pedir.
+            long_res, daily_res = await asyncio.gather(
+                _long_term(client, lat_g, lon_g, today, db),
+                nasa_power.fetch_daily(lat_g, lon_g, start, end, client=client),
+                return_exceptions=True,
+            )
+            if isinstance(long_res, BaseException):
+                raise long_res  # sin largo plazo (ni caché ni NASA) no hay plan B → la API responde 503
+            summary, monthly = long_res
             try:
-                # asyncio.gather lanza las dos peticiones a la vez: tarda lo que la más lenta, no la suma
-                (summary, monthly), daily = await asyncio.gather(
-                    _long_term(client, lat_g, lon_g, today, db),
-                    nasa_power.fetch_daily(lat_g, lon_g, start, end, client=client),
-                )
-                recent = build_recent(daily, monthly, summary, start, end)
+                if isinstance(daily_res, BaseException):
+                    raise daily_res
+                recent = build_recent(daily_res, monthly, summary, start, end)
                 _recent_cache.set((lat_g, lon_g, end), recent)
             except NasaUnavailableError:
-                # Plan B: sin datos diarios se usa lo normal como reciente. No se guarda en _recent_cache
-                # para que, al volver NASA, se pidan los datos reales. Si tampoco hay largo plazo (ni caché
-                # ni NASA), _long_term vuelve a lanzar y la API responde 503.
-                summary, monthly = await _long_term(client, lat_g, lon_g, today, db)
+                # Plan B: sin datos diarios se usa lo normal como reciente (estimated=True). No se guarda en
+                # _recent_cache para que, al volver NASA, se pidan los datos reales.
                 log.warning("Sin datos diarios de NASA para (%s, %s): se usa lo normal como reciente", lat_g, lon_g)
                 recent = recent_from_normals(monthly, summary, start, end)
         else:

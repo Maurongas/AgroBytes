@@ -471,9 +471,12 @@ cultivos consecutivos de la misma familia botánica; acotado a [0, 100].
 | solarRadiation | `ALLSKY_SFC_SW_DWN` promedio anual, en kWh/m²/día | informativo (ok) |
 
 "Últimos días" = hasta hoy − 7 días (los datos diarios de POWER llegan con retraso).
+**Plan B:** si los datos diarios no llegan pero sí hay clima de largo plazo (caché o NASA), "lo reciente" se toma
+igual a lo normal (sin anomalía): el `source` de esas 3 métricas dice "Promedio NASA POWER … (sin datos recientes)"
+y la incertidumbre sube un nivel. Ese resultado no se guarda en caché, para pedir los datos reales cuando vuelvan.
 
 **Incertidumbre:** `rainCvPct` (coef. de variación de la lluvia anual de los últimos 10 años) < 15 → low · 15–30 → medium ·
-> 30 → high. Sube un nivel si `soilMoistureRoot` < 0.3. `reason` explica el porqué en una frase.
+> 30 → high. Sube un nivel si `soilMoistureRoot` < 0.3 y otro si se usó el plan B (sin datos diarios). `reason` explica el porqué en una frase.
 
 **Área y centroide** (`services/geo.py`, puro): centroide = promedio de vértices; área con proyección
 equirectangular local (error < 1 % para parcelas). Sin dependencias extra.
