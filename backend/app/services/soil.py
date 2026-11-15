@@ -5,19 +5,28 @@ sabe su suelo, no reemplaza un análisis de laboratorio. Si falla o no hay dato 
 y el análisis sigue sin suelo. Nunca lanza excepción.
 """
 
+import asyncio
 import logging
+import time
 
 import httpx
 
 from app.schemas.analysis import DetectedSoil, SoilTexture
 
 URL = "https://rest.isric.org/soilgrids/v2.0/properties/query"
-TIMEOUT_S = 20.0  # SoilGrids suele tardar 5–10 s; el frontend lo pide en cuanto se dibuja la parcela
+TIMEOUT_S = 10.0  # SoilGrids suele tardar 3–8 s; si no contesta en 10 s el análisis sigue sin suelo
 # Capas superficiales y su grosor (cm) para promediar 0–30 cm
 DEPTHS = {"0-5cm": 5, "5-15cm": 10, "15-30cm": 15}
 
 log = logging.getLogger(__name__)
 _cache: dict[tuple[float, float], DetectedSoil | None] = {}
+# Si SoilGrids falla (timeout, 5xx), no se reintenta ese punto durante un rato: sin esto cada análisis
+# esperaba los 20 s del timeout, y «Comparar escenarios» hace dos análisis seguidos.
+FAILURE_TTL_S = 300
+_failed_at: dict[tuple[float, float], float] = {}
+# Consultas en curso: si llegan dos análisis del mismo punto a la vez (p. ej. «Comparar escenarios»),
+# el segundo espera la misma respuesta en lugar de hacer otra consulta.
+_inflight: dict[tuple[float, float], asyncio.Task] = {}
 
 
 def texture_class(clay_pct: float, sand_pct: float) -> SoilTexture:
@@ -57,6 +66,19 @@ async def get_soil(lat: float, lon: float, client: httpx.AsyncClient | None = No
     key = (round(lat, 2), round(lon, 2))  # ~1 km: más fino que la resolución útil del dato
     if key in _cache:
         return _cache[key]
+    if time.monotonic() - _failed_at.get(key, float("-inf")) < FAILURE_TTL_S:
+        return None
+    task = _inflight.get(key)
+    if task is None or task.get_loop() is not asyncio.get_running_loop():
+        task = asyncio.ensure_future(_fetch(key, lat, lon, client))
+        _inflight[key] = task
+        task.add_done_callback(lambda done: _inflight.pop(key, None) if _inflight.get(key) is done else None)
+    # shield: si un cliente cancela su petición, la consulta compartida sigue para los demás
+    return await asyncio.shield(task)
+
+
+async def _fetch(key: tuple[float, float], lat: float, lon: float,
+                 client: httpx.AsyncClient | None) -> DetectedSoil | None:
     params = [("lon", round(lon, 4)), ("lat", round(lat, 4)), ("value", "mean"),
               *[("property", p) for p in ("clay", "sand", "phh2o")], *[("depth", d) for d in DEPTHS]]
     try:
@@ -67,8 +89,9 @@ async def get_soil(lat: float, lon: float, client: httpx.AsyncClient | None = No
             response = await client.get(URL, params=params)
         response.raise_for_status()
         result = parse(response.json())
-    except (httpx.HTTPError, ValueError, KeyError, TypeError):
-        log.warning("SoilGrids no disponible para (%s, %s)", lat, lon, exc_info=True)
-        return None  # no se guarda en caché: puede ser un fallo temporal
+    except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:
+        log.warning("SoilGrids no disponible para (%s, %s): %r", lat, lon, exc)
+        _failed_at[key] = time.monotonic()  # fallo temporal: no va a _cache, se reintenta en FAILURE_TTL_S
+        return None
     _cache[key] = result
     return result

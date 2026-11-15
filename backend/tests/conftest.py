@@ -5,7 +5,9 @@ from datetime import date
 import pytest
 
 from app.schemas.climate import ClimateSummary, MonthlyClimatePoint
+from app.core import rate_limit
 from app.services import climate as climate_service
+from app.services import soil as soil_service
 from app.services.climate import ClimateData, RecentClimate
 from app.services.crops import CropParams
 
@@ -58,4 +60,8 @@ def limpiar_cache():
     """Cada prueba empieza con el caché vacío."""
     climate_service._long_term_cache.clear()
     climate_service._recent_cache.clear()
+    soil_service._cache.clear()
+    soil_service._failed_at.clear()
+    soil_service._inflight.clear()
+    rate_limit.reset()
     yield

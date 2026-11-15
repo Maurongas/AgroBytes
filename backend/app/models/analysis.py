@@ -27,5 +27,7 @@ class Analysis(Base):
     priority: Mapped[str] = mapped_column(String(20), nullable=False)
     soil: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     irrigated: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    # Dispositivo anónimo que creó el análisis (header X-Device-Id). NULL = análisis de antes de la v2.1
+    device_id: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
     climate_summary: Mapped[dict] = mapped_column(JSONB, nullable=False)
     result: Mapped[dict] = mapped_column(JSONB, nullable=False)

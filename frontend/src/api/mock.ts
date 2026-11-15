@@ -31,9 +31,9 @@ export const mockAnalysis: AnalysisResponse = {
       waterSavingPct: 42, nitrogenDelta: -12, risks: ['Requiere control de maleza temprano'], plantingWindow: 'May – Jun', irrigationMm: 410 },
   ],
   impact: [
-    { label: 'Balance hídrico', unit: 'mm', current: -120, recommended: -45, betterWhen: 'higher' },
-    { label: 'Balance de nitrógeno (estimado)', unit: 'kg/ha', current: 38, recommended: 71, betterWhen: 'higher' },
+    { label: 'Agua total del cultivo', unit: 'mm', current: 640, recommended: 470, betterWhen: 'lower' },
     { label: 'Riego necesario', unit: 'mm', current: 520, recommended: 340, betterWhen: 'lower' },
+    { label: 'Balance de nitrógeno (estimado)', unit: 'kg/ha', current: 38, recommended: 71, betterWhen: 'higher' },
   ],
   soilHealth: { current: 52, recommended: 74 },
   climate: [

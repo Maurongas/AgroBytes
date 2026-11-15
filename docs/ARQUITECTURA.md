@@ -4,7 +4,7 @@
 > o la estructura de carpetas (§4), **actualiza este archivo en el mismo PR**.
 > Qué cambió respecto a la versión 1.0 y cómo ponerte al día: [`CAMBIOS-ARQUITECTURA.md`](CAMBIOS-ARQUITECTURA.md).
 
-Versión: **2.0 (definitiva)** · Fecha: 2026-11-14
+Versión: **2.1** · Fecha: 2026-11-14 (2.1: `guardar`, historial por dispositivo, `DELETE`, límite 429 — ver [`CAMBIOS-ARQUITECTURA.md`](CAMBIOS-ARQUITECTURA.md) §v2.1)
 
 ---
 
@@ -166,14 +166,28 @@ snake_case; `schemas/base.py` hace la conversión). Documentación viva en `/doc
 | Método | Ruta | Descripción | Estado |
 |---|---|---|---|
 | GET | `/health` | Estado del backend y de la BD | ✅ listo |
-| POST | `/api/v1/analyses` | Analiza una parcela: clima + rotación; guarda el análisis | ✅ listo |
+| POST | `/api/v1/analyses?guardar=true` | Analiza una parcela: clima + rotación; guarda el análisis (`guardar=false` → no lo guarda) | ✅ listo |
 | GET | `/api/v1/analyses?limit=20` | Historial (resúmenes) | ✅ listo |
 | GET | `/api/v1/analyses/{id}` | Detalle de un análisis guardado | ✅ listo |
+| DELETE | `/api/v1/analyses/{id}` | Borra un análisis del historial (solo el dispositivo que lo creó) | ✅ listo |
 | GET | `/api/v1/climate?lat=&lon=` | Resumen climático NASA POWER de un punto (útil para depurar) | ✅ listo |
 | GET | `/api/v1/crops` | Catálogo de cultivos (FAO ECOCROP + FAO) | ✅ listo |
 | GET | `/api/v1/soil?lat=&lon=` | Suelo estimado del punto (ISRIC SoilGrids); 404 si no hay dato | ✅ listo |
 
 Todos los endpoints están implementados: el frontend ya puede usar `VITE_USE_MOCK=false`.
+
+**Header `X-Device-Id` (opcional, recomendado):** identificador anónimo del dispositivo — un UUID que el frontend
+genera una vez y guarda en `localStorage`. 8–64 caracteres `[A-Za-z0-9_-]` (si no → `422`). **No es
+autenticación**: solo separa el historial de cada dispositivo.
+
+| Endpoint | Con `X-Device-Id` | Sin header |
+|---|---|---|
+| `POST /analyses` | el análisis queda a nombre del dispositivo | queda sin dueño |
+| `GET /analyses` | solo los de ese dispositivo | todos (comportamiento anterior) |
+| `GET /analyses/{id}` | `404` si es de otro dispositivo | se ve |
+| `DELETE /analyses/{id}` | solo si es suyo; si no `404` | solo análisis sin dueño |
+
+Con `REQUIRE_DEVICE_ID=true` (§10), `GET`/`DELETE` sin header → `400`. Se activa cuando el frontend ya lo mande.
 
 ### 5.1 Enums (códigos en inglés; las etiquetas en español viven en el frontend)
 | Campo | Valores |
@@ -189,18 +203,35 @@ Todos los endpoints están implementados: el frontend ya puede usar `VITE_USE_MO
 | `family` (cultivo) | rol: `cereal` · `legume` · `cover` · `vegetable` · `oilseed` · `industrial` (la familia botánica va en `botanicalFamily`) |
 
 ### 5.2 `POST /api/v1/analyses`
+Query opcional `guardar` (booleano, default `true`):
+
+| `guardar` | Qué hace | Código | `id` |
+|---|---|---|---|
+| `true` u omitido | Analiza **y guarda** en `analyses` (aparece en el historial §5.3) | `201` | id de la BD: `"42"` |
+| `false` | Analiza y devuelve el mismo `AnalysisResponse`, **sin guardarlo** | `200` | temporal: `"preview-3f9a1c2b7d4e"` |
+
+- Uso: «Comparar escenarios» (`CompareView`) hace un análisis por escenario con `guardar=false`
+  para no meter 2 filas al historial por cada comparación.
+- El `id` `preview-…` no existe en la BD: `GET /analyses/{id}` → `404`. El frontend no debe guardarlo en el
+  historial offline ni usarlo para "Abrir". `createdAt` es la hora del cálculo.
+- El resultado es idéntico al de `guardar=true` con el mismo body (mismo motor, mismo clima en caché).
+- Otro valor (`guardar=quizas`) → `422`. FastAPI acepta `false`/`0`/`no`/`off` y `true`/`1`/`yes`/`on`.
+- Límite: `RATE_LIMIT_ANALYSES_PER_MIN` (default 30) análisis por IP por minuto, cuenten o no para el historial.
+  Si se pasa → `429` con header `Retry-After` (segundos) y `detail` en español. Una comparación usa 2.
+
 Request:
 ```json
 {
   "geometry": { "type": "Polygon", "coordinates": [[[-116.61, 31.85], [-116.59, 31.85], [-116.59, 31.87], [-116.61, 31.85]]] },
   "currentCrop": "maize",
   "priority": "water",
-  "soil": { "texture": "clay", "ph": 7.8 },
+  "soil": { "texture": "clay", "ph": 7.8, "organicMatter": "low" },
   "irrigated": true
 }
 ```
 - `geometry`: GeoJSON Polygon, coordenadas `[lon, lat]`, anillo cerrado (≥ 4 puntos). Si no → `422`.
 - `soil` es opcional. Lo que falte (textura o pH) se completa con **SoilGrids** (`soilDetected` en la respuesta).
+  `soil.organicMatter` (`low`·`mid`·`high`, opcional) ajusta el índice `soilHealth` (§7); SoilGrids no lo da.
 - `irrigated` es opcional: `true` = parcela de riego (el agua se compara por riego necesario); `false`/omitido = temporal.
 
 Response `201`:
@@ -223,7 +254,7 @@ Response `201`:
       "waterSavingPct": 100, "nitrogenDelta": 0, "risks": [], "plantingWindow": "—", "irrigationMm": 0 }
   ],
   "impact": [
-    { "label": "Balance hídrico", "unit": "mm", "current": -120, "recommended": -45, "betterWhen": "higher" },
+    { "label": "Agua total del cultivo", "unit": "mm", "current": 640, "recommended": 470, "betterWhen": "lower" },
     { "label": "Riego necesario", "unit": "mm", "current": 520, "recommended": 340, "betterWhen": "lower" },
     { "label": "Balance de nitrógeno (estimado)", "unit": "kg/ha", "current": 38, "recommended": 71, "betterWhen": "higher" }
   ],
@@ -248,10 +279,15 @@ Response `201`:
     "areaHa": 8.4, "currentCrop": "maize", "priority": "water", "rotationCrops": ["oat", "bean", "sorghum"] }
 ]
 ```
-Ordenado del más reciente al más antiguo. `limit` ∈ [1, 100].
+Ordenado del más reciente al más antiguo. `limit` ∈ [1, 100]. Con `X-Device-Id`, solo los de ese dispositivo.
+Los análisis con `guardar=false` nunca aparecen aquí.
 
 ### 5.4 `GET /api/v1/analyses/{id}`
-El mismo `AnalysisResponse` de §5.2 (se lee del JSON guardado). `404` si no existe.
+El mismo `AnalysisResponse` de §5.2 (se lee del JSON guardado). `404` si no existe o es de otro dispositivo.
+
+### 5.4b `DELETE /api/v1/analyses/{id}`
+`204` sin cuerpo. `404` si no existe, si el id no es numérico (`preview-…`) o si no es de este dispositivo
+(mismo `X-Device-Id` con el que se creó; los análisis sin dueño solo se borran sin header).
 
 ### 5.5 `GET /api/v1/climate?lat=31.86&lon=-116.6`
 ```json
@@ -279,13 +315,17 @@ El mismo `AnalysisResponse` de §5.2 (se lee del JSON guardado). `404` si no exi
 ```json
 { "texture": "clay", "ph": 7.8, "clayPct": 39.8, "sandPct": 29.2, "source": "ISRIC SoilGrids v2.0 (0–30 cm)" }
 ```
+Timeout 10 s. Caché en memoria por punto (~1 km). Si SoilGrids falla, ese punto no se reintenta en 5 min
+(el análisis sigue sin suelo al instante). Dos peticiones simultáneas al mismo punto comparten una sola consulta.
+**Recomendado:** el frontend lo pide al terminar de dibujar la parcela; así `POST /analyses` ya no espera.
 
 ### 5.7 Errores
 | Código | Cuándo |
 |---|---|
 | 422 | Validación (Pydantic): polígono inválido, enums, rangos |
-| 404 | `analyses/{id}` no existe |
-| 404 | `analyses/{id}` no existe · `soil` sin dato para ese punto |
+| 400 | Falta `X-Device-Id` con `REQUIRE_DEVICE_ID=true` |
+| 404 | `analyses/{id}` no existe o es de otro dispositivo · `soil` sin dato para ese punto |
+| 429 | Más de `RATE_LIMIT_ANALYSES_PER_MIN` análisis por IP en un minuto (header `Retry-After`) |
 | 503 | NASA POWER caído y sin caché · BD no disponible al guardar/leer · tabla `crops` vacía |
 
 Formato siempre: `{"detail": "mensaje legible en español"}` (el `client.ts` lo muestra tal cual).
@@ -307,6 +347,7 @@ erDiagram
         string priority
         jsonb soil "nullable"
         bool irrigated "nullable"
+        string device_id "X-Device-Id, nullable, indexado"
         jsonb climate_summary "ClimateSummary usado"
         jsonb result "AnalysisResponse sin id ni createdAt (salen de la fila)"
     }
@@ -350,7 +391,8 @@ Reglas:
 - `crops` se llena con `app/db/seed.py` desde `app/data/crops.json` (idempotente: upsert por `id`).
   **`crops.json` no se edita a mano**: lo genera `backend/research/build_crops.py` desde FAO ECOCROP + tablas FAO
   (detalle de cada campo en `docs/INVESTIGACION-CULTIVOS.md` §4). Los `id` deben ser exactamente los de §5.1.
-- Migraciones: `7c4987b08e73` (tablas iniciales) → `a3f1c2d4e5b6` (catálogo v2 + `analyses.irrigated`).
+- Migraciones: `7c4987b08e73` (tablas iniciales) → `a3f1c2d4e5b6` (catálogo v2 + `analyses.irrigated`) →
+  `b7d2e9f4a1c3` (`analyses.device_id` + índice; los análisis anteriores quedan con `NULL` = sin dueño).
 - No hay tabla `farms` en el MVP (las parcelas viven dentro de cada análisis).
 
 ---
@@ -396,10 +438,13 @@ que **toleran** el clima (temperatura media > límite absoluto y mínima media �
 
 **Impacto** (`current` = `currentCrop` solo en las temporadas donde puede crecer, descanso en las demás;
 `recommended` = la rotación; el barbecho no consume agua ni N):
-- Balance hídrico = Σ(lluvia del ciclo − need) · Riego necesario = Σ irrigationMm.
+- Agua total del cultivo = Σ need (ETc del ciclo, de lluvia o de riego; menor = mejor) · Riego necesario = Σ irrigationMm.
+  (Hasta la v2.0 la primera fila era "Balance hídrico" = Σ(lluvia − need): en zonas áridas salía idéntica a
+  −riego y no aportaba nada.) Ojo: si el cultivo actual solo cabe en una temporada y la rotación llena las tres,
+  `recommended` puede usar **más** agua total que `current` — es real: hay más ciclos de cultivo.
 - Balance de nitrógeno (estimado) = 40 + Σ nitrogenDelta (kg/ha; negativo = hay que fertilizar).
 
-**Salud del suelo (índice estimado 0–100):** 50 + 10 por leguminosa + 8 por cobertura − 10 por cada par de
+**Salud del suelo (índice estimado 0–100):** 50 (40 si `soil.organicMatter` = low, 60 si high) + 10 por leguminosa + 8 por cobertura − 10 por cada par de
 cultivos consecutivos de la misma familia botánica; acotado a [0, 100].
 
 **Métricas** (`series` = 12 valores mensuales de la climatología):
@@ -474,6 +519,8 @@ DATABASE_URL=postgresql+psycopg://admin:password@db:5432/agridb
 CORS_ORIGINS=http://localhost:3000
 NASA_POWER_BASE_URL=https://power.larc.nasa.gov/api
 CLIMATE_CACHE_DAYS=30
+RATE_LIMIT_ANALYSES_PER_MIN=30   # POST /analyses por IP por minuto; 0 = sin límite
+REQUIRE_DEVICE_ID=false          # true = historial/detalle/borrado exigen X-Device-Id
 VITE_API_URL=http://localhost:8000
 VITE_USE_MOCK=true
 ```

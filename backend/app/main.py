@@ -9,7 +9,7 @@ from app.db.database import engine
 app = FastAPI(
     title="DSS Agrícola — API",
     description="Clima de NASA POWER + reglas agronómicas para recomendar rotaciones de cultivo.",
-    version="1.0.0",
+    version="2.1.0",
 )
 
 app.add_middleware(
