@@ -231,6 +231,36 @@ def build_recent(daily: Series, monthly: Series, summary: ClimateSummary, start:
     )
 
 
+def recent_from_normals(monthly: Series, summary: ClimateSummary, start: date, end: date) -> RecentClimate:
+    """Plan B cuando los datos diarios no llegan: lo reciente se toma como igual a lo normal (sin anomalía)."""
+    start_year, end_year = (int(y) for y in summary.period.split("-"))
+
+    def normal(param: str, month: int) -> float | None:
+        vals = [
+            v for y in range(start_year, end_year + 1)
+            if (v := monthly.get(param, {}).get(f"{y}{month:02d}")) is not None
+        ]
+        return _mean(vals) if vals else None
+
+    days = [start + timedelta(days=i) for i in range((end - start).days + 1)]
+    last_30 = days[-30:]
+    normal_temp = {p.month: p.temp_c for p in summary.monthly}
+    soil = [s for d in last_30 if (s := normal("GWETROOT", d.month)) is not None]
+    if not soil:
+        raise NasaUnavailableError("Sin datos normales de humedad de suelo")
+    rain_normal = round(sum(normal("PRECTOTCORR", d.month) or 0.0 for d in days), 1)
+    temp_normal = round(_mean([normal_temp[d.month] for d in last_30]), 2)
+    return RecentClimate(
+        start=start,
+        end=end,
+        rain_90d_mm=rain_normal,
+        rain_90d_normal_mm=rain_normal,
+        temp_30d_c=temp_normal,
+        temp_30d_normal_c=temp_normal,
+        soil_moisture_30d=round(_mean(soil), 3),
+    )
+
+
 # ---------------------------------------------------------------- API del módulo (con red y caché)
 
 
@@ -306,13 +336,21 @@ async def get_climate(lat: float, lon: float, today: date | None = None, db: Ses
     async with httpx.AsyncClient(timeout=nasa_power.TIMEOUT_S) as client:
         recent = _recent_cache.get((lat_g, lon_g, end))
         if recent is None:
-            # asyncio.gather lanza las dos peticiones a la vez: tarda lo que la más lenta, no la suma
-            (summary, monthly), daily = await asyncio.gather(
-                _long_term(client, lat_g, lon_g, today, db),
-                nasa_power.fetch_daily(lat_g, lon_g, start, end, client=client),
-            )
-            recent = build_recent(daily, monthly, summary, start, end)
-            _recent_cache.set((lat_g, lon_g, end), recent)
+            try:
+                # asyncio.gather lanza las dos peticiones a la vez: tarda lo que la más lenta, no la suma
+                (summary, monthly), daily = await asyncio.gather(
+                    _long_term(client, lat_g, lon_g, today, db),
+                    nasa_power.fetch_daily(lat_g, lon_g, start, end, client=client),
+                )
+                recent = build_recent(daily, monthly, summary, start, end)
+                _recent_cache.set((lat_g, lon_g, end), recent)
+            except NasaUnavailableError:
+                # Plan B: sin datos diarios se usa lo normal como reciente. No se guarda en _recent_cache
+                # para que, al volver NASA, se pidan los datos reales. Si tampoco hay largo plazo (ni caché
+                # ni NASA), _long_term vuelve a lanzar y la API responde 503.
+                summary, monthly = await _long_term(client, lat_g, lon_g, today, db)
+                log.warning("Sin datos diarios de NASA para (%s, %s): se usa lo normal como reciente", lat_g, lon_g)
+                recent = recent_from_normals(monthly, summary, start, end)
         else:
             summary, _ = await _long_term(client, lat_g, lon_g, today, db)
     return ClimateData(summary=summary, recent=recent)
