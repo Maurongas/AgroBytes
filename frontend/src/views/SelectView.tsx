@@ -13,9 +13,9 @@ export default function SelectView() {
   });
 
   const onAnalyze = () => {
-    const { geometry, crop, priority, soil } = useStore.getState();
+    const { geometry, crop, priority, soil, irrigated } = useStore.getState();
     if (!geometry || !crop || !priority) return;
-    mutation.mutate({ geometry, currentCrop: crop, priority, soil: soil ?? undefined });
+    mutation.mutate({ geometry, currentCrop: crop, priority, soil: soil ?? undefined, irrigated });
   };
 
   return (

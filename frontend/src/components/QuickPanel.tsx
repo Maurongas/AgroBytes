@@ -1,15 +1,45 @@
-import { useEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type PointerEvent, type ReactNode } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import * as turf from '@turf/turf';
 import { motion } from 'framer-motion';
 import { Droplets, Sprout, TrendingUp, ArrowRight, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import { getSoil } from '../api/client';
 import { CROPS } from '../lib/crops';
-import type { Priority } from '../api/types';
+import type { Priority, SoilTexture } from '../api/types';
 
 const PRIORITIES: { id: Priority; title: string; text: string; icon: typeof Droplets; tone: string }[] = [
   { id: 'water', title: 'Ahorrar agua', text: 'Menos riego, más retención', icon: Droplets, tone: 'text-sky-500' },
   { id: 'nitrogen', title: 'Regenerar nitrógeno', text: 'Suelo más fértil con leguminosas', icon: Sprout, tone: 'text-nitro' },
   { id: 'yield', title: 'Maximizar rendimiento', text: 'Mayor producción por hectárea', icon: TrendingUp, tone: 'text-leaf-500' },
 ];
+
+const TEXTURAS: { id: SoilTexture; nombre: string }[] = [
+  { id: 'sandy', nombre: 'Arenoso' },
+  { id: 'loam', nombre: 'Franco' },
+  { id: 'clay', nombre: 'Arcilloso' },
+];
+const NOMBRE_TEXTURA: Record<SoilTexture, string> = { sandy: 'Arenoso', loam: 'Franco', clay: 'Arcilloso' };
+
+/** Devuelve `valor` pero solo después de que deja de cambiar `ms` milisegundos (evita pedir suelo en cada arrastre). */
+function useRetardo<T>(valor: T, ms: number): T {
+  const [v, setV] = useState(valor);
+  useEffect(() => {
+    const t = setTimeout(() => setV(valor), ms);
+    return () => clearTimeout(t);
+  }, [valor, ms]);
+  return v;
+}
+
+function Chip({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" aria-pressed={activo} onClick={onClick}
+      className={`rounded-full border px-4 py-2 text-sm transition-colors ${
+        activo ? 'border-leaf-600 bg-leaf-50 font-medium text-leaf-900' : 'border-line bg-surface-raised text-ink-700 hover:border-leaf-300'}`}>
+      {children}
+    </button>
+  );
+}
 
 /**
  * En celular el panel es una hoja inferior con cuatro alturas:
@@ -37,7 +67,18 @@ interface Props {
 }
 
 export default function QuickPanel({ onAnalyze, pending, error }: Props) {
-  const { geometry, areaHa, parcelError, crop, priority, setCrop, setPriority } = useStore();
+  const { geometry, areaHa, parcelError, crop, priority, soil, irrigated, setCrop, setPriority, setSoil, setIrrigated } = useStore();
+
+  // Suelo estimado en el centro de la parcela (GeoJSON es [lon, lat]). El retardo evita una consulta por cada arrastre de punto.
+  const centro = useMemo(() => (geometry ? turf.centroid(geometry).geometry.coordinates : null), [geometry]);
+  const centroQuieto = useRetardo(centro, 800);
+  const detectado = useQuery({
+    queryKey: ['soil', centroQuieto?.[1].toFixed(3), centroQuieto?.[0].toFixed(3)],
+    queryFn: () => getSoil(centroQuieto![1], centroQuieto![0]),
+    enabled: centroQuieto !== null,
+    staleTime: Infinity,
+    retry: false,
+  });
   const ready = !!geometry && !!crop && !!priority;
   const missing = !geometry ? 'Dibuja tu parcela en el mapa' : !crop ? 'Elige tu cultivo actual' : !priority ? 'Elige tu prioridad' : '';
   const estado = parcelError ?? (ready && areaHa ? `${areaHa.toFixed(1)} ha · listo para analizar` : missing);
@@ -197,6 +238,40 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
             ))}
           </div>
         </section>
+
+        {/* Plegable para no alargar el panel en el celular */}
+        <details className="mt-5 rounded-2xl border border-line p-3">
+          <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-ink-500">
+            4 · Suelo y riego (opcional)
+          </summary>
+          <div className="mt-3 space-y-4">
+            <div>
+              <p className="text-sm font-medium">Tipo de suelo</p>
+              <p className="mt-1 text-xs text-ink-500" role="status">
+                {!geometry
+                  ? 'Dibuja tu parcela para estimarlo.'
+                  : detectado.isPending || detectado.isFetching // isPending: también durante el retardo previo a la consulta
+                    ? 'Estimando con ISRIC SoilGrids…'
+                    : detectado.data
+                      ? `Estimado: ${NOMBRE_TEXTURA[detectado.data.texture]} (arcilla ${Math.round(detectado.data.clayPct)} %, arena ${Math.round(detectado.data.sandPct)} %)`
+                      : 'No hay dato para este punto; elige el tipo tú.'}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Chip activo={soil === null} onClick={() => setSoil(null)}>Automático</Chip>
+                {TEXTURAS.map((t) => (
+                  <Chip key={t.id} activo={soil?.texture === t.id} onClick={() => setSoil({ texture: t.id })}>{t.nombre}</Chip>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium">¿Tiene riego?</p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Chip activo={!irrigated} onClick={() => setIrrigated(false)}>Temporal (solo lluvia)</Chip>
+                <Chip activo={irrigated} onClick={() => setIrrigated(true)}>Con riego</Chip>
+              </div>
+            </div>
+          </div>
+        </details>
       </div>
 
       {/* Pie: el botón siempre queda visible, también con el panel recogido */}
