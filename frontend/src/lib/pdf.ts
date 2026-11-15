@@ -71,10 +71,10 @@ export function exportarPlanPdf(a: AnalysisResponse, { crop, priority }: Extra):
   // Rotación
   titulo('Rotación recomendada');
   tabla(
-    ['Temporada', 'Cultivo', 'Siembra', 'Puntaje', 'Ahorro de agua', 'Nitrógeno (estimado)'],
+    ['Temporada', 'Cultivo', 'Siembra', 'Puntaje', 'Ahorro de agua', 'Riego (mm)', 'Nitrógeno (estimado)'],
     a.rotation.map((r) => [
       SEASON_LABEL[r.season], cropName(r.cropId), r.plantingWindow, `${r.score} / 100`,
-      `${r.waterSavingPct} %`, `${r.nitrogenDelta > 0 ? '+' : ''}${r.nitrogenDelta} kg/ha`,
+      `${r.waterSavingPct} %`, String(r.irrigationMm), `${r.nitrogenDelta > 0 ? '+' : ''}${r.nitrogenDelta} kg/ha`,
     ]),
   );
   tabla(
