@@ -4,7 +4,7 @@
 > o la estructura de carpetas (§4), **actualiza este archivo en el mismo PR**.
 > Qué cambió respecto a la versión 1.0 y cómo ponerte al día: [`CAMBIOS-ARQUITECTURA.md`](CAMBIOS-ARQUITECTURA.md).
 
-Versión: **2.1** · Fecha: 2026-11-14 (2.1: `guardar`, historial por dispositivo, `DELETE`, límite 429 — ver [`CAMBIOS-ARQUITECTURA.md`](CAMBIOS-ARQUITECTURA.md) §v2.1)
+Versión: **2.2** · Fecha: 2026-11-14 (2.2: `strategies`, `localChecks`, `climateShift`; 2.1: `guardar`, historial por dispositivo, `DELETE`, límite 429 — ver [`CAMBIOS-ARQUITECTURA.md`](CAMBIOS-ARQUITECTURA.md) §v2.1)
 
 ---
 
@@ -226,7 +226,8 @@ Request:
   "currentCrop": "maize",
   "priority": "water",
   "soil": { "texture": "clay", "ph": 7.8, "organicMatter": "low" },
-  "irrigated": true
+  "irrigated": true,
+  "climateShift": { "rainPct": -20, "tempC": 1.5 }
 }
 ```
 - `geometry`: GeoJSON Polygon, coordenadas `[lon, lat]`, anillo cerrado (≥ 4 puntos). Si no → `422`.
@@ -235,6 +236,9 @@ Request:
 - `soil` es opcional. Lo que falte (textura o pH) se completa con **SoilGrids** (`soilDetected` en la respuesta).
   `soil.organicMatter` (`low`·`mid`·`high`, opcional) ajusta el índice `soilHealth` (§7); SoilGrids no lo da.
 - `irrigated` es opcional: `true` = parcela de riego (el agua se compara por riego necesario); `false`/omitido = temporal.
+- `climateShift` es opcional (v2.2): escenario hipotético «¿y si…?». `rainPct` ∈ [−60, 60] cambia la lluvia de cada
+  mes en ese %, `tempC` ∈ [−3, 5] suma °C a cada mes. **Solo con `guardar=false`**; con `guardar=true` → `422`
+  (un escenario inventado no debe quedar en el historial como si fuera un análisis real).
 
 Response `201`:
 ```json
@@ -265,7 +269,17 @@ Response `201`:
   "climate": [{ "month": "Ene", "rain": 62, "temp": 14 }, "… 12 meses"],
   "uncertainty": { "level": "high", "reason": "La lluvia anual varía 38 % entre años" },
   "soilDetected": { "texture": "clay", "ph": 7.8, "clayPct": 39.8, "sandPct": 29.2, "source": "ISRIC SoilGrids v2.0 (0–30 cm)" },
-  "irrigated": true
+  "irrigated": true,
+  "strategies": [
+    { "id": "current", "title": "Seguir como hoy", "isCurrent": true, "isRecommended": false,
+      "steps": ["… 3 RotationStep"], "waterMm": 640, "irrigationMm": 520, "nitrogenKgHa": 38, "soilHealth": 52,
+      "bareSeasons": 1, "why": "Tu cultivo actual en las temporadas en que el clima lo permite; descanso en las demás.",
+      "benefits": ["Ya conoces el cultivo…"], "tradeoffs": ["Repite familia botánica…"],
+      "evidence": ["Maíz, verano: necesita ~420 mm y la lluvia aporta ~6 mm (FAO-56 con clima de NASA POWER)"] },
+    { "id": "water", "title": "Ahorrar agua", "isCurrent": false, "isRecommended": true, "…": "…" }
+  ],
+  "localChecks": ["Confirma las fechas de siembra con productores o el extensionista de tu zona."],
+  "climateShift": null
 }
 ```
 - `metrics`: siempre las 4 de §5.1, en ese orden. Todas de NASA POWER.
@@ -274,6 +288,13 @@ Response `201`:
 - `soilHealth` y `nitrogenDelta` son **estimaciones por reglas**; la UI lo indica.
 - `soilDetected`: `null` si SoilGrids no tiene dato (zonas urbanas, agua) o no respondió (beta, límite 5 consultas/min).
 - `irrigationMm`: riego estimado del ciclo de ese cultivo (FAO-56, ver §7).
+- `strategies` (v2.2): estrategias comparadas para las próximas 3 temporadas. La primera siempre es `current`
+  ("Seguir como hoy"); luego una por prioridad (`water`, `nitrogen`, `yield`). Si dos dan los mismos cultivos se
+  fusionan y el `title` las une ("Ahorrar agua · Regenerar el suelo"). La que tiene `isRecommended: true` tiene
+  los mismos pasos que `rotation`. `nitrogenKgHa` y `soilHealth` son **estimaciones por reglas**. `[]` en análisis
+  guardados antes de la v2.2.
+- `localChecks` (v2.2): 1–5 frases con lo que conviene confirmar con productores o un agrónomo de la zona.
+- `climateShift` (v2.2): el escenario que se aplicó (`null` si es el clima histórico).
 
 ### 5.3 `GET /api/v1/analyses?limit=20`
 ```json
@@ -458,6 +479,16 @@ que **toleran** el clima (temperatura media > límite absoluto y mínima media �
   −riego y no aportaba nada.) Ojo: si el cultivo actual solo cabe en una temporada y la rotación llena las tres,
   `recommended` puede usar **más** agua total que `current` — es real: hay más ciclos de cultivo.
 - Balance de nitrógeno (estimado) = 40 + Σ nitrogenDelta (kg/ha; negativo = hay que fertilizar).
+
+**Estrategias (v2.2):** `current` (el cultivo actual en las temporadas que tolera, descanso en las demás) + una
+rotación por prioridad: el mismo algoritmo corre con `priority` = `water`, `nitrogen` y `yield` (solo cambia el
+factor de prioridad). Las que salen con los mismos cultivos se fusionan. Cada una trae agua, riego, nitrógeno y
+salud del suelo (mismas fórmulas que *Impacto*), temporadas sin cultivo, beneficios y riesgos frente a `current`,
+y la evidencia (necesidad de agua FAO-56 vs. lluvia de NASA POWER por paso).
+
+**Escenario (`climateShift`, v2.2):** antes de recomendar se multiplica la lluvia mensual por `1 + rainPct/100` y se
+suman `tempC` °C a la media, máxima y mínima de cada mes. Lo reciente (90 días) no se toca. La incertidumbre
+agrega "escenario hipotético: …" a su `reason`.
 
 **Salud del suelo (índice estimado 0–100):** 50 (40 si `soil.organicMatter` = low, 60 si high) + 10 por leguminosa + 8 por cobertura − 10 por cada par de
 cultivos consecutivos de la misma familia botánica; acotado a [0, 100].

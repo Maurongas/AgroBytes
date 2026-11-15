@@ -106,6 +106,9 @@ async def create_analysis(
     db: Session = Depends(get_db),
 ) -> AnalysisResponse:
     # 1. Geometría: área y centroide de la parcela (el formato ya lo validó Pydantic → 422)
+    if req.climate_shift is not None and guardar:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT,
+                            detail="Los escenarios hipotéticos solo se calculan sin guardar (guardar=false)")
     ring = geo.outer_ring(req.geometry.coordinates)
     area = geo.area_ha(ring)
     if area <= 0:
@@ -155,6 +158,9 @@ async def create_analysis(
         "uncertainty": result.uncertainty.model_dump(mode="json"),
         "soil_detected": detected_soil.model_dump(mode="json") if detected_soil else None,
         "irrigated": req.irrigated,
+        "strategies": [s.model_dump(mode="json") for s in result.strategies],
+        "local_checks": list(result.local_checks),
+        "climate_shift": req.climate_shift.model_dump(mode="json") if req.climate_shift else None,
     }
 
     # 5a. Sin guardar: id temporal no numérico (GET /analyses/{id} lo trata como inexistente → 404)

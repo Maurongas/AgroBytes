@@ -15,6 +15,7 @@ MetricId = Literal["soilMoisture", "rain90d", "tempMean", "solarRadiation"]
 UncertaintyLevel = Literal["low", "medium", "high"]
 CropRole = Literal["cereal", "legume", "cover", "vegetable", "oilseed", "industrial"]
 CountryCode = Literal["MX", "US", "CA"]  # ISO 3166-1 alfa-2; región de trabajo (ver ARQUITECTURA §7)
+StrategyId = Literal["current", "water", "nitrogen", "yield"]
 # Paso de la rotación sin cultivo: ningún cultivo del catálogo tolera el clima de esa temporada
 FALLOW_ID = "fallow"
 
@@ -51,6 +52,13 @@ class Soil(CamelModel):
     organic_matter: Literal["low", "mid", "high"] | None = None
 
 
+class ClimateShift(CamelModel):
+    """Escenario hipotético «¿y si…?»: modifica el clima histórico antes de recomendar. Solo con guardar=false."""
+
+    rain_pct: float = Field(default=0, ge=-60, le=60, description="% de cambio en la lluvia de cada mes")
+    temp_c: float = Field(default=0, ge=-3, le=5, description="°C que se suman a la temperatura de cada mes")
+
+
 class AnalysisRequest(CamelModel):
     geometry: Polygon
     current_crop: str = Field(examples=["maize"], description="id del catálogo de cultivos")
@@ -61,6 +69,8 @@ class AnalysisRequest(CamelModel):
         description="¿La parcela tiene riego? true = el agua se compara por riego necesario; "
                     "false/null = temporal (depende de la lluvia)",
     )
+    climate_shift: ClimateShift | None = Field(
+        default=None, description="Escenario climático hipotético (solo con guardar=false; si no, 422)")
 
 
 class Location(CamelModel):
@@ -127,6 +137,25 @@ class Uncertainty(CamelModel):
     reason: str = Field(examples=["La lluvia anual varía 38 % entre años"])
 
 
+class Strategy(CamelModel):
+    """Una forma de usar la parcela las próximas 3 temporadas. `current` = seguir como hoy."""
+
+    id: StrategyId
+    title: str = Field(examples=["Ahorrar agua"])
+    is_current: bool
+    is_recommended: bool = Field(description="La de la prioridad elegida: sus pasos son los mismos que `rotation`")
+    steps: list[RotationStep] = Field(min_length=3, max_length=3)
+    water_mm: float = Field(description="Agua total de los cultivos (FAO-56)")
+    irrigation_mm: float = Field(description="Parte del agua que la lluvia no cubre")
+    nitrogen_kg_ha: float = Field(description="Balance de nitrógeno ESTIMADO por reglas")
+    soil_health: int = Field(ge=0, le=100, description="Índice ESTIMADO por reglas")
+    bare_seasons: int = Field(ge=0, le=3, description="Temporadas con el suelo sin cultivo")
+    why: str
+    benefits: list[str]
+    tradeoffs: list[str] = Field(description="Riesgos y costos a revisar")
+    evidence: list[str] = Field(description="Datos que respaldan la estrategia, con su fuente")
+
+
 class AnalysisResponse(CamelModel):
     id: str
     created_at: datetime
@@ -145,6 +174,11 @@ class AnalysisResponse(CamelModel):
     uncertainty: Uncertainty
     soil_detected: DetectedSoil | None = Field(default=None, description="null si SoilGrids no tiene dato o no respondió")
     irrigated: bool | None = None
+    strategies: list[Strategy] = Field(
+        default_factory=list, description="Seguir como hoy + una rotación por prioridad. [] en análisis viejos")
+    local_checks: list[str] = Field(
+        default_factory=list, description="Qué confirmar con productores o un agrónomo de la zona")
+    climate_shift: ClimateShift | None = None
 
 
 class AnalysisSummary(CamelModel):
