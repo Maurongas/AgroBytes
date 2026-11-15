@@ -1,16 +1,17 @@
-"""Pre-calienta la caché de clima (tabla climate_cache) con los lugares de la demo.
+"""Pre-calienta las cachés de clima (BD y memoria) y suelo con los lugares de la demo.
 
 Uso, con `docker compose up` corriendo:
     docker compose exec backend python -m app.db.precalentar
-Así el primer análisis de cada lugar no espera a NASA POWER durante la presentación.
+Así el primer análisis de cada lugar no espera a NASA POWER ni SoilGrids durante la presentación.
 """
 
 import asyncio
 import time
 
-from app.db.database import SessionLocal
-from app.services import climate as climate_service
-from app.services.nasa_power import NasaUnavailableError
+import httpx
+
+API = "http://localhost:8000"  # dentro del contenedor del backend, el propio uvicorn
+LADO = 0.0005  # ~55 m → parcela de ~1 ha (dentro del límite 0.1–500 ha)
 
 LUGARES = {
     "Ensenada": (31.86, -116.60),
@@ -21,15 +22,20 @@ LUGARES = {
 }
 
 
+def parcela(lat: float, lon: float) -> dict:
+    a, b, c, d = lon - LADO, lat - LADO, lon + LADO, lat + LADO
+    return {"type": "Polygon", "coordinates": [[[a, b], [c, b], [c, d], [a, d], [a, b]]]}
+
+
 async def main() -> None:
-    with SessionLocal() as db:
+    async with httpx.AsyncClient(base_url=API, timeout=90) as client:
         for nombre, (lat, lon) in LUGARES.items():
             inicio = time.perf_counter()
-            try:
-                await climate_service.get_climate(lat, lon, db=db)
-                print(f"OK     {nombre:<20} {time.perf_counter() - inicio:5.1f} s")
-            except NasaUnavailableError as exc:
-                print(f"FALLÓ  {nombre:<20} {exc}")
+            r = await client.post("/api/v1/analyses", params={"guardar": "false"},
+                                  headers={"X-Device-Id": "precalentar-demo"},
+                                  json={"geometry": parcela(lat, lon), "currentCrop": "maize", "priority": "water"})
+            estado = "OK   " if r.status_code == 200 else f"{r.status_code}  "
+            print(f"{estado} {nombre:<20} {time.perf_counter() - inicio:5.1f} s")
 
 
 if __name__ == "__main__":

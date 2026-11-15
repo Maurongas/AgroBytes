@@ -311,3 +311,19 @@ def test_escenario_neutro_no_cambia_nada(climate, catalog):
         climate, catalog, req().model_copy(update={"climate_shift": ClimateShift()}), NOV)
     assert [p.crop_id for p in neutro.rotation] == [p.crop_id for p in base.rotation]
     assert neutro.climate == base.climate
+
+
+def test_calor_aparece_como_riesgo():
+    calido = make_climate()
+    calido = calido.__class__(summary=calido.summary.model_copy(update={"monthly": [
+        p.model_copy(update={"temp_max_c": 44}) for p in calido.summary.monthly]}), recent=calido.recent)
+    maiz = crop("maize", "cereal", (18, 32), (10, 46), 600, ["spring", "summer"], -30)
+    frijol = crop("bean", "legume", (16, 28), (8, 45), 350, ["spring", "summer"], 40)
+    r = recommender.recommend(calido, [maiz, frijol], req(), NOV)
+    assert any("calor" in risk for step in r.rotation for risk in step.risks)
+
+
+def test_siempre_hay_algo_que_confirmar(climate, catalog):
+    r = recommender.recommend(climate, catalog, req(), NOV)
+    assert 1 <= len(r.local_checks) <= 5
+    assert any("siembra" in c for c in r.local_checks)
