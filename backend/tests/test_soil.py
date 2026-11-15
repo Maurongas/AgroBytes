@@ -38,3 +38,40 @@ def test_soilgrids_sin_dato_o_caido_da_none():
             return await soil.get_soil(10.123, 20.456, client=c)
 
     assert asyncio.run(run()) is None
+
+
+def test_soilgrids_caido_no_se_reintenta_enseguida():
+    llamadas = []
+
+    def caido(request):
+        llamadas.append(request)
+        return httpx.Response(503)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(caido)) as c:
+            await soil.get_soil(10.123, 20.456, client=c)
+            return await soil.get_soil(10.124, 20.457, client=c)  # mismo punto (~1 km)
+
+    assert asyncio.run(run()) is None
+    assert len(llamadas) == 1  # el segundo análisis no vuelve a esperar el timeout
+
+
+def test_dos_analisis_simultaneos_hacen_una_sola_consulta():
+    """«Comparar escenarios» lanza dos análisis a la vez sobre la misma parcela."""
+    llamadas = []
+    payload = {"properties": {"layers": [capa("clay", [400] * 3), capa("sand", [300] * 3), capa("phh2o", [78] * 3)]}}
+
+    async def lento(request):
+        llamadas.append(request)
+        await asyncio.sleep(0.05)
+        return httpx.Response(200, json=payload)
+
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(lento)) as c:
+            return await asyncio.gather(soil.get_soil(32.52, -115.35, client=c),
+                                        soil.get_soil(32.521, -115.351, client=c))
+
+    a, b = asyncio.run(run())
+    assert a == b and a.texture == "clay"
+    assert len(llamadas) == 1
+    assert soil._inflight == {}

@@ -19,7 +19,7 @@ def req(current="maize", priority="water", soil=None) -> AnalysisRequest:
         "priority": priority,
     }
     if soil:
-        body["soil"] = {"texture": soil}
+        body["soil"] = soil if isinstance(soil, dict) else {"texture": soil}
     return AnalysisRequest.model_validate(body)
 
 
@@ -57,13 +57,27 @@ def test_prioridad_nitrogeno_prefiere_leguminosas(climate, catalog):
 
 def test_impacto_y_metricas_en_orden_del_contrato(climate, catalog):
     r = recommender.recommend(climate, catalog, req(), NOV)
-    assert [i.label for i in r.impact] == ["Balance hídrico", "Riego necesario", "Balance de nitrógeno (estimado)"]
+    assert [i.label for i in r.impact] == ["Agua total del cultivo", "Riego necesario",
+                                         "Balance de nitrógeno (estimado)"]
     assert [m.id for m in r.metrics] == ["soilMoisture", "rain90d", "tempMean", "solarRadiation"]
     assert all(len(m.series) == 12 for m in r.metrics)
     assert len(r.climate) == 12 and r.climate[0].month == "Ene"
     # Con prioridad "ahorrar agua", la rotación necesita menos riego que repetir maíz
-    riego = r.impact[1]
+    agua, riego = r.impact[0], r.impact[1]
     assert riego.recommended < riego.current
+    assert agua.better_when == "lower"
+    # El agua total incluye la lluvia aprovechada: nunca es menor que el riego (antes era −riego en zonas áridas)
+    assert agua.current >= riego.current and agua.recommended >= riego.recommended
+    assert agua.current != -riego.current
+
+
+def test_materia_organica_mueve_el_indice_de_suelo(climate, catalog):
+    def salud(om):
+        soil = {"texture": "loam", "organicMatter": om}
+        return recommender.recommend(climate, catalog, req(soil=soil), NOV).soil_health
+    base, baja, alta = salud("mid"), salud("low"), salud("high")
+    assert baja.current == base.current - 10 and alta.current == base.current + 10
+    assert alta.recommended - alta.current == base.recommended - base.current  # la rotación aporta lo mismo
 
 
 def test_metricas_reflejan_datos_recientes(climate, catalog):

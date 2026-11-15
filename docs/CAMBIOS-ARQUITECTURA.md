@@ -178,3 +178,24 @@ Si tienes archivos de memoria con información del proyecto, actualízalos con e
 | Robustez del dibujo, buscar ubicación, atribución completa de Esri | Mia |
 | vite-plugin-pwa, `lib/offline.ts`, banner offline, botón instalar | menaxmn |
 | Actualizar el texto de los issues #1–#5 en GitHub (aún mencionan Next.js / `src/app`) | Mauro |
+
+
+---
+
+# v2.0 → v2.1 (backend)
+
+Fecha: 2026-11-14. Todo es **compatible hacia atrás**: un frontend que no cambie nada sigue funcionando.
+
+| Cambio | Dónde | Qué tiene que hacer el frontend |
+|---|---|---|
+| `POST /analyses?guardar=false`: analiza sin guardar (200, id `preview-…`) | §5.2 | `client.ts`: opción `guardar`; `CompareView` lo usa y **no** pone el resultado en `useStore.analysis` (OfflineBanner lo guardaría) |
+| Header `X-Device-Id`: historial por dispositivo | §5 | `client.ts`: generar un UUID una vez (`localStorage`) y mandarlo en todas las peticiones |
+| `DELETE /analyses/{id}` (204) | §5.4b | `client.ts`: `deleteAnalysis(id)`; botón en `HistoryView` y quitarlo también de `lib/offline.ts` |
+| `429` si hay más de 30 análisis/min por IP | §5.7 | nada: `client.ts` ya muestra el `detail` |
+| Impacto: la fila "Balance hídrico" pasa a **"Agua total del cultivo"** (`betterWhen: lower`) | §5.2, §7 | nada (se pinta por `label`); `mock.ts` ya actualizado |
+| `soil.organicMatter` ahora sí cuenta (índice `soilHealth` ±10) | §5.2, §7 | opcional: pedirlo en `QuickPanel` |
+| SoilGrids: timeout 10 s, caché de fallos 5 min, consultas simultáneas compartidas | §5.6b | recomendado: llamar `GET /soil` al terminar de dibujar |
+| Migración `b7d2e9f4a1c3` (`analyses.device_id`) | §6 | nada (`docker compose up` corre `alembic upgrade head`) |
+
+Pendientes de frontend que ya soporta el backend y la UI aún no usa: enviar `irrigated` (el campo que más cambia la
+rotación), enviar `soil` (`setSoil` no se usa en ninguna vista), mostrar `soilDetected` e `irrigationMm`.

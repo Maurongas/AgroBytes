@@ -99,3 +99,21 @@ def test_analyses_create_get_and_list_recent(db):
     finally:
         db.query(Analysis).filter(Analysis.id == created.id).delete()
         db.commit()
+
+
+def test_analyses_por_dispositivo_y_borrado(db):
+    polygon = {"type": "Polygon",
+               "coordinates": [[[-115.36, 32.51], [-115.34, 32.51], [-115.34, 32.53], [-115.36, 32.51]]]}
+    comunes = dict(geometry=polygon, lat=32.52, lon=-115.35, area_ha=2.0, current_crop="maize", priority="water",
+                   climate_summary={"period": "test"}, result={"rotation": []})
+    mio = analyses.create(db, device_id="prueba-repo-aaa", **comunes)
+    ajeno = analyses.create(db, device_id="prueba-repo-bbb", **comunes)
+    try:
+        assert mio.device_id == "prueba-repo-aaa"
+        assert [a.id for a in analyses.list_recent(db, 100, device_id="prueba-repo-aaa")] == [mio.id]
+        analyses.delete(db, mio)
+        assert analyses.get(db, mio.id) is None
+        assert analyses.get(db, ajeno.id) is not None
+    finally:
+        db.query(Analysis).filter(Analysis.device_id.in_(["prueba-repo-aaa", "prueba-repo-bbb"])).delete()
+        db.commit()

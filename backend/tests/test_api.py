@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.db.database import get_db
 from app.main import app
 from app.repositories import analyses as analyses_repo
@@ -28,15 +29,19 @@ def bd_falsa(monkeypatch):
     filas: list[SimpleNamespace] = []
 
     def create(db, *, geometry, lat, lon, area_ha, current_crop, priority, climate_summary, result, soil=None,
-               irrigated=None):
+               irrigated=None, device_id=None):
         fila = SimpleNamespace(id=len(filas) + 1, created_at=datetime.now(timezone.utc), geometry=geometry, lat=lat,
                                lon=lon, area_ha=area_ha, current_crop=current_crop, priority=priority, soil=soil,
-                               climate_summary=climate_summary, result=result)
+                               climate_summary=climate_summary, result=result, device_id=device_id)
         filas.append(fila)
         return fila
 
+    def list_recent(db, limit=20, device_id=None):
+        return [f for f in reversed(filas) if device_id is None or f.device_id == device_id][:limit]
+
     monkeypatch.setattr(analyses_repo, "create", create)
-    monkeypatch.setattr(analyses_repo, "list_recent", lambda db, limit=20: list(reversed(filas))[:limit])
+    monkeypatch.setattr(analyses_repo, "list_recent", list_recent)
+    monkeypatch.setattr(analyses_repo, "delete", lambda db, fila: filas.remove(fila))
     monkeypatch.setattr(analyses_repo, "get", lambda db, id: next((f for f in filas if f.id == id), None))
     app.dependency_overrides[get_db] = lambda: None
 
@@ -115,6 +120,39 @@ def test_analisis_se_guarda_y_se_lee(monkeypatch, catalog, bd_falsa):
     assert detalle.json() == creado
 
 
+def test_analisis_sin_guardar_no_entra_al_historial(monkeypatch, catalog, bd_falsa):
+    falsear(monkeypatch, catalog)
+    r = client.post("/api/v1/analyses", params={"guardar": "false"}, json=BODY)
+    assert r.status_code == 200, r.text  # 200, no 201: no se creó nada
+    data = r.json()
+    assert data["id"].startswith("preview-")
+    assert len(data["rotation"]) == 3 and "createdAt" in data
+    assert bd_falsa == []
+    assert client.get("/api/v1/analyses").json() == []
+    assert client.get(f"/api/v1/analyses/{data['id']}").status_code == 404
+
+
+def test_analisis_sin_guardar_da_el_mismo_resultado(monkeypatch, catalog):
+    falsear(monkeypatch, catalog)
+    guardado = client.post("/api/v1/analyses", params={"guardar": "true"}, json=BODY).json()
+    previa = client.post("/api/v1/analyses", params={"guardar": "false"}, json=BODY).json()
+    quitar = lambda d: {k: v for k, v in d.items() if k not in ("id", "createdAt")}  # noqa: E731
+    assert quitar(previa) == quitar(guardado)
+
+
+def test_dos_escenarios_dan_resultados_distintos(monkeypatch, catalog):
+    """Lo que hace «Comparar escenarios»: misma parcela, distinta prioridad."""
+    falsear(monkeypatch, catalog)
+    agua = client.post("/api/v1/analyses", params={"guardar": "false"}, json=BODY).json()
+    nitro = client.post("/api/v1/analyses", params={"guardar": "false"},
+                        json={**BODY, "priority": "nitrogen"}).json()
+    assert agua["rotation"] != nitro["rotation"]
+
+
+def test_guardar_invalido_da_422():
+    assert client.post("/api/v1/analyses", params={"guardar": "quizas"}, json=BODY).status_code == 422
+
+
 def test_historial(monkeypatch, catalog):
     falsear(monkeypatch, catalog)
     primero = client.post("/api/v1/analyses", json=BODY).json()
@@ -166,3 +204,76 @@ def test_sin_catalogo_da_503(monkeypatch):
     monkeypatch.setattr(crops_service, "load_catalog", falta)
     assert client.post("/api/v1/analyses", json=BODY).status_code == 503
     assert client.get("/api/v1/crops").status_code == 503
+
+
+# ---------------------------------------------------------------- historial por dispositivo y borrado
+
+YO = {"X-Device-Id": "dispositivo-aaa-111"}
+OTRO = {"X-Device-Id": "dispositivo-bbb-222"}
+
+
+def test_historial_por_dispositivo(monkeypatch, catalog, bd_falsa):
+    falsear(monkeypatch, catalog)
+    mio = client.post("/api/v1/analyses", json=BODY, headers=YO).json()
+    ajeno = client.post("/api/v1/analyses", json=BODY, headers=OTRO).json()
+    assert bd_falsa[0].device_id == "dispositivo-aaa-111"
+    assert [f["id"] for f in client.get("/api/v1/analyses", headers=YO).json()] == [mio["id"]]
+    # El de otro dispositivo no existe para mí
+    assert client.get(f"/api/v1/analyses/{ajeno['id']}", headers=YO).status_code == 404
+    assert client.get(f"/api/v1/analyses/{mio['id']}", headers=YO).status_code == 200
+    # Sin header (clientes viejos) se ve todo, como antes
+    assert len(client.get("/api/v1/analyses").json()) == 2
+
+
+def test_device_id_invalido_da_422():
+    r = client.get("/api/v1/analyses", headers={"X-Device-Id": "corto"})
+    assert r.status_code == 422
+
+
+def test_require_device_id(monkeypatch):
+    monkeypatch.setattr(settings, "REQUIRE_DEVICE_ID", True)
+    r = client.get("/api/v1/analyses")
+    assert r.status_code == 400 and "X-Device-Id" in r.json()["detail"]
+    assert client.get("/api/v1/analyses", headers=YO).status_code == 200
+
+
+def test_borrar_analisis(monkeypatch, catalog, bd_falsa):
+    falsear(monkeypatch, catalog)
+    mio = client.post("/api/v1/analyses", json=BODY, headers=YO).json()
+    assert client.delete(f"/api/v1/analyses/{mio['id']}", headers=OTRO).status_code == 404  # no es suyo
+    r = client.delete(f"/api/v1/analyses/{mio['id']}", headers=YO)
+    assert r.status_code == 204 and r.content == b""
+    assert bd_falsa == []
+    assert client.delete(f"/api/v1/analyses/{mio['id']}", headers=YO).status_code == 404
+    assert client.delete("/api/v1/analyses/abc", headers=YO).status_code == 404
+
+
+def test_borrar_ajeno_sin_header_da_404(monkeypatch, catalog, bd_falsa):
+    """Un cliente sin header no puede borrar análisis que tienen dueño."""
+    falsear(monkeypatch, catalog)
+    mio = client.post("/api/v1/analyses", json=BODY, headers=YO).json()
+    assert client.delete(f"/api/v1/analyses/{mio['id']}").status_code == 404
+    assert len(bd_falsa) == 1
+
+
+# ---------------------------------------------------------------- límite de peticiones
+
+
+def test_limite_de_analisis_por_ip(monkeypatch, catalog):
+    falsear(monkeypatch, catalog)
+    monkeypatch.setattr(settings, "RATE_LIMIT_ANALYSES_PER_MIN", 2)
+    params = {"guardar": "false"}
+    assert client.post("/api/v1/analyses", params=params, json=BODY).status_code == 200
+    assert client.post("/api/v1/analyses", params=params, json=BODY).status_code == 200
+    r = client.post("/api/v1/analyses", params=params, json=BODY)
+    assert r.status_code == 429
+    assert int(r.headers["Retry-After"]) >= 1 and "Intenta de nuevo" in r.json()["detail"]
+    # El historial (GET) no cuenta para el límite
+    assert client.get("/api/v1/analyses").status_code == 200
+
+
+def test_borrar_permite_cors_con_device_id():
+    r = client.options("/api/v1/analyses/1", headers={
+        "Origin": "http://localhost:3000", "Access-Control-Request-Method": "DELETE",
+        "Access-Control-Request-Headers": "x-device-id"})
+    assert r.status_code == 200

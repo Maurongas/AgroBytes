@@ -12,6 +12,11 @@ class Settings(BaseSettings):
     NASA_POWER_BASE_URL: str = "https://power.larc.nasa.gov/api"
     # Días que es válido un registro de climate_cache
     CLIMATE_CACHE_DAYS: int = 30
+    # Máximo de POST /analyses por IP por minuto (0 = sin límite). Protege la cuota de NASA POWER y SoilGrids
+    RATE_LIMIT_ANALYSES_PER_MIN: int = 30
+    # true = el historial, el detalle y el borrado exigen el header X-Device-Id (activar cuando el
+    # frontend ya lo mande; mientras, sin header se ve todo como antes)
+    REQUIRE_DEVICE_ID: bool = False
 
     @property
     def cors_origins_list(self) -> list[str]:

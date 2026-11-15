@@ -40,6 +40,8 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
       NASA_POWER_BASE_URL: ${NASA_POWER_BASE_URL:-https://power.larc.nasa.gov/api}
       CLIMATE_CACHE_DAYS: ${CLIMATE_CACHE_DAYS:-30}
+      RATE_LIMIT_ANALYSES_PER_MIN: ${RATE_LIMIT_ANALYSES_PER_MIN:-30}
+      REQUIRE_DEVICE_ID: ${REQUIRE_DEVICE_ID:-false}
     volumes:
       # Si editas un .py, uvicorn se recarga solo.
       - ./backend:/app

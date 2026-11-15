@@ -360,24 +360,33 @@ def planting_window(months: tuple[int, int, int]) -> str:
 
 
 def impact(seq: list[CropParams | None], seasons: list[SeasonClimate]) -> tuple[float, float, float]:
-    """(balance hídrico, riego necesario, nitrógeno estimado) para una secuencia de 3 pasos.
-    `None` = barbecho: no consume agua ni nitrógeno."""
-    balance = irrigation = 0.0
+    """(agua total del cultivo, riego necesario, nitrógeno estimado) para una secuencia de 3 pasos.
+    `None` = barbecho: no consume agua ni nitrógeno.
+
+    Agua total = ETc del ciclo (FAO-56), venga de la lluvia o del riego; riego = la parte que la lluvia no cubre.
+    (Antes la primera fila era Σ(lluvia − ETc): en zonas áridas, donde ningún ciclo tiene excedente, salía
+    idéntica a −riego y la fila no decía nada nuevo.)"""
+    water = irrigation = 0.0
     for c, sc in zip(seq, seasons):
         if c is None:
             continue
         need, rain = water_need(c, sc), cycle_rain(c, sc)
-        balance += rain - need
+        water += need
         irrigation += max(0.0, need - rain)
     # Sin tope en 0: negativo = la rotación consume más de lo que el suelo tenía al inicio (hay que fertilizar).
     nitrogen = BASE_NITROGEN_KG_HA + sum(c.nitrogen_delta_kg_ha for c in seq if c is not None)
-    return round(balance), round(irrigation), round(nitrogen)
+    return round(water), round(irrigation), round(nitrogen)
 
 
-def soil_health_index(seq: list[CropParams | None]) -> int:
-    """Índice estimado 0-100: premia leguminosas y coberturas, castiga repetir familia botánica."""
+# Materia orgánica que reporta el usuario → ajuste del índice de salud del suelo (regla propia, estimación)
+ORGANIC_MATTER_POINTS = {"low": -10, "mid": 0, "high": 10}
+
+
+def soil_health_index(seq: list[CropParams | None], organic_matter: str | None = None) -> int:
+    """Índice estimado 0-100: premia leguminosas y coberturas, castiga repetir familia botánica.
+    Parte de 50 (o 40/60 si el usuario dijo que su materia orgánica es baja/alta)."""
     crops = [c for c in seq if c is not None]
-    score = 50
+    score = 50 + ORGANIC_MATTER_POINTS.get(organic_matter or "mid", 0)
     score += 10 * sum(c.family == "legume" for c in crops)
     score += 8 * sum(c.family == "cover" for c in crops)
     score -= 10 * sum(family_of(a) == family_of(b) for a, b in zip(crops, crops[1:]))
@@ -509,19 +518,22 @@ def recommend(data: ClimateData, crops: list[CropParams], req: AnalysisRequest, 
     # "Seguir igual": el cultivo actual en las temporadas donde puede crecer y descanso en las demás
     # (p. ej. trigo en Mexicali: invierno sí, verano no). Así el impacto compara contra algo realista.
     baseline: list[CropParams | None] = [current if tolerates(current, sc) else None for sc in seasons]
-    bal_cur, irr_cur, n_cur = impact(baseline, seasons)
-    bal_rec, irr_rec, n_rec = impact(chosen, seasons)
+    water_cur, irr_cur, n_cur = impact(baseline, seasons)
+    water_rec, irr_rec, n_rec = impact(chosen, seasons)
+    organic_matter = req.soil.organic_matter if req.soil else None
 
     return RecommendationResult(
         metrics=metrics_for(data, current),
         rotation=rotation,
         impact=[
-            ImpactItem(label="Balance hídrico", unit="mm", current=bal_cur, recommended=bal_rec, better_when="higher"),
+            ImpactItem(label="Agua total del cultivo", unit="mm", current=water_cur, recommended=water_rec,
+                       better_when="lower"),
             ImpactItem(label="Riego necesario", unit="mm", current=irr_cur, recommended=irr_rec, better_when="lower"),
             ImpactItem(label="Balance de nitrógeno (estimado)", unit="kg/ha", current=n_cur, recommended=n_rec,
                        better_when="higher"),
         ],
-        soil_health=SoilHealth(current=soil_health_index(baseline), recommended=soil_health_index(chosen)),
+        soil_health=SoilHealth(current=soil_health_index(baseline, organic_matter),
+                               recommended=soil_health_index(chosen, organic_matter)),
         climate=[MonthlyClimate(month=MONTH_ABBR[p.month - 1], rain=round(p.rain_mm), temp=round(p.temp_c, 1))
                  for p in data.summary.monthly],
         uncertainty=uncertainty,

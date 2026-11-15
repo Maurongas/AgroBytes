@@ -23,6 +23,7 @@ def create(
     result: dict[str, Any],
     soil: dict[str, Any] | None = None,
     irrigated: bool | None = None,
+    device_id: str | None = None,
 ) -> Analysis:
     """Inserta un análisis convirtiendo el polígono GeoJSON a Geography(POLYGON, 4326)."""
     if isinstance(geometry, dict) and geometry.get("type") == "Feature":
@@ -43,6 +44,7 @@ def create(
         priority=priority,
         soil=soil,
         irrigated=irrigated,
+        device_id=device_id,
         climate_summary=climate_summary,
         result=result,
     )
@@ -52,16 +54,22 @@ def create(
     return analysis
 
 
-def list_recent(db: Session, limit: int = 20) -> list[Analysis]:
-    """Devuelve los análisis más recientes ordenados de nuevo a antiguo."""
-    stmt = (
-        select(Analysis)
-        .order_by(Analysis.created_at.desc(), Analysis.id.desc())
-        .limit(limit)
-    )
+def list_recent(db: Session, limit: int = 20, device_id: str | None = None) -> list[Analysis]:
+    """Devuelve los análisis más recientes ordenados de nuevo a antiguo.
+    Con `device_id`, solo los de ese dispositivo; sin él, todos (compatibilidad con clientes viejos)."""
+    stmt = select(Analysis)
+    if device_id is not None:
+        stmt = stmt.where(Analysis.device_id == device_id)
+    stmt = stmt.order_by(Analysis.created_at.desc(), Analysis.id.desc()).limit(limit)
     return list(db.scalars(stmt).all())
 
 
 def get(db: Session, analysis_id: int) -> Analysis | None:
     """Obtiene un análisis por su ID o None si no existe."""
     return db.get(Analysis, analysis_id)
+
+
+def delete(db: Session, analysis: Analysis) -> None:
+    """Borra un análisis ya leído con get()."""
+    db.delete(analysis)
+    db.commit()
