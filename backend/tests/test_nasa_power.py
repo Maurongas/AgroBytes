@@ -256,7 +256,10 @@ def test_bd_caida_no_tumba_el_clima(monkeypatch):
 
 
 def test_sin_datos_diarios_usa_lo_normal_como_reciente(monkeypatch):
+    llamadas = []
+
     async def falso_monthly(lat, lon, start, end, client=None):
+        llamadas.append("mensual")
         return serie_mensual({y: 1.0 for y in range(start, end + 1)})
 
     async def daily_caido(lat, lon, start, end, client=None):
@@ -266,10 +269,12 @@ def test_sin_datos_diarios_usa_lo_normal_como_reciente(monkeypatch):
     monkeypatch.setattr(nasa_power, "fetch_daily", daily_caido)
     datos = asyncio.run(climate_service.get_climate(31.86, -116.6, today=date(2026, 11, 14)))
     r = datos.recent
+    assert r.estimated is True  # el motor lo etiqueta como promedio, no como dato medido
     assert r.rain_90d_mm == r.rain_90d_normal_mm == pytest.approx(90.0)  # 1 mm/día × 90 días
     assert r.temp_30d_c == r.temp_30d_normal_c
     assert r.soil_moisture_30d == 0.4
     assert climate_service._recent_cache.get((32.0, -116.875, r.end)) is None  # el plan B no se guarda
+    assert llamadas == ["mensual"]  # si falla lo diario, la serie mensual no se vuelve a descargar
 
 
 def test_sin_datos_diarios_ni_largo_plazo_sigue_fallando(monkeypatch):

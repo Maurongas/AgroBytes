@@ -96,6 +96,21 @@ def test_incertidumbre():
     assert recommender.uncertainty_for(make_climate(rain_cv=10, soil_root=0.2)).level == "medium"
 
 
+def test_reciente_estimado_lo_dice_y_sube_la_incertidumbre():
+    import dataclasses
+
+    base = make_climate(rain_cv=10.0)  # low
+    estimado = dataclasses.replace(base, recent=dataclasses.replace(base.recent, estimated=True))
+    u = recommender.uncertainty_for(estimado)
+    assert recommender.uncertainty_for(base).level == "low"
+    assert u.level == "medium"
+    assert "se usó el promedio" in u.reason
+    maiz = crop("maize", "cereal", (18, 32), (10, 42), 600, ["summer"], -30)
+    fuentes = {m.id: m.source for m in recommender.metrics_for(estimado, maiz)}
+    assert "sin datos recientes" in fuentes["rain90d"]
+    assert "sin datos recientes" not in fuentes["solarRadiation"]
+
+
 def test_suelo_incompatible_baja_el_puntaje(climate, catalog):
     tomate = next(c for c in catalog if c.id == "tomato")
     maiz = catalog[0]

@@ -443,7 +443,8 @@ def metrics_for(data: ClimateData, current: CropParams) -> list[NasaMetric]:
     s, r = data.summary, data.recent
     monthly = s.monthly
     period_src = f"NASA POWER · {s.period}"
-    recent_src = f"NASA POWER · {r.start:%d/%m}–{r.end:%d/%m/%Y}"
+    recent_src = (f"Promedio NASA POWER {s.period} (sin datos recientes)" if r.estimated
+                  else f"NASA POWER · {r.start:%d/%m}–{r.end:%d/%m/%Y}")
 
     # 1. Humedad del suelo (raíces): últimos 30 días
     sm_status = _status_by_threshold(r.soil_moisture_30d, 0.3, 0.5)
@@ -497,6 +498,9 @@ def uncertainty_for(data: ClimateData) -> Uncertainty:
     if s.soil_moisture_root < 0.3:
         i = min(2, i + 1)
         reason += "; además el suelo suele estar seco"
+    if data.recent.estimated:
+        i = min(2, i + 1)
+        reason += "; no llegaron los datos de los últimos 90 días y se usó el promedio"
     return Uncertainty(level=levels[i], reason=reason)
 
 
