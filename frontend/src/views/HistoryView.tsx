@@ -21,7 +21,7 @@ async function cargarHistorial(): Promise<{ filas: AnalysisSummary[]; guardado: 
 }
 
 export default function HistoryView() {
-  const backToSelect = useStore((s) => s.backToSelect);
+  const goTo = useStore((s) => s.goTo);
   const [abriendo, setAbriendo] = useState<string | null>(null);
   const [errorAbrir, setErrorAbrir] = useState<string | null>(null);
   const { data, isPending, isError, error, refetch } = useQuery({
@@ -80,7 +80,7 @@ export default function HistoryView() {
       {data && data.filas.length === 0 && (
         <div className="mt-8 text-center">
           <p className="text-ink-700">Aún no has analizado ninguna parcela.</p>
-          <button onClick={backToSelect} className="mt-3 rounded-full bg-leaf-600 px-5 py-2 text-sm font-medium text-paper hover:bg-leaf-700">
+          <button onClick={() => goTo('select')} className="mt-3 rounded-full bg-leaf-600 px-5 py-2 text-sm font-medium text-paper hover:bg-leaf-700">
             Analizar una parcela
           </button>
         </div>

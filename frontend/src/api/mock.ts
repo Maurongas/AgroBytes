@@ -32,7 +32,7 @@ export const mockAnalysis: AnalysisResponse = {
   ],
   impact: [
     { label: 'Balance hídrico', unit: 'mm', current: -120, recommended: -45, betterWhen: 'higher' },
-    { label: 'Nitrógeno en suelo (estimado)', unit: 'kg/ha', current: 38, recommended: 71, betterWhen: 'higher' },
+    { label: 'Balance de nitrógeno (estimado)', unit: 'kg/ha', current: 38, recommended: 71, betterWhen: 'higher' },
     { label: 'Riego necesario', unit: 'mm', current: 520, recommended: 340, betterWhen: 'lower' },
   ],
   soilHealth: { current: 52, recommended: 74 },
