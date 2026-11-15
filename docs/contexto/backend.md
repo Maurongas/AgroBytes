@@ -17,9 +17,14 @@ uvicorn recarga solo.
 ## Lo que ya existe (v2.0)
 - `app/main.py`: CORS desde `settings`, `/health` (revisa BD), incluye `api/v1`.
 - `app/schemas/`: **contrato completo** (`analysis.py`, `climate.py`, `crop.py`; `base.py` convierte a camelCase).
-- `app/api/v1/`: routers `analyses`, `climate`, `crops` que hoy responden **501** (`_pending.py`).
-- `tests/test_api.py`: 3 pruebas (health, 422 de coordenadas, 422 del body).
-- `research/`: `extraer_links.py` + `links.md` (fuentes investigadas; `fuentes.md` se regenera, no se sube).
+- `app/services/`: `nasa_power.py`, `climate.py` (caché memoria + tabla `climate_cache`), `geo.py`, `crops.py`
+  (lee la tabla `crops`), `recommender.py` ✅.
+- `app/api/v1/`: **todos los endpoints implementados** y conectados a la BD (`POST/GET /analyses`,
+  `/analyses/{id}`, `/climate`, `/crops`). Ya no hay 501.
+- `tests/`: 31 pruebas sin internet (`conftest.py` trae un catálogo y un clima inventados).
+- Las pruebas de API usan una BD falsa (`get_db` → `None` y `analyses_repo` en memoria); las de PostgreSQL real
+  están en `test_repositories.py`. Correr todo: `docker compose exec backend python -m pytest -q`.
+- `research/`: `extraer_links.py` + `links.md` (fuentes investigadas) y `fuentes.md` (texto extraído; se regenera con `python extraer_links.py`).
 
 ## Archivos que te pertenecen
 ```

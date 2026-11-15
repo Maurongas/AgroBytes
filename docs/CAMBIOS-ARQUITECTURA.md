@@ -50,14 +50,14 @@ piezas se conectaran. Decisiones:
 | `backend/app/schemas/base.py, analysis.py, climate.py, crop.py` | **Contrato completo** en Pydantic (JSON en camelCase) |
 | `backend/app/api/v1/analyses.py, climate.py, crops.py` | Routers con el contrato; responden **501** hasta implementarse |
 | `backend/tests/test_api.py` | 3 pruebas (`pytest` pasa) |
-| `backend/research/` | Script que extrae el texto de las fuentes de datos sugeridas (`fuentes.md` no se sube) |
+| `backend/research/` | Script que extrae el texto de las fuentes de datos sugeridas → `fuentes.md` (versionado; se regenera con el script) |
 
 ### Modificado
 | Archivo | Cambio |
 |---|---|
 | `docs/ARQUITECTURA.md` | Reescrito a v2.0: stack, carpetas, contrato §5, modelo §6, reglas §7, NASA §8, frontend §9 |
 | `docs/contexto/*.md` (los 5) | Reescritos: archivos, tareas y reglas de cada rol con la nueva estructura |
-| `CLAUDE.md`, `README.md` | Nuevo flujo (mapa → NASA POWER → rotación); sin "IA Agrícola" |
+| `AGENTS.md`, `README.md` | Nuevo flujo (mapa → NASA POWER → rotación); sin "IA Agrícola" |
 | `docs/GUIA-GIT.md`, `docs/GUIA-INICIO.md` | Ramas por rol, ejemplos actualizados, puerto y mensajes de Vite |
 | `.github/pull_request_template.md` | Checklist de contrato, tests y honestidad de datos |
 | `docker-compose.yml` | 3 servicios (db, backend, frontend:3000), variables con valores por defecto |
@@ -103,7 +103,7 @@ docker compose up --build -V
 Abre http://localhost:3000 (la app con mapa) y http://localhost:8000/docs (la API nueva).
 **No hace falta** `down -v` todavía: la BD se reinicia cuando entre la migración de Daniel (él avisará).
 
-Luego pon al día a tu agente (Claude u otro) con el mensaje de la sección 4.
+Luego pon al día a tu asistente de código (Cursor u otro) con el mensaje de la sección 4.
 
 ### Fernando — Layout (#1)
 Tus PRs **#7 (Navbar) y #8 (historial)** son sobre el Next.js borrado: **no se pueden mergear**. Tu lógica se reutiliza:
@@ -153,7 +153,7 @@ Tu app es ahora el frontend oficial (`frontend/`, puerto **3000**).
 
 ```text
 El proyecto cambió a la arquitectura v2.0 (definitiva). Antes de hacer cualquier cosa:
-1. Lee CLAUDE.md, docs/ARQUITECTURA.md, docs/CAMBIOS-ARQUITECTURA.md y docs/contexto/<rol>.md.
+1. Lee AGENTS.md, docs/ARQUITECTURA.md, docs/CAMBIOS-ARQUITECTURA.md y docs/contexto/<rol>.md.
 2. Descarta cualquier contexto, memoria o plan anterior que mencione: Next.js, frontend/app/, field-shift/,
    el puerto 5173, /api/v1/recommend, /api/v1/history, "3 estrategias" (actual/optimizada/resiliente),
    avg_temp/rainfall_mm, tipo_suelo/disponibilidad_agua, historial_consultas, algorithm.py, next-pwa,
