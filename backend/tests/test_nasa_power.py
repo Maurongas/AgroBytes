@@ -250,3 +250,33 @@ def test_bd_caida_no_tumba_el_clima(monkeypatch):
     monkeypatch.setattr(nasa_power, "fetch_monthly", bien)
     s = asyncio.run(climate_service.get_climate_summary(31.86, -116.6, today=date(2026, 11, 14), db=SesionFalsa()))
     assert s.period == "2016-2025"
+
+
+# ---------------------------------------------------------------- plan B: NASA no da los datos diarios
+
+
+def test_sin_datos_diarios_usa_lo_normal_como_reciente(monkeypatch):
+    async def falso_monthly(lat, lon, start, end, client=None):
+        return serie_mensual({y: 1.0 for y in range(start, end + 1)})
+
+    async def daily_caido(lat, lon, start, end, client=None):
+        raise NasaUnavailableError("NASA POWER no disponible")
+
+    monkeypatch.setattr(nasa_power, "fetch_monthly", falso_monthly)
+    monkeypatch.setattr(nasa_power, "fetch_daily", daily_caido)
+    datos = asyncio.run(climate_service.get_climate(31.86, -116.6, today=date(2026, 11, 14)))
+    r = datos.recent
+    assert r.rain_90d_mm == r.rain_90d_normal_mm == pytest.approx(90.0)  # 1 mm/día × 90 días
+    assert r.temp_30d_c == r.temp_30d_normal_c
+    assert r.soil_moisture_30d == 0.4
+    assert climate_service._recent_cache.get((32.0, -116.875, r.end)) is None  # el plan B no se guarda
+
+
+def test_sin_datos_diarios_ni_largo_plazo_sigue_fallando(monkeypatch):
+    async def caido(lat, lon, start, end, client=None):
+        raise NasaUnavailableError("NASA POWER no disponible")
+
+    monkeypatch.setattr(nasa_power, "fetch_monthly", caido)
+    monkeypatch.setattr(nasa_power, "fetch_daily", caido)
+    with pytest.raises(NasaUnavailableError):
+        asyncio.run(climate_service.get_climate(31.86, -116.6, today=date(2026, 11, 14)))
