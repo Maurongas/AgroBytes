@@ -1,4 +1,22 @@
-import type { AnalysisResponse, AnalysisSummary } from './types';
+import type { AnalysisResponse, AnalysisSummary, RotationStep } from './types';
+
+const ROTACION_AGUA: RotationStep[] = [
+  { season: 'autumn', cropId: 'bean', score: 91,
+    reasons: ['Fija nitrógeno y repone el suelo tras el maíz', 'Necesita 30 % menos agua que el maíz', 'Ciclo corto que aprovecha la lluvia de otoño'],
+    waterSavingPct: 30, nitrogenDelta: 45, risks: ['Sensible a heladas tempranas'], plantingWindow: 'Sep – Oct', irrigationMm: 120 },
+  { season: 'winter', cropId: 'oat', score: 84,
+    reasons: ['Cubre el suelo y reduce la erosión', 'Tolera temperaturas bajas', 'Bajo consumo de agua'],
+    waterSavingPct: 38, nitrogenDelta: -8, risks: ['Rendimiento menor si falta lluvia en enero'], plantingWindow: 'Nov – Dic', irrigationMm: 60 },
+  { season: 'summer', cropId: 'sorghum', score: 79,
+    reasons: ['Resiste calor y sequía', 'Aprovecha la alta radiación solar'],
+    waterSavingPct: 42, nitrogenDelta: -12, risks: ['Requiere control de maleza temprano'], plantingWindow: 'May – Jun', irrigationMm: 410 },
+];
+
+const p = (season: RotationStep['season'], cropId: string, score: number, irrigationMm: number,
+  nitrogenDelta: number, reasons: string[], risks: string[] = []): RotationStep => ({
+  season, cropId, score, irrigationMm, nitrogenDelta, reasons, risks,
+  waterSavingPct: 0, plantingWindow: cropId === 'fallow' ? '—' : 'Según temporada',
+});
 
 export const mockAnalysis: AnalysisResponse = {
   id: 'demo-001',
@@ -20,17 +38,7 @@ export const mockAnalysis: AnalysisResponse = {
       meaning: 'Excelente para cultivos de sol', series: [3.2,3.9,4.8,5.6,6.4,7,6.9,6.2,5.2,4.1,3.3,5.8],
       source: 'NASA POWER · demo' },
   ],
-  rotation: [
-    { season: 'autumn', cropId: 'bean', score: 91,
-      reasons: ['Fija nitrógeno y repone el suelo tras el maíz', 'Necesita 30 % menos agua que el maíz', 'Ciclo corto que aprovecha la lluvia de otoño'],
-      waterSavingPct: 30, nitrogenDelta: 45, risks: ['Sensible a heladas tempranas'], plantingWindow: 'Sep – Oct', irrigationMm: 120 },
-    { season: 'winter', cropId: 'oat', score: 84,
-      reasons: ['Cubre el suelo y reduce la erosión', 'Tolera temperaturas bajas', 'Bajo consumo de agua'],
-      waterSavingPct: 38, nitrogenDelta: -8, risks: ['Rendimiento menor si falta lluvia en enero'], plantingWindow: 'Nov – Dic', irrigationMm: 60 },
-    { season: 'summer', cropId: 'sorghum', score: 79,
-      reasons: ['Resiste calor y sequía', 'Aprovecha la alta radiación solar'],
-      waterSavingPct: 42, nitrogenDelta: -12, risks: ['Requiere control de maleza temprano'], plantingWindow: 'May – Jun', irrigationMm: 410 },
-  ],
+  rotation: ROTACION_AGUA,
   impact: [
     { label: 'Agua total del cultivo', unit: 'mm', current: 640, recommended: 470, betterWhen: 'lower' },
     { label: 'Riego necesario', unit: 'mm', current: 520, recommended: 340, betterWhen: 'lower' },
@@ -48,6 +56,54 @@ export const mockAnalysis: AnalysisResponse = {
   uncertainty: { level: 'high', reason: 'La lluvia anual varía 38 % entre años (NASA POWER 2015-2024)' },
   soilDetected: { texture: 'loam', ph: 6.9, clayPct: 19.2, sandPct: 58.1, source: 'ISRIC SoilGrids v2.0 (0–30 cm)' },
   irrigated: false,
+  strategies: [
+    { id: 'current', title: 'Seguir como hoy', isCurrent: true, isRecommended: false,
+      steps: [
+        p('autumn', 'maize', 58, 260, -30, ['Es lo que siembras hoy'], ['Misma familia que el cultivo anterior (más riesgo de plagas)']),
+        p('winter', 'fallow', 0, 0, 0, ['El maíz no tolera el invierno de este lugar', 'Hoy la parcela queda sin cultivo en esta temporada']),
+        p('summer', 'maize', 55, 260, -30, ['Es lo que siembras hoy'], ['Requiere riego: la lluvia cubre ~10 % de lo que necesita']),
+      ],
+      waterMm: 640, irrigationMm: 520, nitrogenKgHa: 38, soilHealth: 52, bareSeasons: 1,
+      why: 'Tu cultivo actual en las temporadas en que el clima lo permite; descanso en las demás.',
+      benefits: ['Ya conoces el cultivo, tienes el equipo y sabes dónde venderlo'],
+      tradeoffs: ['Repite familia botánica: plagas y enfermedades se acumulan', '1 temporada sin cultivo: deja rastrojo o una cobertura para evitar erosión'],
+      evidence: ['Maíz, verano: necesita ~420 mm y la lluvia aporta ~6 mm (FAO-56 con clima de NASA POWER)'] },
+    { id: 'water', title: 'Ahorrar agua', isCurrent: false, isRecommended: true, steps: ROTACION_AGUA,
+      waterMm: 470, irrigationMm: 340, nitrogenKgHa: 71, soilHealth: 74, bareSeasons: 0,
+      why: 'En cada temporada elige lo que menos agua necesita entre lo que el clima permite.',
+      benefits: ['180 mm menos de riego que seguir como hoy', '+33 kg/ha de nitrógeno en el suelo (estimado)', 'Salud del suelo de 52 a 74 / 100 (estimado)'],
+      tradeoffs: ['Sensible a heladas tempranas', 'Requiere control de maleza temprano'],
+      evidence: ['Frijol, otoño: necesita ~300 mm y la lluvia aporta ~60 mm (FAO-56 con clima de NASA POWER)', 'Sorgo, verano: necesita ~420 mm y la lluvia aporta ~6 mm (FAO-56 con clima de NASA POWER)'] },
+    { id: 'nitrogen', title: 'Regenerar el suelo', isCurrent: false, isRecommended: false,
+      steps: [
+        p('autumn', 'chickpea', 82, 150, 40, ['Leguminosa: fija nitrógeno en el suelo (estimado)']),
+        p('winter', 'vetch', 80, 40, 60, ['Cultivo de cobertura: protege el suelo de la erosión']),
+        p('summer', 'sorghum', 70, 200, -12, ['Resiste calor y sequía'], ['Requiere riego: la lluvia cubre ~15 % de lo que necesita']),
+      ],
+      waterMm: 520, irrigationMm: 390, nitrogenKgHa: 112, soilHealth: 86, bareSeasons: 0,
+      why: 'Da más peso a leguminosas y coberturas, que devuelven nitrógeno y protegen el suelo.',
+      benefits: ['130 mm menos de riego que seguir como hoy', '+74 kg/ha de nitrógeno en el suelo (estimado)', 'Salud del suelo de 52 a 86 / 100 (estimado)'],
+      tradeoffs: ['El garbanzo y la veza tienen menos mercado que el maíz en la zona'],
+      evidence: ['Garbanzo, otoño: necesita ~280 mm y la lluvia aporta ~60 mm (FAO-56 con clima de NASA POWER)'] },
+    { id: 'yield', title: 'Más rendimiento', isCurrent: false, isRecommended: false,
+      steps: [
+        p('autumn', 'bean', 88, 120, 45, ['Es de los 5 cultivos más sembrados en México (FAOSTAT): hay mercado e insumos']),
+        p('winter', 'wheat', 81, 90, -20, ['La temperatura de invierno (14 °C) está en su rango óptimo']),
+        p('summer', 'maize', 76, 270, -30, ['Cultivo de alto valor productivo'], ['Requiere riego: la lluvia cubre ~10 % de lo que necesita']),
+      ],
+      waterMm: 610, irrigationMm: 480, nitrogenKgHa: 58, soilHealth: 66, bareSeasons: 0,
+      why: 'Da más peso a los cultivos de mayor valor productivo que el clima permite.',
+      benefits: ['40 mm menos de riego que seguir como hoy', '+20 kg/ha de nitrógeno en el suelo (estimado)'],
+      tradeoffs: ['Usa casi la misma agua que hoy: depende del riego en verano'],
+      evidence: ['Trigo, invierno: necesita ~250 mm y la lluvia aporta ~150 mm (FAO-56 con clima de NASA POWER)'] },
+  ],
+  localChecks: [
+    'Confirma las fechas de siembra con productores o el extensionista de tu zona.',
+    'Haz un análisis de suelo: la textura y el pH vienen de un modelo global de unos 250 m, no de tu parcela.',
+    'Revisa que haya semilla e inoculante de frijol en tu zona antes de sembrarlo.',
+    'La lluvia varía mucho entre años: ten un plan por si el temporal falla.',
+  ],
+  climateShift: null,
 };
 export const mockHistory: AnalysisSummary[] = [
   { id: 'demo-001', createdAt: '2026-11-14T18:00:00Z', location: { lat: 31.86, lon: -116.6 }, areaHa: 8.4,

@@ -19,6 +19,7 @@ export interface AnalysisRequest {
   priority: Priority;
   soil?: Soil;
   irrigated?: boolean;       // ¿tiene riego? (null/omitido = temporal)
+  climateShift?: ClimateShift; // escenario hipotético: solo con guardar=false (si no, 422)
 }
 
 // Todas las métricas salen de NASA POWER
@@ -56,6 +57,32 @@ export interface ImpactItem {
 export interface Uncertainty {
   level: 'low' | 'medium' | 'high';
   reason: string;           // «La lluvia anual varía 38 % entre años»
+}
+
+export type StrategyId = 'current' | Priority;
+
+// Escenario hipotético «¿y si…?» (solo con previewAnalysis / guardar=false)
+export interface ClimateShift {
+  rainPct: number; // −60 a 60: % de cambio en la lluvia de cada mes
+  tempC: number;   // −3 a 5: °C que se suman a cada mes
+}
+
+// Una forma de usar la parcela las próximas 3 temporadas. 'current' = seguir como hoy.
+export interface Strategy {
+  id: StrategyId;
+  title: string;            // «Ahorrar agua»; si dos coinciden: «Ahorrar agua · Regenerar el suelo»
+  isCurrent: boolean;
+  isRecommended: boolean;   // la de la prioridad elegida (= rotation)
+  steps: RotationStep[];    // 3 pasos
+  waterMm: number;
+  irrigationMm: number;
+  nitrogenKgHa: number;     // ESTIMADO por reglas
+  soilHealth: number;       // 0-100, ESTIMADO por reglas
+  bareSeasons: number;      // temporadas con el suelo sin cultivo
+  why: string;
+  benefits: string[];
+  tradeoffs: string[];      // riesgos y costos a revisar
+  evidence: string[];       // datos que la respaldan, con su fuente
 }
 
 // Suelo estimado por coordenadas (ISRIC SoilGrids, 0–30 cm). También: GET /api/v1/soil?lat=&lon= (404 si no hay dato)
@@ -101,6 +128,9 @@ export interface AnalysisResponse {
   uncertainty: Uncertainty;
   soilDetected?: DetectedSoil | null; // null si SoilGrids no tiene dato o no respondió
   irrigated?: boolean | null;
+  strategies?: Strategy[];  // [] o ausente en análisis guardados antes de la v2.2
+  localChecks?: string[];   // qué confirmar con productores o un agrónomo de la zona
+  climateShift?: ClimateShift | null;
 }
 
 // GET /api/v1/analyses — un renglón del historial

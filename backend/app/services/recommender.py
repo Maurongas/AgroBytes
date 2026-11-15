@@ -13,7 +13,7 @@ Fuentes de las reglas (docs/INVESTIGACION-CULTIVOS.md):
 
 import calendar
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date
 
 from app.schemas.analysis import (
@@ -27,6 +27,7 @@ from app.schemas.analysis import (
     Season,
     SoilHealth,
     Status,
+    Strategy,
     Uncertainty,
     UncertaintyLevel,
 )
@@ -69,6 +70,8 @@ class RecommendationResult:
     soil_health: SoilHealth
     climate: list[MonthlyClimate]
     uncertainty: Uncertainty
+    strategies: list[Strategy] = field(default_factory=list)
+    local_checks: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
