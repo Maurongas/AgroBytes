@@ -57,6 +57,7 @@ OUT_OF_SEASON_PENALTY = 0.9  # la temporada es preferencia, no filtro: en climas
 SYSTEM_CHANGE_PENALTY = 0.85  # pasar de granos a hortalizas (o al revés) exige equipo, mano de obra y mercado
 BASE_NITROGEN_KG_HA = 40
 FROST_MARGIN_C = 2  # mínima media a menos de 2 °C del umbral de helada → riesgo
+HEAT_MARGIN_C = 4  # máxima media 4 °C sobre el óptimo del cultivo → riesgo
 DEFAULT_FROST_KILL_C = 0.0  # cultivos sin KTMP en ECOCROP: se asume que la helada (0 °C) los daña
 KC_SEASON_FACTOR = 0.8  # Kc promedio del ciclo ≈ 80 % del Kc de media estación (simplificación de FAO-56)
 EFFECTIVE_RAIN = 0.8  # fracción de la lluvia que aprovecha el cultivo (simplificación)
@@ -95,6 +96,7 @@ class SeasonClimate:
     temp_c: float  # promedio de los 3 meses
     rain_mm: float  # suma de los 3 meses
     temp_min_c: float = 99.0  # promedio de la mínima diaria de los 3 meses (riesgo de helada)
+    temp_max_c: float = -99.0  # promedio de la máxima diaria (calor)
     et0_mm_day: float = 0.0  # evapotranspiración de referencia promedio (Hargreaves)
     days: int = 91
 
@@ -123,6 +125,7 @@ class Candidate:
     water_need_mm: float  # agua del ciclo en este lugar y temporada
     irrigation_mm: float  # lo que la lluvia no cubre
     frost_risk: bool = False
+    heat_risk: bool = False
     ph_ok: bool = True
     in_season: bool = True
     system_change: bool = False
@@ -176,6 +179,7 @@ def season_climate(season: Season, data: ClimateData) -> SeasonClimate:
         temp_c=sum(p.temp_c for p in points) / 3,
         rain_mm=sum(p.rain_mm for p in points),
         temp_min_c=sum(p.temp_min_c for p in points) / 3,
+        temp_max_c=sum(p.temp_max_c for p in points) / 3,
         et0_mm_day=sum(et0_hargreaves(p.temp_c, p.temp_max_c, p.temp_min_c, lat, p.month) for p in points) / 3,
         days=sum(calendar.monthrange(2021, m)[1] for m in months),
     )
@@ -292,7 +296,9 @@ def evaluate(crop: CropParams, sc: SeasonClimate, req: AnalysisRequest, previous
         raw *= SYSTEM_CHANGE_PENALTY
     return Candidate(crop, max(0, min(100, round(raw))), t, w, s, p, same_family,
                      water_need_mm=need, irrigation_mm=max(0.0, need - rain),
-                     frost_risk=sc.temp_min_c < limit + FROST_MARGIN_C, ph_ok=ph_in_range(soil.ph, crop),
+                     frost_risk=sc.temp_min_c < limit + FROST_MARGIN_C,
+                     heat_risk=sc.temp_max_c > crop.temp_opt_max + HEAT_MARGIN_C,
+                     ph_ok=ph_in_range(soil.ph, crop),
                      in_season=in_season, system_change=system_change)
 
 
@@ -370,6 +376,9 @@ def risks_for(c: Candidate, sc: SeasonClimate, high_uncertainty: bool, out_of_se
     risks: list[str] = []
     if c.frost_risk:
         risks.append(f"Riesgo de helada: mínimas de ~{sc.temp_min_c:.0f} °C (aguanta hasta {frost_limit(c.crop):.0f} °C)")
+    if c.heat_risk:
+        risks.append(f"Estrés por calor: máximas de ~{sc.temp_max_c:.0f} °C (su óptimo llega a "
+                     f"{c.crop.temp_opt_max:.0f} °C); siembra temprano o riega en horas frescas")
     if out_of_season:
         risks.append("Fuera de su temporada habitual de siembra; confirma las fechas locales")
     if c.system_change:
@@ -653,6 +662,31 @@ def merge_duplicates(strategies: list[Strategy]) -> list[Strategy]:
 # ---------------------------------------------------------------- función principal
 
 
+def local_checks_for(chosen: list[CropParams | None], current: CropParams, req: AnalysisRequest,
+                     detected_soil: DetectedSoil | None, uncertainty: Uncertainty,
+                     seasons: list[SeasonClimate]) -> list[str]:
+    """Qué confirmar con productores o un agrónomo de la zona antes de cambiar la rotación (máx. 5)."""
+    checks = ["Confirma las fechas de siembra con productores o el extensionista de tu zona."]
+    if (req.soil is None or req.soil.ph is None) and detected_soil is not None:
+        checks.append("Haz un análisis de suelo: la textura y el pH vienen de un modelo global de unos 250 m, "
+                      "no de tu parcela.")
+    crops = [c for c in chosen if c is not None]
+    for c in crops:
+        if c.family == "legume":
+            checks.append(f"Revisa que haya semilla e inoculante de {c.name.lower()} en tu zona antes de sembrarlo.")
+            break
+    if any(changes_system(c, current) for c in crops):
+        checks.append("Algún cultivo cambia tu sistema de producción: confirma que tienes equipo, mano de obra "
+                      "y comprador.")
+    if uncertainty.level == "high" and not req.irrigated:
+        checks.append("La lluvia varía mucho entre años: ten un plan por si el temporal falla.")
+    if any(c is None for c in chosen):
+        empty = next(SEASON_LABEL[sc.season] for c, sc in zip(chosen, seasons) if c is None)
+        checks.append(f"Planea cómo cubrir el suelo en {empty} (rastrojo o una cobertura).")
+    checks.append("Pregunta qué plagas y enfermedades son comunes en tu zona para estos cultivos.")
+    return checks[:5]
+
+
 def recommend(data: ClimateData, crops: list[CropParams], req: AnalysisRequest, today: date,
               detected_soil: DetectedSoil | None = None, country_areas: dict[str, float] | None = None,
               country_name: str | None = None) -> RecommendationResult:
@@ -710,4 +744,5 @@ def recommend(data: ClimateData, crops: list[CropParams], req: AnalysisRequest, 
                  for p in data.summary.monthly],
         uncertainty=uncertainty,
         strategies=strategies,
+        local_checks=local_checks_for(chosen, current, req, detected_soil, uncertainty, seasons),
     )
