@@ -6,10 +6,7 @@
 > Cambios de la v2.0: `docs/CAMBIOS-ARQUITECTURA.md`.
 
 ## ⚠️ Cambio importante (v2.0)
-El frontend ya **no es Next.js**. La app es la que hizo Mia (antes `field-shift/`), ahora en `frontend/`:
-**React 19 + Vite 8 + TypeScript + Tailwind 4**, rutas en `frontend/src/`. Tus PRs #7 (Navbar) y #8
-(historial) se hicieron sobre el Next.js borrado: hay que **portarlos** (ver tareas 1 y 2). Tu lógica sí
-se reutiliza: formatos de fecha/número, estados de carga/error/vacío, tabla + tarjetas móviles.
+El frontend ya **no es Next.js**. La app es la que hizo Mía (antes `field-shift/`), ahora en `frontend/`: **React 19 + Vite 8 + TypeScript + Tailwind 4**, rutas en `frontend/src/`. El historial (#8) y la barra de navegación (#7) ya se portaron a esta versión, y conservan su lógica: formatos de fecha/número, estados de carga/error/vacío, tabla + tarjetas móviles.
 
 ## Stack
 React 19 · Vite 8 · Tailwind 4 (tokens en `src/index.css` con `@theme`) · Framer Motion · Recharts ·
@@ -20,25 +17,17 @@ lucide-react · Zustand (`src/store/useStore.ts`) · TanStack Query.
 frontend/src/App.tsx                  navegación entre vistas (select | diagnosis | history)
 frontend/src/index.css                tema: tokens de color y fuentes
 frontend/src/views/DiagnosisView.tsx  resultados del análisis
-frontend/src/views/HistoryView.tsx    (por crear) historial
-frontend/src/components/Navbar.tsx    (por crear)
+frontend/src/views/HistoryView.tsx    historial
 frontend/src/components/NasaMetricCard.tsx  ImpactBar.tsx  GaugeSoilHealth.tsx  CountUp.tsx
 ```
-Compartido: `useStore.ts` es de Mia; para agregar `'history'` al tipo `view` (y una acción `goToHistory`)
-coordina con ella. `api/` es de menaxmn: usa sus funciones, no hagas `fetch` directo.
+Compartido: `useStore.ts` es de Mía y `api/` es de menaxmn: usa sus funciones, no hagas `fetch` directo.
 
-## Tareas (en orden)
-1. **Navbar** (de tu PR #7): `components/Navbar.tsx` con los tokens del tema (canvas/ink/leaf), no el tema
-   oscuro gris del Next viejo. Enlaces: "Analizar" (`view='select'`) e "Historial" (`view='history'`).
-   Debe convivir con el mapa a pantalla completa de `SelectView` (no taparlo en móvil).
-2. **HistoryView** (de tu PR #8): usa `listAnalyses()` de `src/api/client.ts` con `useQuery`; tipo
-   `AnalysisSummary` (§5.3). Columnas: fecha, ubicación (lat, lon), área, cultivo actual (`cropName`),
-   prioridad, cultivos de la rotación. Clic en un renglón → `getAnalysis(id)` → `view='diagnosis'`.
-   En modo mock ya devuelve 2 renglones de ejemplo.
-3. **DiagnosisView**: mostrar `analysis.uncertainty` (nivel + motivo) de forma visible; revisar que las
-   4 métricas se vean bien (ya está en `lg:grid-cols-4`); mantener las etiquetas "(estimado)" del nitrógeno
-   y salud del suelo.
-4. Responsivo y accesible (contraste, foco visible, `aria-label` en botones con solo ícono).
+## Estado
+Las tareas de esta fase ya están terminadas:
+- **Barra de navegación** portada a `components/nav/` (Sidebar y BottomBar).
+- **HistoryView** portado: usa `listAnalyses()` y abre el diagnóstico al hacer clic.
+- **DiagnosisView** muestra `analysis.uncertainty` y las 4 métricas.
+- **Responsivo y accesible:** revisado en 390 px y 1280 px, en modo claro y oscuro.
 
 ## Reglas
 - Colores siempre con tokens del tema (`bg-leaf-600`, `text-ink-700`…), nada de hex sueltos en componentes.

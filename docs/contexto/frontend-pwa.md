@@ -18,7 +18,7 @@ Vite 8 · vite-plugin-pwa (Workbox) · TanStack Query · TypeScript 6.
 frontend/src/api/types.ts     espejo EXACTO de ARQUITECTURA §5 (Mauro revisa cambios)
 frontend/src/api/client.ts    cliente único: createAnalysis, listAnalyses, getAnalysis (+ los que se agreguen)
 frontend/src/api/mock.ts      datos de ejemplo con la forma de §5
-frontend/src/lib/offline.ts   (por crear) guardar/leer último análisis
+frontend/src/lib/offline.ts   guardar/leer último análisis
 frontend/src/main.tsx         QueryClient y registro del service worker
 frontend/vite.config.ts       plugins (aquí va VitePWA)
 frontend/public/              íconos PWA
