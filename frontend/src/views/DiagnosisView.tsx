@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ChevronDown, Download } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ClipboardCheck, Download, Users } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useStore } from '../store/useStore';
 import { cropName, SEASON_BG, SEASON_LABEL } from '../lib/crops';
 import NasaMetricCard from '../components/NasaMetricCard';
 import GaugeSoilHealth from '../components/GaugeSoilHealth';
 import ImpactBar from '../components/ImpactBar';
+import Estrategias from '../components/Estrategias';
+import { estrategiaInicial, impactoContra } from '../lib/estrategias';
 import { exportarPlanPdf } from '../lib/pdf';
 import { PRIORITY_LABEL, TEXTURA_LABEL } from '../lib/etiquetas';
 import { COUNTRY_NAME } from '../lib/region';
@@ -21,8 +23,18 @@ export default function DiagnosisView() {
   const { analysis, crop, priority, backToSelect } = useStore();
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(true);
+  const [elegidaId, setElegidaId] = useState<string | null>(null);
   if (!analysis) return null;
-  const step = analysis.rotation[active];
+  const estrategias = analysis.strategies ?? [];
+  const base = estrategias.find((s) => s.isCurrent);
+  const idValido = elegidaId && estrategias.some((s) => s.id === elegidaId) ? elegidaId : estrategiaInicial(estrategias);
+  const elegida = estrategias.find((s) => s.id === idValido);
+  const pasos = elegida?.steps ?? analysis.rotation;
+  const step = pasos[Math.min(active, pasos.length - 1)];
+  const impacto = elegida && base ? impactoContra(base, elegida) : analysis.impact;
+  const suelo = elegida && base ? { current: base.soilHealth, recommended: elegida.soilHealth } : analysis.soilHealth;
+  const etiqueta = elegida && !elegida.isRecommended ? 'Esta opción' : 'Recomendado';
+  const elegir = (id: string) => { setElegidaId(id); setActive(0); setOpen(true); };
 
   return (
     <div className="h-full overflow-auto">
@@ -66,11 +78,13 @@ export default function DiagnosisView() {
         <strong>Incertidumbre {INCERTIDUMBRE[analysis.uncertainty.level].texto}.</strong> {analysis.uncertainty.reason}.
       </p>
 
+      {elegida && <Estrategias lista={estrategias} elegida={elegida} onElegir={elegir} />}
+
       <div className="grid gap-6 p-6 lg:grid-cols-5">
         <section className="lg:col-span-3">
-          <h2 className="font-display text-2xl font-semibold">Rotación recomendada</h2>
+          <h2 className="font-display text-2xl font-semibold">{elegida ? `Detalle: ${elegida.title}` : 'Rotación recomendada'}</h2>
           <div className="mt-4 flex gap-2 overflow-x-auto">
-            {analysis.rotation.map((r, i) => (
+            {pasos.map((r, i) => (
               <button key={r.season} onClick={() => { setActive(i); setOpen(true); }}
                 className="relative rounded-full px-4 py-2 text-sm font-medium text-ink-700">
                 {active === i && (
@@ -83,7 +97,7 @@ export default function DiagnosisView() {
           </div>
 
           <AnimatePresence mode="wait">
-            <motion.article key={step.season}
+            <motion.article key={`${idValido}-${step.season}`}
               className={`mt-4 rounded-card border border-line p-5 shadow-card ${SEASON_BG[step.season]}`}
               initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -24 }}
               transition={{ duration: 0.25 }} whileHover={{ y: -4 }}>
@@ -131,12 +145,12 @@ export default function DiagnosisView() {
         </section>
 
         <section className="space-y-5 lg:col-span-2">
-          <h2 className="font-display text-2xl font-semibold">Impacto comparado</h2>
+          <h2 className="font-display text-2xl font-semibold">{elegida && !elegida.isCurrent ? 'Contra seguir como hoy' : 'Impacto comparado'}</h2>
           <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card">
             <p className="text-sm font-medium">Salud del suelo</p>
             <div className="mt-2 flex items-center justify-around">
-              <div className="text-center"><GaugeSoilHealth value={analysis.soilHealth.current} /><p className="text-xs text-ink-500">Actual</p></div>
-              <div className="text-center"><GaugeSoilHealth value={analysis.soilHealth.recommended} /><p className="text-xs text-ink-500">Con la rotación</p></div>
+              <div className="text-center"><GaugeSoilHealth value={suelo.current} /><p className="text-xs text-ink-500">Actual</p></div>
+              <div className="text-center"><GaugeSoilHealth value={suelo.recommended} /><p className="text-xs text-ink-500">{elegida ? elegida.title : 'Con la rotación'}</p></div>
             </div>
           </div>
           {analysis.soilDetected && (
@@ -152,8 +166,22 @@ export default function DiagnosisView() {
               </p>
             </div>
           )}
+          {(analysis.localChecks?.length ?? 0) > 0 && (
+            <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card">
+              <p className="flex items-center gap-2 text-sm font-medium">
+                <ClipboardCheck size={16} className="text-leaf-700" aria-hidden /> Antes de decidir, confirma
+              </p>
+              <ul className="mt-3 space-y-2 text-sm text-ink-700">
+                {analysis.localChecks!.map((c) => (
+                  <li key={c} className="flex gap-2">
+                    <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-leaf-500" aria-hidden />{c}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <div className="space-y-5 rounded-card border border-line bg-surface-raised p-5 shadow-card">
-            {analysis.impact.map((it) => <ImpactBar key={it.label} item={it} />)}
+            {impacto.map((it) => <ImpactBar key={it.label} item={it} etiqueta={etiqueta} />)}
           </div>
         </section>
 
@@ -174,7 +202,14 @@ export default function DiagnosisView() {
           </div>
         </section>
       </div>
-      <p className="px-6 pb-6 text-xs text-ink-500">Clima: NASA POWER. Recomendación por reglas agronómicas; nitrógeno y salud del suelo son estimaciones.</p>
+      <aside className="mx-6 mb-6 flex gap-3 rounded-card border border-line bg-canvas-subtle p-4 text-sm text-ink-700">
+        <Users size={20} className="mt-0.5 shrink-0 text-leaf-700" aria-hidden />
+        <p>
+          <strong className="text-ink-900">Tú decides.</strong> Field Shift te ayuda a explorar opciones con clima de
+          NASA POWER y reglas agronómicas; no reemplaza tu experiencia ni la de un agrónomo de tu zona. El nitrógeno y
+          la salud del suelo son estimaciones.
+        </p>
+      </aside>
     </div>
   );
 }

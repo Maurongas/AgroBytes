@@ -86,6 +86,19 @@ export function exportarPlanPdf(a: AnalysisResponse, { crop, priority }: Extra):
     ]),
   );
 
+  // Estrategias (análisis v2.2 en adelante)
+  if (a.strategies?.length) {
+    titulo('Estrategias comparadas');
+    tabla(
+      ['Estrategia', 'Cultivos por temporada', 'Riego (mm)', 'Nitrógeno (kg/ha, est.)', 'Suelo (/100, est.)'],
+      a.strategies.map((s) => [
+        s.isRecommended ? `${s.title} (recomendada)` : s.title,
+        s.steps.map((p) => `${SEASON_LABEL[p.season]}: ${cropName(p.cropId)}`).join('\n'),
+        String(s.irrigationMm), String(s.nitrogenKgHa), String(s.soilHealth),
+      ]),
+    );
+  }
+
   // Métricas NASA
   titulo('Datos de la NASA para la parcela');
   tabla(
@@ -104,6 +117,13 @@ export function exportarPlanPdf(a: AnalysisResponse, { crop, priority }: Extra):
   // Incertidumbre
   titulo('Incertidumbre');
   parrafo(`Nivel ${INCERTIDUMBRE[a.uncertainty.level]}. ${a.uncertainty.reason}.`);
+
+  if (a.localChecks?.length) {
+    titulo('Antes de decidir, confirma');
+    parrafo(a.localChecks.map((c) => `- ${c}`).join('\n'));
+  }
+  titulo('Tú decides');
+  parrafo('Este plan es una guía para explorar opciones con datos de NASA POWER y reglas agronómicas. No reemplaza tu experiencia ni la de un agrónomo de tu zona.');
 
   // Pie de cada página
   const paginas = doc.getNumberOfPages();
