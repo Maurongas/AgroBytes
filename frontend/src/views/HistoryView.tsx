@@ -1,11 +1,13 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { listAnalyses, getAnalysis } from '../api/client';
+import { useCallback, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { Trash2 } from 'lucide-react';
+import { listAnalyses, getAnalysis, deleteAnalysis } from '../api/client';
 import type { AnalysisResponse, AnalysisSummary } from '../api/types';
 import { useStore } from '../store/useStore';
+import ConfirmarBorrar from '../components/ConfirmarBorrar';
 import { cropName } from '../lib/crops';
 import { formatoFecha, formatoUbicacion, PRIORITY_LABEL } from '../lib/etiquetas';
-import { guardarAnalisis, guardarHistorial, leerAnalisis, leerHistorial } from '../lib/offline';
+import { guardarAnalisis, guardarHistorial, leerAnalisis, leerHistorial, quitarAnalisis } from '../lib/offline';
 
 // Intenta la API; si falla y hay historial guardado, usa ese.
 async function cargarHistorial(): Promise<{ filas: AnalysisSummary[]; guardado: boolean }> {
@@ -24,6 +26,11 @@ export default function HistoryView() {
   const goTo = useStore((s) => s.goTo);
   const [abriendo, setAbriendo] = useState<string | null>(null);
   const [errorAbrir, setErrorAbrir] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const [porBorrar, setPorBorrar] = useState<AnalysisSummary | null>(null);
+  const cerrarConfirmar = useCallback(() => setPorBorrar(null), []);
+  const [borrando, setBorrando] = useState<string | null>(null);
+  const [avisoBorrar, setAvisoBorrar] = useState<string | null>(null);
   const { data, isPending, isError, error, refetch } = useQuery({
     queryKey: ['historial'],
     queryFn: cargarHistorial,
@@ -51,6 +58,23 @@ export default function HistoryView() {
     }
   }
 
+  async function borrar(fila: AnalysisSummary) {
+    setPorBorrar(null);
+    setBorrando(fila.id);
+    setAvisoBorrar(null);
+    try {
+      await deleteAnalysis(fila.id);
+    } catch {
+      setAvisoBorrar('No hay conexión con el servidor: se quitó solo de este dispositivo y puede volver a aparecer al reconectar.');
+    } finally {
+      quitarAnalisis(fila.id);
+      qc.setQueryData(['historial'], (prev: { filas: AnalysisSummary[]; guardado: boolean } | undefined) =>
+        prev ? { ...prev, filas: prev.filas.filter((f) => f.id !== fila.id) } : prev,
+      );
+      setBorrando(null);
+    }
+  }
+
   return (
     <div className="h-full overflow-auto p-6">
       <h1 className="font-display text-3xl font-semibold">Historial</h1>
@@ -69,6 +93,10 @@ export default function HistoryView() {
 
       {errorAbrir && (
         <p className="mt-4 rounded-xl bg-clay-100 p-3 text-sm text-ink-900" role="alert">{errorAbrir}</p>
+      )}
+
+      {avisoBorrar && (
+        <p className="mt-4 rounded-xl bg-sun-100 p-3 text-sm text-ink-900" role="status">{avisoBorrar}</p>
       )}
 
       {data?.guardado && (
@@ -95,7 +123,7 @@ export default function HistoryView() {
                 <tr>
                   <th className="px-4 py-3">Fecha</th><th className="px-4 py-3">Ubicación</th><th className="px-4 py-3">Área</th>
                   <th className="px-4 py-3">Cultivo actual</th><th className="px-4 py-3">Prioridad</th>
-                  <th className="px-4 py-3">Rotación</th><th className="px-4 py-3"><span className="sr-only">Abrir</span></th>
+                  <th className="px-4 py-3">Rotación</th><th className="px-4 py-3"><span className="sr-only">Acciones</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -107,10 +135,15 @@ export default function HistoryView() {
                     <td className="px-4 py-3">{cropName(f.currentCrop)}</td>
                     <td className="px-4 py-3">{PRIORITY_LABEL[f.priority]}</td>
                     <td className="px-4 py-3">{f.rotationCrops.map(cropName).join(' · ')}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="whitespace-nowrap px-4 py-3 text-right">
                       <button onClick={() => abrir(f)} disabled={abriendo !== null}
                         className="rounded-full border border-leaf-600 px-3 py-1 text-leaf-700 hover:bg-leaf-50 disabled:opacity-50">
                         {abriendo === f.id ? 'Abriendo…' : 'Abrir'}
+                      </button>
+                      <button onClick={() => setPorBorrar(f)} disabled={borrando !== null} aria-label="Borrar análisis"
+                        className="ml-2 inline-flex items-center gap-1 rounded-full border border-danger/50 px-3 py-1 text-danger hover:bg-danger/10 disabled:opacity-50">
+                        <Trash2 size={14} aria-hidden />
+                        {borrando === f.id ? 'Borrando…' : 'Borrar'}
                       </button>
                     </td>
                   </tr>
@@ -132,11 +165,18 @@ export default function HistoryView() {
                   className="mt-3 w-full rounded-full bg-leaf-600 py-2 text-sm font-medium text-paper disabled:opacity-50">
                   {abriendo === f.id ? 'Abriendo…' : 'Abrir resultados'}
                 </button>
+                <button onClick={() => setPorBorrar(f)} disabled={borrando !== null} aria-label="Borrar análisis"
+                  className="mt-2 inline-flex w-full items-center justify-center gap-1 rounded-full border border-danger/50 py-2 text-sm text-danger hover:bg-danger/10 disabled:opacity-50">
+                  <Trash2 size={14} aria-hidden />
+                  {borrando === f.id ? 'Borrando…' : 'Borrar'}
+                </button>
               </li>
             ))}
           </ul>
         </>
       )}
+
+      <ConfirmarBorrar fila={porBorrar} onCancelar={cerrarConfirmar} onConfirmar={borrar} />
     </div>
   );
 }
