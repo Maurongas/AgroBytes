@@ -30,9 +30,9 @@ uvicorn recarga solo.
 ```
 backend/app/main.py
 backend/app/schemas/        base.py analysis.py climate.py crop.py
-backend/app/api/v1/         analyses.py climate.py crops.py _pending.py
-backend/app/services/       geo.py nasa_power.py climate.py recommender.py   (hecho)
-backend/tests/              test_api.py test_geo.py test_nasa_power.py test_recommender.py
+backend/app/api/v1/         analyses.py climate.py crops.py soil.py
+backend/app/services/       geo.py nasa_power.py climate.py recommender.py crops.py region.py soil.py   (hecho)
+backend/tests/              test_api.py test_geo.py test_nasa_power.py test_recommender.py test_region.py test_soil.py
 backend/research/
 ```
 No toques sin avisar a Daniel: `app/core/`, `app/db/`, `app/models/`, `app/repositories/`, `alembic/`,
