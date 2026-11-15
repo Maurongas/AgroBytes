@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import type { ImpactItem } from '../api/types';
 
-export default function ImpactBar({ item }: { item: ImpactItem }) {
+export default function ImpactBar({ item, etiqueta = 'Recomendado' }: { item: ImpactItem; etiqueta?: string }) {
   const max = Math.max(Math.abs(item.current), Math.abs(item.recommended)) || 1;
   const better = item.betterWhen === 'higher' ? item.recommended > item.current : item.recommended < item.current;
   const delta = item.current === 0 ? 0 : ((item.recommended - item.current) / Math.abs(item.current)) * 100;
@@ -28,7 +28,7 @@ export default function ImpactBar({ item }: { item: ImpactItem }) {
           <span className="w-16 shrink-0 text-right">{item.current} {item.unit}</span>
         </div>
         <div className="flex items-center gap-2 text-xs text-ink-700">
-          <span className="w-20 shrink-0">Recomendado</span>{bar(item.recommended, 'bg-leaf-600', 0.15)}
+          <span className="w-20 shrink-0 truncate">{etiqueta}</span>{bar(item.recommended, 'bg-leaf-600', 0.15)}
           <span className="w-16 shrink-0 text-right">{item.recommended} {item.unit}</span>
         </div>
       </div>
