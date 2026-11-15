@@ -88,9 +88,9 @@ export default function HistoryView() {
 
       {data && data.filas.length > 0 && (
         <>
-          {/* Escritorio: tabla */}
-          <div className="mt-6 hidden overflow-hidden rounded-card border border-line bg-surface-raised shadow-card md:block">
-            <table className="w-full text-left text-sm">
+          {/* Pantallas anchas: tabla. Si aun así no cabe, se desplaza a los lados en vez de cortarse. */}
+          <div className="mt-6 hidden overflow-x-auto rounded-card border border-line bg-surface-raised shadow-card xl:block">
+            <table className="w-full min-w-[760px] text-left text-sm">
               <thead className="bg-surface-sunken text-xs uppercase tracking-widest text-ink-500">
                 <tr>
                   <th className="px-4 py-3">Fecha</th><th className="px-4 py-3">Ubicación</th><th className="px-4 py-3">Área</th>
@@ -119,15 +119,15 @@ export default function HistoryView() {
             </table>
           </div>
 
-          {/* Celular: tarjetas */}
-          <ul className="mt-6 space-y-3 md:hidden">
+          {/* Celular, tableta y ventanas angostas: tarjetas (dos columnas cuando hay espacio) */}
+          <ul className="mt-6 grid gap-3 sm:grid-cols-2 xl:hidden">
             {data.filas.map((f) => (
-              <li key={f.id} className="rounded-card border border-line bg-surface-raised p-4 shadow-card">
+              <li key={f.id} className="flex flex-col rounded-card border border-line bg-surface-raised p-4 shadow-card">
                 <p className="text-xs text-ink-500">{formatoFecha(f.createdAt)}</p>
                 <p className="mt-1 font-display text-lg font-semibold">{cropName(f.currentCrop)} · {f.areaHa.toFixed(1)} ha</p>
                 <p className="text-sm text-ink-700">{PRIORITY_LABEL[f.priority]}</p>
                 <p className="mt-1 text-sm text-ink-700">Rotación: {f.rotationCrops.map(cropName).join(' · ')}</p>
-                <p className="mt-1 font-mono text-xs text-ink-500">{formatoUbicacion(f.location)}</p>
+                <p className="mb-auto mt-1 font-mono text-xs text-ink-500">{formatoUbicacion(f.location)}</p>
                 <button onClick={() => abrir(f)} disabled={abriendo !== null}
                   className="mt-3 w-full rounded-full bg-leaf-600 py-2 text-sm font-medium text-paper disabled:opacity-50">
                   {abriendo === f.id ? 'Abriendo…' : 'Abrir resultados'}
