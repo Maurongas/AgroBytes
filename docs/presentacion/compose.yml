@@ -1,0 +1,21 @@
+# Presentación (pitch) en Docker, sin instalar Node:
+#   docker compose -f docs/presentacion/compose.yml up --build      → http://localhost:3001
+# Reutiliza la imagen y los node_modules del frontend; monta el código de la app y de esta carpeta.
+name: fieldshift-pitch
+services:
+  pitch:
+    build:
+      context: ../../frontend
+    ports:
+      - "3001:3001"
+    environment:
+      FRONTEND_DIR: /app
+      CHOKIDAR_USEPOLLING: "true"
+    volumes:
+      - ../../frontend:/app
+      - /app/node_modules
+      - ./:/docs/presentacion
+    # /frontend → /app para que las rutas relativas (../../frontend) sean las mismas que en el repo
+    command: >
+      sh -c "ln -sfn /app /frontend &&
+             npx vite --config /docs/presentacion/vite.config.mjs --configLoader native --host 0.0.0.0 --port 3001"

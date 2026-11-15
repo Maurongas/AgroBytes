@@ -1,0 +1,47 @@
+/* Tokens, fuentes y modo oscuro de la app: si el frontend cambia su paleta, el pitch la hereda. */
+@import "../../../frontend/src/index.css";
+
+@source "./";
+@source "../../../frontend/src/components";
+
+html, body, #root { overflow: hidden; }
+body { background: var(--color-canvas); }
+#root { touch-action: pan-y; }
+
+/* Textura de tierra (surcos) para el hook y como respaldo del mapa sin internet */
+.soil-texture {
+  background-color: #6B4A2E;
+  background-image:
+    repeating-linear-gradient(100deg, rgba(0,0,0,.18) 0 6px, transparent 6px 22px),
+    repeating-linear-gradient(100deg, rgba(255,220,170,.07) 0 2px, transparent 2px 22px),
+    radial-gradient(ellipse at 30% 20%, rgba(255,207,92,.18), transparent 60%),
+    radial-gradient(ellipse at 80% 90%, rgba(18,38,31,.55), transparent 60%);
+}
+.map-fallback .leaflet-container {
+  background-color: #4B5D3A;
+  background-image:
+    repeating-linear-gradient(80deg, rgba(0,0,0,.12) 0 10px, transparent 10px 34px),
+    radial-gradient(ellipse at 40% 30%, rgba(156,203,134,.35), transparent 65%);
+}
+.leaflet-container { font-family: var(--font-sans); }
+.leaflet-control-attribution { font-size: 9px !important; opacity: .6; }
+
+@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.animate-blink { animation: blink 1.2s ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-blink { animation: none; }
+  [style*="animation: scan"] { animation: none !important; left: 50% !important; }
+}
+
+/* Volteo de las tarjetas de estrategia */
+.flip { perspective: 1400px; }
+.flip-inner { transform-style: preserve-3d; transition: transform .7s cubic-bezier(.22,1,.36,1); }
+.flip-inner.is-flipped { transform: rotateY(180deg); }
+.flip-face { backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+.flip-back { transform: rotateY(180deg); }
+@media (prefers-reduced-motion: reduce) {
+  .flip-inner { transition: none; }
+}
+
+input[type='range'].pitch-range { accent-color: var(--color-leaf-600); height: 28px; }
