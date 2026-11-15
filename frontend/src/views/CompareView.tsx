@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { createAnalysis } from '../api/client';
+import { previewAnalysis } from '../api/client';
 import type { AnalysisResponse, ImpactItem, Priority } from '../api/types';
 import { CROPS, cropName, SEASON_LABEL } from '../lib/crops';
 import { useStore } from '../store/useStore';
@@ -85,7 +85,7 @@ export default function CompareView() {
   const comparar = useMutation({
     mutationFn: async () => {
       if (!geometry) throw new Error('Dibuja una parcela primero.');
-      const pedir = (e: Escenario) => createAnalysis({ geometry, currentCrop: e.crop, priority: e.priority, soil: soil ?? undefined });
+      const pedir = (e: Escenario) => previewAnalysis({ geometry, currentCrop: e.crop, priority: e.priority, soil: soil ?? undefined });
       const [a, b] = await Promise.all([pedir(escA), pedir(escB)]);
       return { a, b };
     },
