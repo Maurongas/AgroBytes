@@ -2,15 +2,18 @@
 
 Uso, con `docker compose up` corriendo:
     docker compose exec backend python -m app.db.precalentar
+Contra la versión publicada (desde tu compu, en backend/):
+    API=https://<tu-backend> python -m app.db.precalentar
 Así el primer análisis de cada lugar no espera a NASA POWER ni SoilGrids durante la presentación.
 """
 
 import asyncio
+import os
 import time
 
 import httpx
 
-API = "http://localhost:8000"  # dentro del contenedor del backend, el propio uvicorn
+API = os.environ.get("API", "http://localhost:8000")  # por defecto, el uvicorn del propio contenedor
 LADO = 0.0005  # ~55 m → parcela de ~1 ha (dentro del límite 0.1–500 ha)
 
 LUGARES = {
