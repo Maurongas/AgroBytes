@@ -45,7 +45,7 @@ export function exportarPlanPdf(a: AnalysisResponse, { crop, priority }: Extra):
       body,
       styles: { font: 'helvetica', fontSize: 9, cellPadding: 2 },
       headStyles: { fillColor: VERDE },
-      margin: { left: 14, right: 14 },
+      margin: { left: 14, right: 14, bottom: 20 }, // deja espacio para el pie de página
     });
     y = finalY(doc) + 10;
   };
