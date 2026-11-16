@@ -1,177 +1,123 @@
 # 🌱 AgroBytes
 
-## Transformando datos de observación terrestre de la NASA en decisiones agrícolas inteligentes
+**[English](README.md) · [Español](README.es.md)**
 
-> **De los datos de la NASA al campo: transformamos información ambiental en resiliencia agrícola.**
+## Turning NASA Earth observation data into smart farming decisions
 
-![Mapa con la parcela dibujada](docs/img/mapa.png)
+> **🔗 Live app (for judges): https://agrobytes-web.onrender.com/**
+> Open the link, draw your field on the map, pick your current crop and priority, and press **Analyze field**.
+> The app is in English by default; use the **EN / ES** button in the menu to switch to Spanish.
+> *Hosted on Render's free plan: the first load may take up to a minute while the server wakes up.*
 
-Los agricultores enfrentan condiciones cada vez más impredecibles debido al cambio climático, la escasez de agua y la degradación del suelo. Aunque la NASA proporciona una enorme cantidad de datos ambientales de alta calidad, convertir esa información en decisiones prácticas para el campo sigue siendo un desafío.
+![Map with a drawn field](docs/img/mapa.png)
 
-**AgroBytes** cierra esa brecha al transformar datos climáticos y ambientales en recomendaciones agrícolas claras, comprensibles y accionables. Nuestra plataforma ayuda a los productores a seleccionar rotaciones de cultivos más resilientes, optimizar el uso del agua y mejorar la salud del suelo, fortaleciendo su capacidad de adaptación frente a condiciones cambiantes.
+Farmers face increasingly unpredictable conditions due to climate change, water scarcity and soil degradation. NASA provides a huge amount of high-quality environmental data, but turning it into practical field decisions is still hard.
+
+**AgroBytes** closes that gap: it turns climate and environmental data into clear, explainable crop-rotation recommendations that help growers save water, improve soil health and adapt to changing conditions.
 
 ---
 
-## ▶️ Cómo correrlo
+## ▶️ Run it locally
 
-Necesitas [Docker](https://www.docker.com/).
+You need [Docker](https://www.docker.com/).
 
 ```bash
-git clone https://github.com/nahuumm/NasaSpaceApp.git
-cd NasaSpaceApp
+git clone https://github.com/Maurongas/AgroBytes.git
+cd AgroBytes
 docker compose up --build
 ```
 
 - App: http://localhost:3000
-- API (documentación interactiva): http://localhost:8000/docs
+- API (interactive docs): http://localhost:8000/docs
 
 ---
 
-## 🚜 El Problema
+## 🚜 The problem
 
-Muchos agricultores deben tomar decisiones críticas sobre qué cultivar, cuándo hacerlo y cómo preservar sus recursos naturales, a menudo con información limitada o difícil de interpretar.
+Farmers must make critical decisions about what to plant, when, and how to preserve their resources, often with limited or hard-to-interpret information. Droughts, temperature swings, changing rainfall and soil decline raise agricultural risk, while valuable Earth observation data usually requires specialized knowledge to use.
 
-Los efectos de las sequías, las variaciones en la temperatura, los cambios en los patrones de precipitación y el deterioro del suelo generan riesgos cada vez mayores para la producción agrícola.
+## 💡 Our solution
 
-Al mismo tiempo, existen valiosos datos de observación terrestre que podrían ayudar a reducir estos riesgos, pero normalmente requieren conocimientos técnicos especializados para ser utilizados.
+From a field's location and the grower's goals, AgroBytes analyzes environmental conditions and proposes seasonal crop rotations aimed at:
 
----
+- 💧 Saving water
+- 🌱 Improving soil fertility
+- ♻️ Restoring nutrients such as nitrogen
+- 🌦️ Increasing resilience to adverse weather
+- 📈 Keeping long-term productivity
 
-## 💡 Nuestra Solución
-
-AgroBytes convierte datos ambientales complejos en recomendaciones prácticas para agricultores.
-
-A partir de la ubicación de una parcela y los objetivos del productor, el sistema analiza las condiciones ambientales disponibles y propone estrategias de rotación de cultivos orientadas a:
-
-- 💧 Ahorrar agua.
-- 🌱 Mejorar la fertilidad del suelo.
-- ♻️ Favorecer la regeneración de nutrientes como el nitrógeno.
-- 🌦️ Incrementar la resiliencia frente a eventos climáticos adversos.
-- 📈 Mantener la productividad agrícola a largo plazo.
-
-| Diagnóstico | Comparar |
+| Results | Compare |
 |---|---|
-| ![Resultados del análisis](docs/img/diagnostico.png) | ![Comparación de rotaciones](docs/img/comparar.png) |
+| ![Analysis results](docs/img/diagnostico.png) | ![Rotation comparison](docs/img/comparar.png) |
 
-| Historial en celular | Modo oscuro |
+| History on mobile | Dark mode |
 |---|---|
-| ![Historial en celular](docs/img/historial-movil.png) | ![Diagnóstico en modo oscuro](docs/img/diagnostico-oscuro.png) |
+| ![History on mobile](docs/img/historial-movil.png) | ![Results in dark mode](docs/img/diagnostico-oscuro.png) |
 
 ---
 
-## 🛰️ Integración de Datos de la NASA
-
-AgroBytes aprovecha los recursos de observación terrestre de la NASA para comprender mejor las condiciones que afectan a los sistemas agrícolas.
+## 🛰️ NASA data integration
 
 ### NASA POWER
+Location-based climate data: temperature, precipitation, solar radiation, soil moisture and weather trends.
 
-Actualmente utilizamos NASA POWER para obtener información climática basada en la ubicación geográfica, incluyendo:
+### Other sources
+- **ISRIC SoilGrids:** soil properties.
+- **FAO ECOCROP:** crop requirements (temperature, rainfall, cycle).
+- **FAOSTAT:** which crops are grown in each country.
 
-- Temperatura.
-- Precipitación.
-- Radiación solar.
-- Tendencias meteorológicas.
-
-### Otras fuentes
-
-- **ISRIC SoilGrids:** propiedades del suelo.
-- **FAO ECOCROP:** requerimientos de cada cultivo (temperatura, lluvia, ciclo).
-
-### Futuras Integraciones
-
-La arquitectura de la plataforma está preparada para incorporar fuentes adicionales de datos de la NASA como:
-
-- **SMAP** para monitoreo de humedad del suelo.
-- **GPM IMERG** para análisis avanzado de precipitaciones.
-- **ECOSTRESS** para indicadores de estrés hídrico en cultivos.
-- **MODIS y Landsat** para monitoreo de vegetación.
-- **SRTM** para evaluación de pendientes y riesgos de erosión.
-
-Estas integraciones permitirán recomendaciones cada vez más precisas y adaptadas a las condiciones reales de cada región.
+### Future integrations
+**SMAP** (soil moisture), **GPM IMERG** (precipitation), **ECOSTRESS** (crop water stress), **MODIS and Landsat** (vegetation), **SRTM** (slope and erosion risk).
 
 ---
 
-## 🎯 Cómo Respondemos al Desafío
+## 🎯 How we address the challenge
 
-AgroBytes contribuye directamente al objetivo del desafío al:
+- Uses NASA data to support farming decisions.
+- Improves water-use efficiency.
+- Promotes sustainable practices.
+- Strengthens resilience to climate variability.
+- Translates complex science into easy-to-apply recommendations.
 
-- Utilizar datos de la NASA para apoyar decisiones agrícolas.
-- Mejorar la eficiencia en el uso del agua.
-- Promover prácticas agrícolas sostenibles.
-- Fortalecer la resiliencia frente a la variabilidad climática.
-- Traducir información científica compleja en recomendaciones fáciles de aplicar.
+## 🔍 Explainable recommendation engine
 
-Nuestro objetivo es acercar la ciencia y la tecnología espacial a quienes más las necesitan: los agricultores.
+Every recommendation can be traced back to specific environmental conditions, crop characteristics and known agronomic principles. Instead of opaque answers, the system shows **why** a rotation is recommended, its risks, its estimated impact and its uncertainty. It is a transparent **rule-based engine** (not machine learning). See [docs/METODOLOGIA.md](docs/METODOLOGIA.md) and [docs/VALIDACION.md](docs/VALIDACION.md).
 
----
+## ⚙️ Workflow
 
-## 🔍 Motor de Recomendaciones Explicable
+1. The farmer draws their field on the map.
+2. The system queries NASA POWER climate data.
+3. Climate and agronomic variables are analyzed.
+4. The grower's goals are taken into account.
+5. Explainable crop-rotation recommendations are generated.
+6. The user gets clear information to support the decision.
 
-AgroBytes prioriza la transparencia.
+## ⚠️ Limits
 
-Cada recomendación puede rastrearse hasta condiciones ambientales específicas, características de los cultivos y principios agronómicos conocidos.
+- Recommendations are **estimates based on agronomic rules**, not a prediction of the future.
+- Alerts show the **typical risks of the year** from historical climate, not a weather forecast.
+- Nitrogen and soil health are **rule-based estimates**.
+- Each result states its **uncertainty**. It does not replace a visit from an agronomist.
+- Coverage: Mexico, the United States and Canada.
 
-En lugar de proporcionar respuestas opacas, el sistema permite que los agricultores comprendan por qué una determinada rotación es recomendada y cómo puede beneficiar a su parcela.
+## 🌍 Potential impact
 
----
+✅ Better climate adaptation · ✅ Better water management · ✅ Soil health conservation · ✅ Lower agricultural risk · ✅ Simple access to NASA science data · ✅ More sustainable decisions
 
-## ⚙️ Flujo de Trabajo
+## 🚀 Vision
 
-1. El agricultor selecciona la ubicación de su parcela.
-2. El sistema consulta datos ambientales provenientes de fuentes de la NASA.
-3. Se analizan variables climáticas y agrícolas relevantes.
-4. Se evalúan las necesidades y objetivos del productor.
-5. Se generan recomendaciones explicables de rotación de cultivos.
-6. El usuario recibe información clara para apoyar la toma de decisiones.
-
----
-
-## ⚠️ Límites
-
-- Las recomendaciones son **estimaciones basadas en reglas agronómicas**, no una predicción del futuro.
-- Las alertas muestran los **riesgos típicos del año** según el clima histórico, no un pronóstico del tiempo.
-- Cada resultado indica su nivel de **incertidumbre**. No sustituye la visita de un agrónomo.
+We want AgroBytes to become a comprehensive resilient-agriculture platform combining Earth observations, environmental analysis and accessible agronomic advice for any grower.
 
 ---
 
-## 🌍 Impacto Potencial
+## 👥 Team
 
-AgroBytes busca democratizar el acceso a la información ambiental avanzada.
-
-Entre sus beneficios potenciales se encuentran:
-
-- ✅ Mayor adaptación al cambio climático.
-- ✅ Mejor gestión de recursos hídricos.
-- ✅ Conservación de la salud del suelo.
-- ✅ Reducción del riesgo agrícola.
-- ✅ Acceso simplificado a datos científicos de la NASA.
-- ✅ Decisiones agrícolas más sostenibles y resilientes.
-
-Creemos que las decisiones agrícolas más inteligentes comienzan con información accesible, confiable y comprensible.
-
----
-
-## 🚀 Visión a Futuro
-
-Nuestra visión es convertir AgroBytes en una plataforma integral de agricultura resiliente que combine observaciones de la Tierra, análisis ambiental y recomendaciones agronómicas accesibles para cualquier productor.
-
-A medida que se incorporen nuevas fuentes de datos, el sistema podrá ofrecer recomendaciones aún más precisas para enfrentar los desafíos agrícolas del futuro.
-
----
-
-## 👨‍🌾 Porque el futuro de la agricultura también se observa desde el espacio
-
-AgroBytes demuestra cómo los datos de observación terrestre de la NASA pueden transformarse en herramientas prácticas que ayuden a los agricultores a producir más inteligentemente, conservar recursos y adaptarse a un entorno cada vez más cambiante.
-
----
-
-## 👥 Equipo
-
-| Área | Rol | Responsable | Issue |
+| Area | Role | Owner | Issue |
 |---|---|---|---|
-| Frontend | Layout y navegación | Fernando (FernandoBorbas) | #1 |
-| Frontend | Mapa | Mía (hdmiaa) | #2 |
-| Frontend | PWA y datos | Ximena (menaxmn) | #3 |
-| Backend | Base de datos | Daniel (daniel379618) | #4 |
-| Backend | API, NASA POWER y reglas | Mauro (Maurongas) | #5 |
-| Backend | Repositorio de GitHub, Docker y video | Nahúm (nahuumm) | — |
+| Frontend | Layout and navigation | Fernando (FernandoBorbas) | #1 |
+| Frontend | Map | Mía (hdmiaa) | #2 |
+| Frontend | PWA and data | Ximena (menaxmn) | #3 |
+| Backend | Database | Daniel (daniel379618) | #4 |
+| Backend | API, NASA POWER and rules | Mauro (Maurongas) | #5 |
+
+Built for the **NASA Space Apps Challenge 2026** — "Field Shift" challenge. Technical docs (in Spanish) are in [docs/](docs/).

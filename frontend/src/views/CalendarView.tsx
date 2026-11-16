@@ -1,7 +1,7 @@
 import { useStore } from '../store/useStore';
 import CropIcon from '../components/CropIcon';
-import { cropName, SEASON_LABEL } from '../lib/crops';
-import { MESES, mesesDeVentana } from '../lib/calendario';
+import { cropName, seasonLabel } from '../lib/crops';
+import { meses, mesesDeVentana } from '../lib/calendario';
 import SinAnalisis from '../components/SinAnalisis';
 
 const COLUMNAS = 'grid-cols-[150px_repeat(12,minmax(44px,1fr))]';
@@ -24,7 +24,7 @@ export default function CalendarView() {
         <div className="min-w-[760px] p-3">
           <div className={`grid ${COLUMNAS} items-center gap-y-1 text-center text-xs text-ink-500`}>
             <span />
-            {MESES.map((m, i) => <span key={m} className={`rounded-md py-1 font-medium ${colMes(i)}`}>{m}</span>)}
+            {meses().map((m, i) => <span key={m} className={`rounded-md py-1 font-medium ${colMes(i)}`}>{m}</span>)}
 
             {analysis.rotation.map((step) => {
               const meses = mesesDeVentana(step.plantingWindow);
@@ -32,9 +32,9 @@ export default function CalendarView() {
                 <div key={step.season} className="contents">
                   <div className="pr-2 text-left">
                     <p className="flex items-center gap-1.5 text-sm font-semibold text-ink-900"><CropIcon id={step.cropId} size={15} />{cropName(step.cropId)}</p>
-                    <p className="text-[11px] text-ink-500">{SEASON_LABEL[step.season]} · {step.plantingWindow}</p>
+                    <p className="text-[11px] text-ink-500">{seasonLabel(step.season)} · {step.plantingWindow}</p>
                   </div>
-                  {MESES.map((m, i) => (
+                  {meses().map((m, i) => (
                     <span key={m} className={`flex h-9 items-center justify-center ${colMes(i)}`}>
                       {meses.includes(i) && (
                         <span className="h-5 w-full bg-leaf-500" aria-label={`Siembra de ${cropName(step.cropId)} en ${m}`} />

@@ -1,7 +1,8 @@
 import { create } from 'zustand';
 import * as turf from '@turf/turf';
 import type { AnalysisResponse, Priority, Soil } from '../api/types';
-import { REGION_NAME, pointInRegion, validateParcel } from '../lib/region';
+import { regionName, pointInRegion, validateParcel } from '../lib/region';
+import { tr } from '../lib/i18n';
 
 export type LatLng = [number, number]; // Leaflet usa [latitud, longitud]
 
@@ -61,7 +62,7 @@ export const useStore = create<State>((set, get) => ({
   startDrawing: () => set({ drawing: true, points: [], geometry: null, areaHa: null, parcelError: null }),
   addPoint: (p) => {
     if (!pointInRegion(p)) {
-      set({ parcelError: `Solo puedes marcar puntos dentro de ${REGION_NAME}` });
+      set({ parcelError: tr(`Solo puedes marcar puntos dentro de ${regionName()}`, `You can only place points within ${regionName()}`) });
       return;
     }
     set((s) => ({ points: [...s.points, p], parcelError: null }));

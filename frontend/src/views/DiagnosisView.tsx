@@ -4,15 +4,15 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ChevronDown, ClipboardCheck, Download, Users } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, Bar, Line, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { useStore } from '../store/useStore';
-import { cropName, SEASON_BG, SEASON_LABEL } from '../lib/crops';
+import { cropName, SEASON_BG, seasonLabel } from '../lib/crops';
 import NasaMetricCard from '../components/NasaMetricCard';
 import GaugeSoilHealth from '../components/GaugeSoilHealth';
 import ImpactBar from '../components/ImpactBar';
 import Estrategias from '../components/Estrategias';
 import { estrategiaInicial, impactoContra } from '../lib/estrategias';
 import { exportarPlanPdf } from '../lib/pdf';
-import { PRIORITY_LABEL, TEXTURA_LABEL } from '../lib/etiquetas';
-import { COUNTRY_NAME } from '../lib/region';
+import { priorityLabel, texturaLabel } from '../lib/etiquetas';
+import { countryName } from '../lib/region';
 
 const INCERTIDUMBRE = {
   low: { texto: 'baja', clase: 'bg-leaf-50 text-leaf-900' },
@@ -45,10 +45,10 @@ export default function DiagnosisView() {
         </button>
         <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{analysis.areaHa.toFixed(1)} ha</span>
         {analysis.country && (
-          <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{COUNTRY_NAME[analysis.country]}</span>
+          <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{countryName(analysis.country)}</span>
         )}
         {crop && <span className="rounded-full bg-leaf-50 px-3 py-1 text-xs text-leaf-900">{cropName(crop)}</span>}
-        {priority && <span className="rounded-full bg-sky-50 px-3 py-1 text-xs text-sky-700">{PRIORITY_LABEL[priority]}</span>}
+        {priority && <span className="rounded-full bg-sky-50 px-3 py-1 text-xs text-sky-700">{priorityLabel(priority)}</span>}
         {analysis.irrigated != null && (
           <span className="rounded-full bg-sky-50 px-3 py-1 text-xs text-sky-700">
             {analysis.irrigated ? 'Con riego' : 'Temporal (sin riego)'}
@@ -92,7 +92,7 @@ export default function DiagnosisView() {
                   <motion.span layoutId="season-pill" className="absolute inset-0 rounded-full bg-leaf-100"
                     transition={{ type: 'spring', stiffness: 380, damping: 30 }} />
                 )}
-                <span className="relative flex items-center gap-1.5"><CropIcon id={r.cropId} size={15} />{SEASON_LABEL[r.season]} · {cropName(r.cropId)}</span>
+                <span className="relative flex items-center gap-1.5"><CropIcon id={r.cropId} size={15} />{seasonLabel(r.season)} · {cropName(r.cropId)}</span>
               </button>
             ))}
           </div>
@@ -104,7 +104,7 @@ export default function DiagnosisView() {
               transition={{ duration: 0.25 }} whileHover={{ y: -4 }}>
               <button onClick={() => setOpen(!open)} className="flex w-full items-center justify-between text-left">
                 <div>
-                  <p className="text-xs uppercase tracking-widest text-ink-500">{SEASON_LABEL[step.season]} · siembra {step.plantingWindow}</p>
+                  <p className="text-xs uppercase tracking-widest text-ink-500">{seasonLabel(step.season)} · siembra {step.plantingWindow}</p>
                   <h3 className="flex items-center gap-2 font-display text-2xl font-semibold"><CropIcon id={step.cropId} size={26} />{cropName(step.cropId)}</h3>
                 </div>
                 <div className="flex items-center gap-3">
@@ -157,7 +157,7 @@ export default function DiagnosisView() {
           {analysis.soilDetected && (
             <div className="rounded-card border border-line bg-surface-raised p-5 shadow-card">
               <p className="text-sm font-medium">Suelo de la parcela</p>
-              <p className="mt-1 font-display text-xl font-semibold">{TEXTURA_LABEL[analysis.soilDetected.texture]}</p>
+              <p className="mt-1 font-display text-xl font-semibold">{texturaLabel(analysis.soilDetected.texture)}</p>
               <p className="mt-1 text-sm text-ink-700">
                 Arcilla {Math.round(analysis.soilDetected.clayPct)} % · Arena {Math.round(analysis.soilDetected.sandPct)} %
                 {analysis.soilDetected.ph != null && ` · pH ${analysis.soilDetected.ph.toFixed(1)}`}

@@ -3,7 +3,7 @@ import CropIcon from '../components/CropIcon';
 import { useMutation } from '@tanstack/react-query';
 import { previewAnalysis } from '../api/client';
 import type { AnalysisResponse, ClimateShift, ImpactItem, Priority } from '../api/types';
-import { CROPS, cropName, SEASON_LABEL } from '../lib/crops';
+import { crops, cropName, seasonLabel } from '../lib/crops';
 import { useStore } from '../store/useStore';
 
 interface Escenario {
@@ -68,7 +68,7 @@ function Selector({ titulo, valor, onChange }: { titulo: string; valor: Escenari
       <label className="block text-xs font-semibold uppercase tracking-widest text-ink-500">
         Cultivo actual
         <select value={valor.crop} onChange={(e) => onChange({ ...valor, crop: e.target.value })} className={CAMPO}>
-          {CROPS.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+          {crops().map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
       </label>
       <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label={`Prioridad del ${titulo}`}>
@@ -132,7 +132,7 @@ function Columna({ titulo, a }: { titulo: string; a: AnalysisResponse }) {
       <ul className="mt-3 space-y-2">
         {a.rotation.map((r) => (
           <li key={r.season} className="flex items-center justify-between rounded-xl bg-surface-sunken px-3 py-2 text-sm">
-            <span className="flex items-center gap-1.5">{SEASON_LABEL[r.season]} · <CropIcon id={r.cropId} size={16} /><strong>{cropName(r.cropId)}</strong></span>
+            <span className="flex items-center gap-1.5">{seasonLabel(r.season)} · <CropIcon id={r.cropId} size={16} /><strong>{cropName(r.cropId)}</strong></span>
             <span className="rounded-full bg-leaf-600 px-2.5 py-0.5 text-xs font-medium text-paper">{r.score}</span>
           </li>
         ))}

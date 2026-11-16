@@ -1,14 +1,16 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { useT } from '../lib/i18n';
 
-const MESSAGES = [
-  'Consultando NASA POWER…',
-  'Leyendo humedad del suelo…',
-  'Calculando balance hídrico…',
-  'Buscando la mejor rotación…',
+const MESSAGES: [string, string][] = [
+  ['Consultando NASA POWER…', 'Querying NASA POWER…'],
+  ['Leyendo humedad del suelo…', 'Reading soil moisture…'],
+  ['Calculando balance hídrico…', 'Computing the water balance…'],
+  ['Buscando la mejor rotación…', 'Finding the best rotation…'],
 ];
 
 export default function ScanOverlay() {
+  const t = useT();
   const [i, setI] = useState(0);
   useEffect(() => {
     const t = setInterval(() => setI((n) => (n + 1) % MESSAGES.length), 700);
@@ -23,7 +25,7 @@ export default function ScanOverlay() {
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full bg-orbit px-5 py-2.5 text-sm text-paper">
         <AnimatePresence mode="wait">
           <motion.span key={i} className="block" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }}>
-            {MESSAGES[i]}
+            {t(...MESSAGES[i])}
           </motion.span>
         </AnimatePresence>
       </div>

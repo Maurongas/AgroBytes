@@ -6,21 +6,18 @@ import { motion } from 'framer-motion';
 import { Droplets, Sprout, TrendingUp, ArrowRight, Check } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { getSoil } from '../api/client';
-import { CROPS } from '../lib/crops';
+import { crops } from '../lib/crops';
+import { texturaLabel } from '../lib/etiquetas';
+import { useT } from '../lib/i18n';
 import type { Priority, SoilTexture } from '../api/types';
 
-const PRIORITIES: { id: Priority; title: string; text: string; icon: typeof Droplets; tone: string }[] = [
-  { id: 'water', title: 'Ahorrar agua', text: 'Menos riego, más retención', icon: Droplets, tone: 'text-sky-500' },
-  { id: 'nitrogen', title: 'Regenerar nitrógeno', text: 'Suelo más fértil con leguminosas', icon: Sprout, tone: 'text-nitro' },
-  { id: 'yield', title: 'Maximizar rendimiento', text: 'Mayor producción por hectárea', icon: TrendingUp, tone: 'text-leaf-500' },
+const PRIORITIES: { id: Priority; title: [string, string]; text: [string, string]; icon: typeof Droplets; tone: string }[] = [
+  { id: 'water', title: ['Ahorrar agua', 'Save water'], text: ['Menos riego, más retención', 'Less irrigation, more retention'], icon: Droplets, tone: 'text-sky-500' },
+  { id: 'nitrogen', title: ['Regenerar nitrógeno', 'Restore nitrogen'], text: ['Suelo más fértil con leguminosas', 'More fertile soil with legumes'], icon: Sprout, tone: 'text-nitro' },
+  { id: 'yield', title: ['Maximizar rendimiento', 'Maximize yield'], text: ['Mayor producción por hectárea', 'Higher production per hectare'], icon: TrendingUp, tone: 'text-leaf-500' },
 ];
 
-const TEXTURAS: { id: SoilTexture; nombre: string }[] = [
-  { id: 'sandy', nombre: 'Arenoso' },
-  { id: 'loam', nombre: 'Franco' },
-  { id: 'clay', nombre: 'Arcilloso' },
-];
-const NOMBRE_TEXTURA: Record<SoilTexture, string> = { sandy: 'Arenoso', loam: 'Franco', clay: 'Arcilloso' };
+const TEXTURAS: SoilTexture[] = ['sandy', 'loam', 'clay'];
 
 /** Devuelve `valor` pero solo después de que deja de cambiar `ms` milisegundos (evita pedir suelo en cada arrastre). */
 function useRetardo<T>(valor: T, ms: number): T {
@@ -68,6 +65,7 @@ interface Props {
 }
 
 export default function QuickPanel({ onAnalyze, pending, error }: Props) {
+  const t = useT();
   const { geometry, areaHa, parcelError, crop, priority, soil, irrigated, setCrop, setPriority, setSoil, setIrrigated } = useStore();
 
   // Suelo estimado en el centro de la parcela (GeoJSON es [lon, lat]). El retardo evita una consulta por cada arrastre de punto.
@@ -81,8 +79,10 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
     retry: false,
   });
   const ready = !!geometry && !!crop && !!priority;
-  const missing = !geometry ? 'Dibuja tu parcela en el mapa' : !crop ? 'Elige tu cultivo actual' : !priority ? 'Elige tu prioridad' : '';
-  const estado = parcelError ?? (ready && areaHa ? `${areaHa.toFixed(1)} ha · listo para analizar` : missing);
+  const missing = !geometry ? t('Dibuja tu parcela en el mapa', 'Draw your field on the map')
+    : !crop ? t('Elige tu cultivo actual', 'Choose your current crop')
+    : !priority ? t('Elige tu prioridad', 'Choose your priority') : '';
+  const estado = parcelError ?? (ready && areaHa ? t(`${areaHa.toFixed(1)} ha · listo para analizar`, `${areaHa.toFixed(1)} ha · ready to analyze`) : missing);
   const escritorio = useEsEscritorio();
 
   const [posicion, setPosicion] = useState<Posicion>(() => (useStore.getState().geometry ? 'medio' : 'recogido'));
@@ -185,35 +185,37 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
       <div ref={cabeceraRef} onPointerDown={alBajar} onPointerMove={alMover} onPointerUp={alSoltar} onPointerCancel={alCancelar}
         className="shrink-0 touch-none select-none px-5 pb-3 lg:touch-auto lg:select-auto lg:pt-5">
         <button ref={asaRef} type="button" onClick={alTocarAsa} aria-expanded={posicion !== 'oculto'}
-          aria-label={posicion === 'oculto' ? 'Mostrar el panel de la parcela' : 'Ocultar el panel y ver el mapa'}
+          aria-label={posicion === 'oculto' ? t('Mostrar el panel de la parcela', 'Show the field panel') : t('Ocultar el panel y ver el mapa', 'Hide the panel and see the map')}
           className="flex min-h-11 w-full flex-col items-center justify-center gap-1 py-2 lg:hidden">
           <span className="h-1.5 w-10 rounded-full bg-line-strong" />
           {posicion === 'oculto' && (
-            <span className={`text-xs font-medium ${parcelError ? 'text-danger' : 'text-ink-700'}`}>Tu parcela · {estado || 'listo'}</span>
+            <span className={`text-xs font-medium ${parcelError ? 'text-danger' : 'text-ink-700'}`}>{t('Tu parcela', 'Your field')} · {estado || t('listo', 'ready')}</span>
           )}
         </button>
-        <h1 className="font-display text-2xl font-semibold">Tu parcela</h1>
+        <h1 className="font-display text-2xl font-semibold">{t('Tu parcela', 'Your field')}</h1>
         <p aria-live="polite" className={`mt-0.5 text-sm ${parcelError ? 'text-danger' : ready ? 'text-leaf-700' : 'text-ink-500'}`}>{estado}</p>
       </div>
 
       {/* Opciones: se desplazan hacia arriba o abajo cuando no caben */}
       <div inert={oculto} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-2">
         <section className="mt-2">
-          <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">1 · Terreno</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">1 · {t('Terreno', 'Field')}</p>
           <div className="mt-2 flex items-center gap-2 text-sm">
             <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${geometry ? 'bg-leaf-600 text-paper' : 'bg-surface-sunken text-ink-400'}`}>
               {geometry && <Check size={13} />}
             </span>
             <span className={parcelError ? 'text-danger' : 'text-ink-700'}>
-              {parcelError ?? (geometry && areaHa ? `${areaHa.toFixed(1)} hectáreas marcadas` : 'Aún no has dibujado tu parcela')}
+              {parcelError ?? (geometry && areaHa
+                ? t(`${areaHa.toFixed(1)} hectáreas marcadas`, `${areaHa.toFixed(1)} hectares marked`)
+                : t('Aún no has dibujado tu parcela', 'You have not drawn your field yet'))}
             </span>
           </div>
         </section>
 
         <section className="mt-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">2 · Cultivo actual</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">2 · {t('Cultivo actual', 'Current crop')}</p>
           <div className="mt-2 flex flex-wrap gap-2">
-            {CROPS.map((c) => (
+            {crops().map((c) => (
               <motion.button key={c.id} whileTap={{ scale: 0.96 }} onClick={() => setCrop(c.id)}
                 className={`inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm transition-colors ${
                   crop === c.id ? 'border-leaf-600 bg-leaf-50 font-medium text-leaf-900' : 'border-line bg-surface-raised text-ink-700 hover:border-leaf-300'}`}>
@@ -224,7 +226,7 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
         </section>
 
         <section className="mt-5">
-          <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">3 · Tu prioridad</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-ink-500">3 · {t('Tu prioridad', 'Your priority')}</p>
           <div className="mt-2 flex flex-col gap-2">
             {PRIORITIES.map(({ id, title, text, icon: Icon, tone }) => (
               <motion.button key={id} whileHover={{ y: -2 }} whileTap={{ scale: 0.98 }} onClick={() => setPriority(id)}
@@ -232,8 +234,8 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
                   priority === id ? 'border-leaf-600 bg-leaf-50' : 'border-line bg-surface-raised hover:border-leaf-300'}`}>
                 <Icon size={22} className={`shrink-0 ${tone}`} />
                 <span>
-                  <span className="block text-sm font-medium">{title}</span>
-                  <span className="block text-xs text-ink-500">{text}</span>
+                  <span className="block text-sm font-medium">{t(...title)}</span>
+                  <span className="block text-xs text-ink-500">{t(...text)}</span>
                 </span>
               </motion.button>
             ))}
@@ -243,32 +245,33 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
         {/* Plegable para no alargar el panel en el celular */}
         <details className="mt-5 rounded-2xl border border-line p-3">
           <summary className="cursor-pointer text-xs font-semibold uppercase tracking-widest text-ink-500">
-            4 · Suelo y riego (opcional)
+            4 · {t('Suelo y riego (opcional)', 'Soil and irrigation (optional)')}
           </summary>
           <div className="mt-3 space-y-4">
             <div>
-              <p className="text-sm font-medium">Tipo de suelo</p>
+              <p className="text-sm font-medium">{t('Tipo de suelo', 'Soil type')}</p>
               <p className="mt-1 text-xs text-ink-500" role="status">
                 {!geometry
-                  ? 'Dibuja tu parcela para estimarlo.'
+                  ? t('Dibuja tu parcela para estimarlo.', 'Draw your field to estimate it.')
                   : detectado.isPending || detectado.isFetching // isPending: también durante el retardo previo a la consulta
-                    ? 'Estimando con ISRIC SoilGrids…'
+                    ? t('Estimando con ISRIC SoilGrids…', 'Estimating with ISRIC SoilGrids…')
                     : detectado.data
-                      ? `Estimado: ${NOMBRE_TEXTURA[detectado.data.texture]} (arcilla ${Math.round(detectado.data.clayPct)} %, arena ${Math.round(detectado.data.sandPct)} %)`
-                      : 'No hay dato para este punto; elige el tipo tú.'}
+                      ? t(`Estimado: ${texturaLabel(detectado.data.texture)} (arcilla ${Math.round(detectado.data.clayPct)} %, arena ${Math.round(detectado.data.sandPct)} %)`,
+                        `Estimated: ${texturaLabel(detectado.data.texture)} (clay ${Math.round(detectado.data.clayPct)} %, sand ${Math.round(detectado.data.sandPct)} %)`)
+                      : t('No hay dato para este punto; elige el tipo tú.', 'No data for this point; choose the type yourself.')}
               </p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Chip activo={soil === null} onClick={() => setSoil(null)}>Automático</Chip>
-                {TEXTURAS.map((t) => (
-                  <Chip key={t.id} activo={soil?.texture === t.id} onClick={() => setSoil({ texture: t.id })}>{t.nombre}</Chip>
+                <Chip activo={soil === null} onClick={() => setSoil(null)}>{t('Automático', 'Automatic')}</Chip>
+                {TEXTURAS.map((x) => (
+                  <Chip key={x} activo={soil?.texture === x} onClick={() => setSoil({ texture: x })}>{texturaLabel(x)}</Chip>
                 ))}
               </div>
             </div>
             <div>
-              <p className="text-sm font-medium">¿Tiene riego?</p>
+              <p className="text-sm font-medium">{t('¿Tiene riego?', 'Is it irrigated?')}</p>
               <div className="mt-2 flex flex-wrap gap-2">
-                <Chip activo={!irrigated} onClick={() => setIrrigated(false)}>Temporal (solo lluvia)</Chip>
-                <Chip activo={irrigated} onClick={() => setIrrigated(true)}>Con riego</Chip>
+                <Chip activo={!irrigated} onClick={() => setIrrigated(false)}>{t('Temporal (solo lluvia)', 'Rainfed (rain only)')}</Chip>
+                <Chip activo={irrigated} onClick={() => setIrrigated(true)}>{t('Con riego', 'Irrigated')}</Chip>
               </div>
             </div>
           </div>
@@ -280,7 +283,7 @@ export default function QuickPanel({ onAnalyze, pending, error }: Props) {
         {error && <p role="alert" className="mb-3 rounded-xl bg-danger/10 p-3 text-sm text-danger">{error}</p>}
         <button onClick={onAnalyze} disabled={!ready || pending}
           className="flex w-full items-center justify-center gap-2 rounded-2xl bg-leaf-600 px-4 py-3 font-medium text-paper transition-colors hover:bg-leaf-700 disabled:opacity-50">
-          {pending ? 'Analizando…' : 'Analizar parcela'} {!pending && <ArrowRight size={18} />}
+          {pending ? t('Analizando…', 'Analyzing…') : t('Analizar parcela', 'Analyze field')} {!pending && <ArrowRight size={18} />}
         </button>
       </div>
     </aside>

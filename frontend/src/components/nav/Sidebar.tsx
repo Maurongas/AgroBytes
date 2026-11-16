@@ -4,8 +4,10 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { useStore } from '../../store/useStore';
 import { useSession } from '../../lib/session';
 import ThemeToggle from '../ThemeToggle';
+import LangToggle from '../LangToggle';
+import { useT } from '../../lib/i18n';
 import BrandMark from '../BrandMark';
-import { ACCOUNT_ITEM, NAV_ITEMS, type NavItem } from './navItems';
+import { ACCOUNT_ITEM, NAV_ITEMS, navLabel, type NavItem } from './navItems';
 
 /*
  * Menú lateral plegable (desde md). Plegado muestra solo los íconos (w-16) y deja más espacio a la vista.
@@ -33,20 +35,21 @@ const suscribirAncho = (avisar: () => void) => {
 const useAnchoGrande = () => useSyncExternalStore(suscribirAncho, () => window.matchMedia(ANCHO_GRANDE).matches, () => true);
 
 function Item({ item, label, plegado }: { item: NavItem; label?: string; plegado: boolean }) {
+  const t = useT();
   const view = useStore((s) => s.view);
   const goTo = useStore((s) => s.goTo);
   const hasAnalysis = useStore((s) => s.analysis !== null);
   const disabled = !!item.needsAnalysis && !hasAnalysis;
   const active = view === item.id;
   const Icon = item.icon;
-  const texto = label ?? item.label;
+  const texto = label ?? navLabel(item);
   return (
     <button
       onClick={() => goTo(item.id)}
       disabled={disabled}
       aria-current={active ? 'page' : undefined}
       aria-label={plegado ? texto : undefined}
-      title={disabled ? 'Primero analiza una parcela' : plegado ? texto : undefined}
+      title={disabled ? t('Primero analiza una parcela', 'Analyze a field first') : plegado ? texto : undefined}
       className={`relative flex w-full items-center gap-3 rounded-xl py-2.5 text-left text-sm font-medium text-ink-700 transition-colors hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-leaf-600 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent ${
         plegado ? 'justify-center px-0' : 'px-3'}`}
     >
@@ -61,6 +64,7 @@ function Item({ item, label, plegado }: { item: NavItem; label?: string; plegado
 }
 
 export default function Sidebar() {
+  const t = useT();
   const { usuario } = useSession();
   const grande = useAnchoGrande();
   const [preferencia, setPreferencia] = useState<Preferencia>(leerPreferencia);
@@ -77,14 +81,15 @@ export default function Sidebar() {
   };
 
   return (
-    <aside aria-label="Menú principal"
+    <aside aria-label={t('Menú principal', 'Main menu')}
       className={`hidden shrink-0 flex-col overflow-y-auto overflow-x-hidden border-r border-line-soft bg-surface-raised transition-[width] duration-200 md:flex ${
         plegado ? 'w-16 p-2' : 'w-60 p-4'}`}>
       <div className={`mb-6 flex items-center gap-2 ${plegado ? 'flex-col' : 'px-2'}`}>
         <BrandMark size={30} />
         {!plegado && <span className="flex-1 truncate font-display text-xl font-semibold text-ink-900">Agro<span className="text-leaf-600">Bytes</span></span>}
         <button onClick={alternar} aria-expanded={!plegado}
-          aria-label={plegado ? 'Desplegar menú' : 'Plegar menú'} title={plegado ? 'Desplegar menú' : 'Plegar menú'}
+          aria-label={plegado ? t('Desplegar menú', 'Expand menu') : t('Plegar menú', 'Collapse menu')}
+          title={plegado ? t('Desplegar menú', 'Expand menu') : t('Plegar menú', 'Collapse menu')}
           className="flex min-h-9 min-w-9 items-center justify-center rounded-lg text-ink-500 hover:bg-surface-sunken focus-visible:outline-2 focus-visible:outline-leaf-600">
           {plegado ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
@@ -95,8 +100,9 @@ export default function Sidebar() {
       </nav>
 
       <div className="mt-4 space-y-1 border-t border-line-soft pt-4">
-        <Item item={ACCOUNT_ITEM} label={usuario ? usuario.nombre : 'Iniciar sesión'} plegado={plegado} />
+        <Item item={ACCOUNT_ITEM} label={usuario ? usuario.nombre : t('Iniciar sesión', 'Sign in')} plegado={plegado} />
         <ThemeToggle className="w-full" compacto={plegado} />
+        <LangToggle className="w-full" compacto={plegado} />
       </div>
     </aside>
   );

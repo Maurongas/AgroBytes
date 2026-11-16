@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
+import { useT } from '../lib/i18n';
 
 export default function GaugeSoilHealth({ value }: { value: number }) {
+  const t = useT();
   const color = value < 40 ? '#D64545' : value < 65 ? '#F5A623' : '#2E9E5B';
   const arc = 'M10 60 A50 50 0 0 1 110 60';
   return (
-    <svg viewBox="0 0 120 70" className="w-full max-w-[220px]" role="img" aria-label={`Salud del suelo ${Math.round(value)} de 100`}>
+    <svg viewBox="0 0 120 70" className="w-full max-w-[220px]" role="img" aria-label={t(`Salud del suelo ${Math.round(value)} de 100`, `Soil health ${Math.round(value)} out of 100`)}>
       <path d={arc} fill="none" className="stroke-surface-sunken" strokeWidth="12" strokeLinecap="round" />
       <motion.path d={arc} fill="none" stroke={color} strokeWidth="12" strokeLinecap="round"
         initial={{ pathLength: 0 }} animate={{ pathLength: value / 100 }}

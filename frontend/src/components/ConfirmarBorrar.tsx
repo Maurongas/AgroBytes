@@ -3,7 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Trash2 } from 'lucide-react';
 import type { AnalysisSummary } from '../api/types';
 import { cropName } from '../lib/crops';
-import { formatoFecha, PRIORITY_LABEL } from '../lib/etiquetas';
+import { formatoFecha, priorityLabel } from '../lib/etiquetas';
+import { useT } from '../lib/i18n';
 
 /** Ventana para confirmar el borrado de un análisis. `fila = null` la oculta. */
 export default function ConfirmarBorrar({ fila, onCancelar, onConfirmar }: {
@@ -11,6 +12,7 @@ export default function ConfirmarBorrar({ fila, onCancelar, onConfirmar }: {
   onCancelar: () => void;
   onConfirmar: (fila: AnalysisSummary) => void;
 }) {
+  const t = useT();
   const cancelarRef = useRef<HTMLButtonElement>(null);
 
   // Al abrir: foco en "Cancelar" (la opción segura) y Esc para cerrar.
@@ -39,22 +41,23 @@ export default function ConfirmarBorrar({ fila, onCancelar, onConfirmar }: {
             <span className="flex h-12 w-12 items-center justify-center rounded-full bg-danger/10 text-danger">
               <Trash2 size={22} aria-hidden />
             </span>
-            <h2 id="borrar-titulo" className="mt-4 font-display text-xl font-semibold">¿Borrar este análisis?</h2>
+            <h2 id="borrar-titulo" className="mt-4 font-display text-xl font-semibold">{t('¿Borrar este análisis?', 'Delete this analysis?')}</h2>
             <div className="mt-3 rounded-xl bg-surface-sunken p-3 text-sm">
               <p className="font-medium text-ink-900">{cropName(fila.currentCrop)} · {fila.areaHa.toFixed(1)} ha</p>
-              <p className="text-ink-700">{PRIORITY_LABEL[fila.priority]} · {formatoFecha(fila.createdAt)}</p>
+              <p className="text-ink-700">{priorityLabel(fila.priority)} · {formatoFecha(fila.createdAt)}</p>
             </div>
             <p id="borrar-texto" className="mt-3 text-sm text-ink-700">
-              Se quitará de tu historial y de este dispositivo. Esta acción no se puede deshacer.
+              {t('Se quitará de tu historial y de este dispositivo. Esta acción no se puede deshacer.',
+                'It will be removed from your history and from this device. This cannot be undone.')}
             </p>
             <div className="mt-6 flex gap-3">
               <button ref={cancelarRef} onClick={onCancelar}
                 className="flex-1 rounded-full border border-line py-2 text-sm font-medium text-ink-900 hover:bg-surface-sunken">
-                Cancelar
+                {t('Cancelar', 'Cancel')}
               </button>
               <button onClick={() => onConfirmar(fila)}
                 className="flex flex-1 items-center justify-center gap-1.5 rounded-full bg-danger py-2 text-sm font-medium text-paper hover:opacity-90">
-                <Trash2 size={16} aria-hidden /> Borrar
+                <Trash2 size={16} aria-hidden /> {t('Borrar', 'Delete')}
               </button>
             </div>
           </motion.div>

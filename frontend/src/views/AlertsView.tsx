@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import CropIcon from '../components/CropIcon';
 import { CloudRain, ShieldCheck, Snowflake, Sun, Thermometer } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { cropName, SEASON_LABEL } from '../lib/crops';
+import { cropName, seasonLabel } from '../lib/crops';
 import { calcularRiesgos, type RiesgoId } from '../lib/riesgos';
 import SinAnalisis from '../components/SinAnalisis';
 
@@ -61,7 +61,7 @@ export default function AlertsView() {
       <ul className="mt-4 grid gap-3 md:grid-cols-3">
         {analysis.rotation.map((step) => (
           <li key={step.season} className="rounded-card border border-line bg-surface-raised p-4">
-            <p className="text-xs uppercase tracking-widest text-ink-500">{SEASON_LABEL[step.season]}</p>
+            <p className="text-xs uppercase tracking-widest text-ink-500">{seasonLabel(step.season)}</p>
             <p className="flex items-center gap-2 font-display text-lg font-semibold"><CropIcon id={step.cropId} size={20} />{cropName(step.cropId)}</p>
             {step.risks.length > 0 ? (
               <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-700">

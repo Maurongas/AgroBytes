@@ -6,7 +6,7 @@ import type { AnalysisResponse, AnalysisSummary } from '../api/types';
 import { useStore } from '../store/useStore';
 import ConfirmarBorrar from '../components/ConfirmarBorrar';
 import { cropName } from '../lib/crops';
-import { formatoFecha, formatoUbicacion, PRIORITY_LABEL } from '../lib/etiquetas';
+import { formatoFecha, formatoUbicacion, priorityLabel } from '../lib/etiquetas';
 import { guardarAnalisis, guardarHistorial, leerAnalisis, leerHistorial, quitarAnalisis } from '../lib/offline';
 
 // Intenta la API; si falla y hay historial guardado, usa ese.
@@ -133,7 +133,7 @@ export default function HistoryView() {
                     <td className="px-4 py-3 font-mono text-xs">{formatoUbicacion(f.location)}</td>
                     <td className="px-4 py-3">{f.areaHa.toFixed(1)} ha</td>
                     <td className="px-4 py-3">{cropName(f.currentCrop)}</td>
-                    <td className="px-4 py-3">{PRIORITY_LABEL[f.priority]}</td>
+                    <td className="px-4 py-3">{priorityLabel(f.priority)}</td>
                     <td className="px-4 py-3">{f.rotationCrops.map(cropName).join(' · ')}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-right">
                       <button onClick={() => abrir(f)} disabled={abriendo !== null}
@@ -158,7 +158,7 @@ export default function HistoryView() {
               <li key={f.id} className="flex flex-col rounded-card border border-line bg-surface-raised p-4 shadow-card">
                 <p className="text-xs text-ink-500">{formatoFecha(f.createdAt)}</p>
                 <p className="mt-1 font-display text-lg font-semibold">{cropName(f.currentCrop)} · {f.areaHa.toFixed(1)} ha</p>
-                <p className="text-sm text-ink-700">{PRIORITY_LABEL[f.priority]}</p>
+                <p className="text-sm text-ink-700">{priorityLabel(f.priority)}</p>
                 <p className="mt-1 text-sm text-ink-700">Rotación: {f.rotationCrops.map(cropName).join(' · ')}</p>
                 <p className="mb-auto mt-1 font-mono text-xs text-ink-500">{formatoUbicacion(f.location)}</p>
                 <button onClick={() => abrir(f)} disabled={abriendo !== null}

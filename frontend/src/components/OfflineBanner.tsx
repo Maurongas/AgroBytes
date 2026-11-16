@@ -2,8 +2,10 @@ import { useEffect } from 'react';
 import { WifiOff } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { guardarAnalisis, guardarUltima, leerUltima, useOnline } from '../lib/offline';
+import { useT } from '../lib/i18n';
 
 export default function OfflineBanner() {
+  const t = useT();
   const online = useOnline();
   const hayAnalisis = useStore((s) => s.analysis !== null);
 
@@ -31,8 +33,8 @@ export default function OfflineBanner() {
     <div role="status" className="flex items-center gap-2 bg-sun-100 px-4 py-2 text-sm text-ink-900">
       <WifiOff size={16} />
       {hayAnalisis
-        ? 'Sin conexión. Mostrando los datos guardados en este dispositivo.'
-        : 'Sin conexión. Los análisis nuevos necesitan internet.'}
+        ? t('Sin conexión. Mostrando los datos guardados en este dispositivo.', 'Offline. Showing the data saved on this device.')
+        : t('Sin conexión. Los análisis nuevos necesitan internet.', 'Offline. New analyses need an internet connection.')}
     </div>
   );
 }

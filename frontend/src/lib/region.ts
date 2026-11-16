@@ -4,8 +4,9 @@
 import type { LatLng } from '../store/useStore';
 import type { CountryCode } from '../api/types';
 import regionData from '../data/region.json';
+import { locale, tr } from './i18n';
 
-export const REGION_NAME = 'México, Estados Unidos o Canadá';
+export const regionName = () => tr('México, Estados Unidos o Canadá', 'Mexico, the United States or Canada');
 export const MIN_AREA_HA = 0.1; // 1 000 m²
 export const MAX_AREA_HA = 500; // 5 km²: más grande ya no comparte un solo clima/suelo
 const EDGE_TOLERANCE_DEG = 0.05; // ~5 km: compensa la simplificación de la costa
@@ -23,7 +24,8 @@ const COUNTRIES: Country[] = Object.entries(regionData.countries).map(([code, c]
   return { code: code as CountryCode, name: c.name, rings, bboxes };
 });
 
-export const COUNTRY_NAME: Record<CountryCode, string> = { MX: 'México', US: 'Estados Unidos', CA: 'Canadá' };
+const COUNTRY: Record<CountryCode, [string, string]> = { MX: ['México', 'Mexico'], US: ['Estados Unidos', 'United States'], CA: ['Canadá', 'Canada'] };
+export const countryName = (c: CountryCode) => tr(...COUNTRY[c]);
 
 /** Contornos de los países en formato Leaflet ([lat, lng]); para la máscara del mapa. */
 export const REGION_LATLNGS: LatLng[][] = COUNTRIES.flatMap((c) => c.rings.map((r) => r.map(([lon, lat]) => [lat, lon] as LatLng)));
@@ -82,9 +84,15 @@ export const pointInRegion = (p: LatLng): boolean => countryOf(p) !== null;
 
 /** Mensaje de error para el usuario, o null si la parcela es válida. */
 export function validateParcel(points: LatLng[], areaHa: number): string | null {
-  if (!points.every(pointInRegion)) return `La parcela debe estar completamente dentro de ${REGION_NAME}`;
-  if (areaHa < MIN_AREA_HA) return `La parcela es muy pequeña (${areaHa.toFixed(2)} ha); el mínimo es ${MIN_AREA_HA} ha`;
-  if (areaHa > MAX_AREA_HA)
-    return `La parcela es muy grande (${Math.round(areaHa).toLocaleString('es-MX')} ha); el máximo es ${MAX_AREA_HA} ha. Divídela en parcelas más pequeñas`;
+  if (!points.every(pointInRegion))
+    return tr(`La parcela debe estar completamente dentro de ${regionName()}`, `The field must be entirely within ${regionName()}`);
+  if (areaHa < MIN_AREA_HA)
+    return tr(`La parcela es muy pequeña (${areaHa.toFixed(2)} ha); el mínimo es ${MIN_AREA_HA} ha`,
+      `The field is too small (${areaHa.toFixed(2)} ha); the minimum is ${MIN_AREA_HA} ha`);
+  if (areaHa > MAX_AREA_HA) {
+    const ha = Math.round(areaHa).toLocaleString(locale());
+    return tr(`La parcela es muy grande (${ha} ha); el máximo es ${MAX_AREA_HA} ha. Divídela en parcelas más pequeñas`,
+      `The field is too large (${ha} ha); the maximum is ${MAX_AREA_HA} ha. Split it into smaller fields`);
+  }
   return null;
 }

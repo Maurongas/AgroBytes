@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Check, Download } from 'lucide-react';
+import { useT } from '../lib/i18n';
 
 type EventoInstalar = Event & {
   prompt: () => Promise<void>;
@@ -18,6 +19,7 @@ const yaInstalada = () =>
   (navigator as Navigator & { standalone?: boolean }).standalone === true;
 
 export default function InstallButton() {
+  const t = useT();
   const [evento, setEvento] = useState<EventoInstalar | null>(() => window.__eventoInstalar ?? null);
   const [instalada, setInstalada] = useState(yaInstalada);
 
@@ -41,7 +43,7 @@ export default function InstallButton() {
   if (instalada) {
     return (
       <p className="inline-flex items-center gap-2 text-sm text-ink-500">
-        <Check size={16} aria-hidden /> App instalada
+        <Check size={16} aria-hidden /> {t('App instalada', 'App installed')}
       </p>
     );
   }
@@ -58,7 +60,7 @@ export default function InstallButton() {
         }}
         className="inline-flex items-center gap-2 rounded-full bg-leaf-600 px-5 py-2 text-sm font-medium text-paper hover:bg-leaf-700"
       >
-        <Download size={16} aria-hidden /> Instalar app
+        <Download size={16} aria-hidden /> {t('Instalar app', 'Install app')}
       </button>
     );
   }
@@ -66,7 +68,8 @@ export default function InstallButton() {
   if (esIOS) {
     return (
       <p className="text-sm text-ink-500">
-        Para instalarla en iPhone: toca Compartir y luego "Agregar a pantalla de inicio".
+        {t('Para instalarla en iPhone: toca Compartir y luego "Agregar a pantalla de inicio".',
+          'To install it on iPhone: tap Share and then "Add to Home Screen".')}
       </p>
     );
   }
