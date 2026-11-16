@@ -2,13 +2,15 @@ import { useState } from 'react';
 import CropIcon from '../components/CropIcon';
 import { useMutation } from '@tanstack/react-query';
 import { previewAnalysis } from '../api/client';
-import type { AnalysisResponse, ImpactItem, Priority } from '../api/types';
+import type { AnalysisResponse, ClimateShift, ImpactItem, Priority } from '../api/types';
 import { CROPS, cropName, SEASON_LABEL } from '../lib/crops';
 import { useStore } from '../store/useStore';
 
 interface Escenario {
   crop: string;
   priority: Priority;
+  rainPct: number;
+  tempC: number;
 }
 
 const PRIORIDADES: { id: Priority; texto: string }[] = [
@@ -32,6 +34,33 @@ function mejor(item: ImpactItem, a: number, b: number): 'a' | 'b' | null {
   return (item.betterWhen === 'higher') === a > b ? 'a' : 'b';
 }
 
+// Límites que acepta el backend para el clima hipotético.
+const LLUVIA = { min: -60, max: 60, paso: 5 };
+const TEMP = { min: -3, max: 5, paso: 0.5 };
+
+const OPCIONES_CLIMA: { texto: string; rainPct: number; tempC: number }[] = [
+  { texto: 'Normal', rainPct: 0, tempC: 0 },
+  { texto: 'Año seco', rainPct: -30, tempC: 0 },
+  { texto: 'Año lluvioso', rainPct: 30, tempC: 0 },
+  { texto: 'Más calor', rainPct: 0, tempC: 2 },
+  { texto: 'Seco y caluroso', rainPct: -30, tempC: 2 },
+];
+
+const conSigno = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+
+const hayCambio = (c: ClimateShift) => c.rainPct !== 0 || c.tempC !== 0;
+
+function textoClima(c: ClimateShift): string {
+  if (!hayCambio(c)) return 'clima normal';
+  const partes: string[] = [];
+  if (c.rainPct !== 0) partes.push(`lluvia ${conSigno(c.rainPct)} %`);
+  if (c.tempC !== 0) partes.push(`${conSigno(c.tempC)} °C`);
+  return partes.join(', ');
+}
+
+const cambioDe = (e: Escenario): ClimateShift | undefined =>
+  hayCambio(e) ? { rainPct: e.rainPct, tempC: e.tempC } : undefined;
+
 function Selector({ titulo, valor, onChange }: { titulo: string; valor: Escenario; onChange: (e: Escenario) => void }) {
   return (
     <fieldset className="rounded-card border border-line bg-surface-raised p-4 shadow-card">
@@ -51,6 +80,41 @@ function Selector({ titulo, valor, onChange }: { titulo: string; valor: Escenari
           </button>
         ))}
       </div>
+      <details className="mt-4 rounded-xl border border-line p-3">
+        <summary className="cursor-pointer text-sm font-medium text-ink-900">
+          ¿Y si cambia el clima? <span className="font-normal text-ink-500">({textoClima(valor)})</span>
+        </summary>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {OPCIONES_CLIMA.map((o) => {
+            const activa = valor.rainPct === o.rainPct && valor.tempC === o.tempC;
+            return (
+              <button key={o.texto} type="button" aria-pressed={activa}
+                onClick={() => onChange({ ...valor, rainPct: o.rainPct, tempC: o.tempC })}
+                className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                  activa ? 'border-leaf-600 bg-leaf-50 font-medium text-leaf-900' : 'border-line text-ink-700 hover:border-leaf-300'}`}>
+                {o.texto}
+              </button>
+            );
+          })}
+        </div>
+        <label className="mt-3 block text-sm text-ink-700">
+          Lluvia: <strong className="text-ink-900">{conSigno(valor.rainPct)} %</strong>
+          <input type="range" min={LLUVIA.min} max={LLUVIA.max} step={LLUVIA.paso} value={valor.rainPct}
+            onChange={(e) => onChange({ ...valor, rainPct: Number(e.target.value) })}
+            aria-valuetext={`${conSigno(valor.rainPct)} % de lluvia`}
+            className="mt-1 w-full accent-leaf-600" />
+        </label>
+        <label className="mt-3 block text-sm text-ink-700">
+          Temperatura: <strong className="text-ink-900">{conSigno(valor.tempC)} °C</strong>
+          <input type="range" min={TEMP.min} max={TEMP.max} step={TEMP.paso} value={valor.tempC}
+            onChange={(e) => onChange({ ...valor, tempC: Number(e.target.value) })}
+            aria-valuetext={`${conSigno(valor.tempC)} grados Celsius`}
+            className="mt-1 w-full accent-leaf-600" />
+        </label>
+        <p className="mt-2 text-xs text-ink-500">
+          Mueve la lluvia y la temperatura de todos los meses respecto a lo normal de tu zona. Es un supuesto para explorar, no un pronóstico.
+        </p>
+      </details>
     </fieldset>
   );
 }
@@ -59,6 +123,11 @@ function Columna({ titulo, a }: { titulo: string; a: AnalysisResponse }) {
   return (
     <section className="rounded-card border border-line bg-surface-raised p-5 shadow-card">
       <h2 className="font-display text-xl font-semibold">{titulo}</h2>
+      {a.climateShift && hayCambio(a.climateShift) && (
+        <span className="mt-1 inline-block rounded-full bg-sun-100 px-3 py-1 text-xs font-medium text-ink-900">
+          Clima hipotético: {textoClima(a.climateShift)}
+        </span>
+      )}
       <p className="text-sm text-ink-500">Puntaje promedio de la rotación: <strong className="text-ink-900">{promedio(a)} / 100</strong></p>
       <ul className="mt-3 space-y-2">
         {a.rotation.map((r) => (
@@ -80,8 +149,10 @@ export default function CompareView() {
   const priority = useStore((s) => s.priority);
   const goTo = useStore((s) => s.goTo);
 
-  const [escA, setEscA] = useState<Escenario>({ crop: crop ?? 'maize', priority: priority ?? 'water' });
-  const [escB, setEscB] = useState<Escenario>({ crop: crop ?? 'maize', priority: priority === 'yield' ? 'water' : 'yield' });
+  const [escA, setEscA] = useState<Escenario>({ crop: crop ?? 'maize', priority: priority ?? 'water', rainPct: 0, tempC: 0 });
+  const [escB, setEscB] = useState<Escenario>({
+    crop: crop ?? 'maize', priority: priority === 'yield' ? 'water' : 'yield', rainPct: 0, tempC: 0,
+  });
 
   const comparar = useMutation({
     mutationFn: async () => {
@@ -89,7 +160,7 @@ export default function CompareView() {
       // Mismas condiciones de riego que el análisis principal.
       const { irrigated } = useStore.getState();
       const pedir = (e: Escenario) =>
-        previewAnalysis({ geometry, currentCrop: e.crop, priority: e.priority, soil: soil ?? undefined, irrigated });
+        previewAnalysis({ geometry, currentCrop: e.crop, priority: e.priority, soil: soil ?? undefined, irrigated, climateShift: cambioDe(e) });
       const [a, b] = await Promise.all([pedir(escA), pedir(escB)]);
       return { a, b };
     },
@@ -114,7 +185,7 @@ export default function CompareView() {
   return (
     <div className="h-full overflow-auto p-6">
       <h1 className="font-display text-3xl font-semibold">Comparar escenarios</h1>
-      <p className="mt-1 max-w-2xl text-sm text-ink-500">Misma parcela, dos decisiones distintas. Elige cada escenario y compara la rotación y el impacto.</p>
+      <p className="mt-1 max-w-2xl text-sm text-ink-500">Misma parcela, dos decisiones distintas. Elige cada escenario, prueba un año seco o más caluroso y compara la rotación y el impacto.</p>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <Selector titulo="Escenario A" valor={escA} onChange={setEscA} />
@@ -131,6 +202,9 @@ export default function CompareView() {
         <div className="mt-8 space-y-6">
           {ES_EJEMPLO && (
             <p className="rounded-xl bg-sun-100 p-3 text-sm text-ink-900">Estás viendo datos de ejemplo: ambos escenarios dan el mismo resultado hasta que el backend esté conectado.</p>
+          )}
+          {(r.a.climateShift || r.b.climateShift) && (
+            <p className="rounded-xl bg-sun-100 p-3 text-sm text-ink-900">Al menos un escenario usa un clima hipotético. Sirve para ver cómo cambiaría la recomendación; no es un pronóstico y no se guarda en el historial.</p>
           )}
           <p className="font-display text-xl font-semibold">
             {pa === pb ? `Empate: ambos escenarios promedian ${pa} / 100.` : `Gana el escenario ${pa > pb ? 'A' : 'B'}: ${Math.max(pa, pb)} contra ${Math.min(pa, pb)} de puntaje promedio.`}
