@@ -213,6 +213,27 @@ def test_la_rotacion_es_una_linea_de_tiempo_sin_traslapes(climate, catalog):
             assert despues.planting >= antes.harvest, "un cultivo no puede sembrarse antes de cosechar el anterior"
 
 
+def test_la_rotacion_no_repite_cultivos(climate, catalog):
+    """Con alternativas disponibles, ningún cultivo aparece dos veces en los 12 meses (plagas acumuladas)."""
+    seasons = recommender.seasons_ahead(NOV, climate)
+    for prioridad in ("water", "nitrogen", "yield"):
+        slots = recommender.plan(catalog, seasons, req(priority=prioridad), catalog[0],
+                                 recommender.SoilInput(None, None))
+        ids = [s.candidate.crop.id for s in slots if s.candidate]
+        assert len(ids) == len(set(ids)), ids
+
+
+def test_choose_repite_solo_si_no_hay_otra_opcion(climate, catalog):
+    sc = recommender.seasons_ahead(NOV, climate)[0]
+    maiz, trigo = catalog[0], catalog[1]
+    todos = frozenset(c.id for c in catalog)
+    best, _ = recommender.choose(catalog, sc, req(), maiz, recommender.SoilInput(None, None), used=todos)
+    assert best is None or best.crop.id != maiz.id  # nunca el anterior, aunque todos estén usados
+    best, _ = recommender.choose(catalog, sc, req(), maiz, recommender.SoilInput(None, None),
+                                 used=frozenset({trigo.id}))
+    assert best is None or best.crop.id not in {maiz.id, trigo.id}
+
+
 def test_seguir_como_hoy_tampoco_se_traslapa(climate, catalog):
     seasons = recommender.seasons_ahead(NOV, climate)
     slots = recommender.plan(catalog, seasons, req(), catalog[0], recommender.SoilInput(None, None),
@@ -346,8 +367,8 @@ def test_con_riego_no_se_queja_de_la_lluvia(climate, catalog):
     temporal = recommender.recommend(climate, catalog, req(), NOV)
     body = req().model_dump(by_alias=True) | {"irrigated": True}
     riego = recommender.recommend(climate, catalog, AnalysisRequest.model_validate(body), NOV)
-    assert any("Requiere riego" in r for s in temporal.rotation for r in s.risks)
-    assert not any("Requiere riego" in r for s in riego.rotation for r in s.risks)
+    assert any("requerir riego" in r for s in temporal.rotation for r in s.risks)
+    assert not any("requerir riego" in r for s in riego.rotation for r in s.risks)
     assert all(s.irrigation_mm >= 0 for s in riego.rotation)
 
 

@@ -183,8 +183,8 @@ Si tienes un disco `D:` o una USB rápida: Docker Desktop → ⚙️ **Settings 
 | Problema | Solución |
 |---|---|
 | `Cannot connect to the Docker daemon` / `pipe ... not found` | Docker Desktop no está abierto. Ábrelo y espera a "Engine running". |
-| `port is already allocated` (3000, 8000 o 5432) | Otro programa usa ese puerto. Si tienes PostgreSQL instalado en tu compu, detén su servicio. O corre `docker compose down` por si quedó algo prendido. |
-| La página no carga los resultados | Revisa que el backend esté vivo: http://localhost:8000/health. Mira `docker compose logs backend`. Si un endpoint responde 501 es porque aún no se implementa: deja `VITE_USE_MOCK=true`. |
+| `port is already allocated` (3000 u 8000) | Otro programa usa ese puerto. Corre `docker compose down` por si quedó algo prendido. (La BD ya no abre el 5432 en tu compu, así que un PostgreSQL instalado no estorba.) |
+| La página no carga los resultados | Revisa que el backend esté vivo: http://localhost:8000/health. Mira `docker compose logs backend`. Para probar solo la interfaz sin backend: `VITE_USE_MOCK=true` en `.env`. |
 | `ModuleNotFoundError` en el backend o `Module not found` en el frontend | Alguien agregó una librería. Corre `docker compose up --build -V`. |
 | Cambié código y no se actualiza | Guarda el archivo. Si sigue igual: `docker compose restart frontend` (o `backend`). |
 | Algo está muy roto y nada funciona | Último recurso: `docker compose down -v` y `docker compose up --build` (borra la BD local). |
@@ -200,13 +200,57 @@ Si tienes un disco `D:` o una USB rápida: Docker Desktop → ⚙️ **Settings 
 
 | Pieza | URL | Dónde se publicaría |
 |---|---|---|
-| Backend (API) | No publicado | Render (Web Service con Docker) |
-| Base de datos | No publicada | Render Postgres (con PostGIS) |
-| Frontend | No publicado | Netlify, Vercel o Cloudflare Pages |
+| Backend (API) | No publicado | Hugging Face Spaces (Docker) o Render |
+| Base de datos | No publicada | Neon (PostgreSQL + PostGIS) o Render Postgres |
+| Frontend | No publicado | Vercel, Netlify o Cloudflare Pages |
 
 **Nunca subas contraseñas ni la `DATABASE_URL` al repo:** van en el dashboard del servicio.
 
-### Publicar el backend (una sola vez)
+### Opción A — gratis y sin tarjeta: Neon + Hugging Face Spaces + Vercel
+
+Render a veces pide tarjeta para verificar la cuenta. Estos tres servicios no la piden (todos aceptan entrar con
+GitHub). Hazlo en este orden, porque cada paso usa la URL del anterior.
+
+**0. Fork.** En GitHub, botón **Fork** del repo → se crea una copia en tu cuenta. Vercel necesita un repo donde
+tengas permiso de administrador.
+
+**1. Base de datos en [Neon](https://neon.tech)** (gratis, no caduca; se duerme sola y despierta en ~1 s).
+1. *Sign up* con GitHub → **Create project**: nombre `agrobytes`, Postgres 17, región **AWS US West (Oregon)**.
+2. En el proyecto: **Connect** → **desactiva "Connection pooling"** (las migraciones necesitan conexión directa)
+   → copia la cadena `postgresql://...neon.tech/neondb?sslmode=require...`. Esa es tu `DATABASE_URL`.
+3. No hace falta crear tablas: el backend activa PostGIS, corre las migraciones y carga los cultivos al arrancar.
+
+**2. API en [Hugging Face Spaces](https://huggingface.co/spaces)** (gratis; se duerme tras 48 h sin uso).
+1. Crea cuenta → **New Space**: nombre `agrobytes-api`, SDK **Docker** → plantilla **Blank**, hardware
+   **CPU basic (free)**, visibilidad **Public** → *Create Space*.
+2. **Settings → Variables and secrets**:
+   - **New secret** `DATABASE_URL` = la cadena de Neon.
+   - **New variable** `CORS_ORIGINS` = `http://localhost:3000` por ahora (en el paso 4 pones el de Vercel).
+3. **Files → Add file → Upload files**: arrastra **el contenido** de la carpeta `backend/` del repo (`Dockerfile`,
+   `requirements.txt`, `alembic.ini`, `alembic/`, `app/`) y el archivo `deploy/huggingface/README.md`, que debe
+   quedar como `README.md` en la raíz del Space (reemplaza al que trae). *Commit changes*.
+4. La pestaña **App** muestra *Building* (~3–5 min) y luego *Running*. Tu API queda en
+   `https://<tu-usuario>-agrobytes-api.hf.space`. Prueba `/health` → `{"status":"ok","db":"ok"}` y `/docs`.
+   Si falla, la pestaña **Logs** dice por qué (casi siempre es la `DATABASE_URL`).
+
+**3. Frontend en [Vercel](https://vercel.com)** (gratis, plan Hobby).
+1. *Sign up* con GitHub → **Add New → Project** → importa **tu fork**.
+2. **Root Directory**: `frontend` (Vercel detecta Vite; build `npm run build`, salida `dist`).
+3. **Environment Variables** (antes de *Deploy*; Vite las mete en el build):
+   - `VITE_API_URL` = `https://<tu-usuario>-agrobytes-api.hf.space` (sin `/` al final)
+   - `VITE_USE_MOCK` = `false`
+4. *Deploy* → te da `https://<proyecto>.vercel.app`.
+
+**4. Conectar los dos.** En el Space → *Settings* → cambia `CORS_ORIGINS` a `https://<proyecto>.vercel.app`
+(el Space se reinicia solo). Abre la app de Vercel, dibuja una parcela y analiza: si sale la rotación, ya quedó.
+Si ves un error de red, revisa que `CORS_ORIGINS` sea exactamente el dominio de Vercel, sin `/` al final.
+
+Para actualizar la API después de un cambio en `backend/`, vuelve a subir los archivos al Space. Vercel se
+actualiza solo con cada push a tu fork.
+
+### Opción B — Render (puede pedir tarjeta)
+
+#### Publicar el backend (una sola vez)
 
 1. En [dashboard.render.com](https://dashboard.render.com): **New → Blueprint** → elige este repo. Render lee
    `render.yaml` y crea la BD `agridb` y el servicio `dss-agricola-api`.
@@ -229,7 +273,8 @@ Cada merge a `main` vuelve a publicar el backend (`autoDeploy`).
 
 - **En local:** con `docker compose up` corriendo, pre-calienta el clima de la demo con
   `docker compose exec backend python -m app.db.precalentar`. Los puntos de abajo aplican solo si se publica.
-- **El plan gratis se duerme** tras ~15 min sin uso y tarda ~1 min en despertar. Abre `/health` antes de empezar.
+- **Los planes gratis se duermen** (Render tras ~15 min, Hugging Face tras 48 h sin uso) y tardan ~1 min en
+  despertar. Abre `/health` antes de empezar.
 - Pre-calienta el clima de la demo contra la URL pública (desde `backend/`, con Python y `httpx`):
   `API=https://<backend> python -m app.db.precalentar` (en PowerShell: `$env:API="https://<backend>"; python -m app.db.precalentar`).
 - La BD gratis de Render caduca a los 30 días: sirve para el concurso, no para dejarla para siempre.

@@ -529,14 +529,16 @@ def evaluate(crop: CropParams, sc: SeasonClimate, req: AnalysisRequest, previous
 
 def choose(crops: list[CropParams], sc: SeasonClimate, req: AnalysisRequest, previous: CropParams,
            soil: SoilInput, current: CropParams | None = None,
-           window: Window = Window()) -> tuple[Candidate | None, bool]:
+           window: Window = Window(), used: frozenset[str] = frozenset()) -> tuple[Candidate | None, bool]:
     """Mejor cultivo de la temporada. Devuelve (candidato, fuera_de_temporada).
 
     Entre los cultivos que toleran el clima de su ciclo (EcoCrop) y caben en la línea de tiempo, gana el de mayor
     puntaje; estar fuera de su temporada habitual o cambiar de sistema de producción solo resta. Si ninguno →
-    None = barbecho (descanso). Nunca repite el cultivo anterior.
+    None = barbecho (descanso). Nunca repite el cultivo anterior y, si hay alternativa, tampoco uno que ya está en
+    la rotación (`used`): repetir el mismo cultivo en 12 meses acumula sus plagas y enfermedades.
     """
-    others = [c for c in crops if c.id != previous.id] or crops
+    others = ([c for c in crops if c.id != previous.id and c.id not in used]
+              or [c for c in crops if c.id != previous.id] or crops)
     ctx = season_context(others, sc, window)
     evaluated = [evaluate(c, sc, req, previous, ctx, soil, current, window) for c in others]
     pool = [e for e in evaluated if e.temp_f > 0]
@@ -624,7 +626,8 @@ def risks_for(c: Candidate, sc: SeasonClimate, high_uncertainty: bool, out_of_se
     if c.system_change:
         risks.append("Cambia tu sistema de producción (requiere otro equipo, mano de obra y mercado)")
     if not irrigated and c.water_f < 0.6:
-        risks.append(f"Requiere riego: la lluvia cubre ~{c.water_f * 100:.0f} % de lo que necesita")
+        risks.append(f"Puede requerir riego: la lluvia del ciclo cubre ~{c.water_f * 100:.0f} % de lo que necesita "
+                     "(no cuenta el agua que el suelo ya guarda al sembrar)")
     if not c.ph_ok and soil.ph is not None:
         risks.append(f"pH del suelo ({soil.ph:.1f}) fuera de su rango óptimo "
                      f"({c.crop.ph_min:.1f}–{c.crop.ph_max:.1f})")
@@ -861,7 +864,8 @@ def plan(candidates: list[CropParams], seasons: list[SeasonClimate], req: Analys
             cand = evaluate(current, sc, req, current, ctx, soil, current, window)
             best, oos = (cand, not cand.in_season) if cand.temp_f > 0 else (None, False)
         else:
-            best, oos = choose(candidates, sc, req, previous, soil, current, window)
+            used = frozenset(s.candidate.crop.id for s in slots if s.candidate)
+            best, oos = choose(candidates, sc, req, previous, soil, current, window, used)
         if best is None:
             pool = [current] if monoculture else candidates
             slots.append(Slot(sc, None, fallow_reason=_fallow_reason(pool, sc, window, previous, monoculture)))

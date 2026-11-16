@@ -35,12 +35,12 @@ export const mockAnalysis: AnalysisResponse = {
         0.454,
         0.462
       ],
-      "source": "NASA POWER · 11/08–08/11/2026"
+      "source": "NASA POWER · 12/08–09/11/2026"
     },
     {
       "id": "rain90d",
       "label": "Lluvia 90 días",
-      "value": 48.0,
+      "value": 47.0,
       "unit": "mm",
       "status": "ok",
       "meaning": "Temporada normalmente seca (lo normal es 23 mm): esa lluvia casi no la aprovecha el cultivo (FAO)",
@@ -58,12 +58,12 @@ export const mockAnalysis: AnalysisResponse = {
         7.8,
         11.9
       ],
-      "source": "NASA POWER · 11/08–08/11/2026"
+      "source": "NASA POWER · 12/08–09/11/2026"
     },
     {
       "id": "tempMean",
       "label": "Temperatura media",
-      "value": 23.5,
+      "value": 23.3,
       "unit": "°C",
       "status": "ok",
       "meaning": "0.2 °C bajo lo normal (0.1 desviaciones estándar)",
@@ -81,7 +81,7 @@ export const mockAnalysis: AnalysisResponse = {
         18.87,
         13.97
       ],
-      "source": "NASA POWER · 11/08–08/11/2026"
+      "source": "NASA POWER · 12/08–09/11/2026"
     },
     {
       "id": "solarRadiation",
@@ -120,7 +120,7 @@ export const mockAnalysis: AnalysisResponse = {
       "waterSavingPct": 65.0,
       "nitrogenDelta": 8.0,
       "risks": [
-        "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+        "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
       ],
       "plantingWindow": "Dic – Feb",
       "irrigationMm": 316.0
@@ -138,27 +138,27 @@ export const mockAnalysis: AnalysisResponse = {
       "nitrogenDelta": -52.0,
       "risks": [
         "Calor: en jul la temperatura media (~35 °C) pasa su óptimo (35 °C, ECOCROP); el rendimiento puede bajar: siembra temprano o elige una variedad tolerante",
-        "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+        "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
       ],
       "plantingWindow": "Abr – May",
       "irrigationMm": 908.0
     },
     {
       "season": "autumn",
-      "cropId": "pea",
-      "score": 65,
+      "cropId": "vetch",
+      "score": 60,
       "reasons": [
-        "Todo su ciclo (Nov–Ene) cae en su rango óptimo de temperatura (ECOCROP)",
-        "Necesita 44 % menos agua que maíz",
-        "Leguminosa: fija nitrógeno del aire (estimado)"
+        "Tolera las temperaturas de su ciclo (Nov–Feb)",
+        "Necesita 21 % menos agua que maíz",
+        "Cultivo de cobertura: protege el suelo de la erosión"
       ],
-      "waterSavingPct": 44.0,
-      "nitrogenDelta": 8.0,
+      "waterSavingPct": 21.0,
+      "nitrogenDelta": 119.0,
       "risks": [
-        "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+        "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
       ],
       "plantingWindow": "Nov",
-      "irrigationMm": 226.0
+      "irrigationMm": 321.0
     }
   ],
   "impact": [
@@ -166,27 +166,27 @@ export const mockAnalysis: AnalysisResponse = {
       "label": "Agua total del cultivo",
       "unit": "mm",
       "current": 1311.0,
-      "recommended": 1453.0,
+      "recommended": 1547.0,
       "betterWhen": "lower"
     },
     {
       "label": "Riego necesario",
       "unit": "mm",
       "current": 1310.0,
-      "recommended": 1451.0,
+      "recommended": 1546.0,
       "betterWhen": "lower"
     },
     {
       "label": "Balance de nitrógeno (estimado)",
       "unit": "kg/ha",
       "current": -94.0,
-      "recommended": -36.0,
+      "recommended": 75.0,
       "betterWhen": "higher"
     }
   ],
   "soilHealth": {
     "current": 40,
-    "recommended": 70
+    "recommended": 68
   },
   "climate": [
     {
@@ -275,7 +275,7 @@ export const mockAnalysis: AnalysisResponse = {
           "nitrogenDelta": -47.0,
           "risks": [
             "Fuera de su temporada habitual de siembra; confirma las fechas locales",
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita",
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)",
             "Misma familia que el cultivo anterior (más riesgo de plagas)"
           ],
           "plantingWindow": "Feb",
@@ -307,7 +307,7 @@ export const mockAnalysis: AnalysisResponse = {
           "nitrogenDelta": -47.0,
           "risks": [
             "Fuera de su temporada habitual de siembra; confirma las fechas locales",
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita",
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)",
             "Misma familia que el cultivo anterior (más riesgo de plagas)"
           ],
           "plantingWindow": "Sep – Nov",
@@ -327,7 +327,7 @@ export const mockAnalysis: AnalysisResponse = {
         "Repite familia botánica: plagas y enfermedades se acumulan",
         "1 temporada(s) sin cultivo: deja rastrojo o una cobertura para evitar erosión",
         "Fuera de su temporada habitual de siembra; confirma las fechas locales",
-        "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+        "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
       ],
       "evidence": [
         "Maíz, siembra feb (ciclo Feb–Jun): necesita ~902 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~0 mm (NASA POWER)",
@@ -352,7 +352,7 @@ export const mockAnalysis: AnalysisResponse = {
           "waterSavingPct": 65.0,
           "nitrogenDelta": 8.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Dic – Feb",
           "irrigationMm": 316.0
@@ -370,50 +370,50 @@ export const mockAnalysis: AnalysisResponse = {
           "nitrogenDelta": -52.0,
           "risks": [
             "Calor: en jul la temperatura media (~35 °C) pasa su óptimo (35 °C, ECOCROP); el rendimiento puede bajar: siembra temprano o elige una variedad tolerante",
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Abr – May",
           "irrigationMm": 908.0
         },
         {
           "season": "autumn",
-          "cropId": "pea",
-          "score": 65,
+          "cropId": "vetch",
+          "score": 60,
           "reasons": [
-            "Todo su ciclo (Nov–Ene) cae en su rango óptimo de temperatura (ECOCROP)",
-            "Necesita 44 % menos agua que maíz",
-            "Leguminosa: fija nitrógeno del aire (estimado)"
+            "Tolera las temperaturas de su ciclo (Nov–Feb)",
+            "Necesita 21 % menos agua que maíz",
+            "Cultivo de cobertura: protege el suelo de la erosión"
           ],
-          "waterSavingPct": 44.0,
-          "nitrogenDelta": 8.0,
+          "waterSavingPct": 21.0,
+          "nitrogenDelta": 119.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Nov",
-          "irrigationMm": 226.0
+          "irrigationMm": 321.0
         }
       ],
-      "waterMm": 1453.0,
-      "irrigationMm": 1451.0,
-      "nitrogenKgHa": -36.0,
-      "soilHealth": 70,
+      "waterMm": 1547.0,
+      "irrigationMm": 1546.0,
+      "nitrogenKgHa": 75.0,
+      "soilHealth": 68,
       "bareSeasons": 0,
       "why": "En cada temporada elige lo que menos agua necesita entre lo que el clima permite.",
       "benefits": [
-        "Menos riego por ciclo: ~484 mm contra ~655 mm de seguir como hoy",
-        "Balance de nitrógeno 58 kg/ha mejor que seguir como hoy (estimado)",
-        "Salud del suelo de 40 a 70 / 100 (estimado)",
+        "Menos riego por ciclo: ~515 mm contra ~655 mm de seguir como hoy",
+        "Balance de nitrógeno 169 kg/ha mejor que seguir como hoy (estimado)",
+        "Salud del suelo de 40 a 68 / 100 (estimado)",
         "Cada ciclo cambia de familia botánica: corta ciclos de plagas"
       ],
       "tradeoffs": [
-        "Usa 142 mm más de agua en total: hay más ciclos de cultivo",
-        "Requiere riego: la lluvia cubre ~0 % de lo que necesita",
+        "Usa 236 mm más de agua en total: hay más ciclos de cultivo",
+        "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)",
         "Calor: en jul la temperatura media (~35 °C) pasa su óptimo (35 °C, ECOCROP); el rendimiento puede bajar: siembra temprano o elige una variedad tolerante"
       ],
       "evidence": [
         "Chícharo, siembra dic – feb (ciclo Ene–Mar): necesita ~317 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~1 mm (NASA POWER)",
         "Sorgo, siembra abr – may (ciclo May–Ago): necesita ~908 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~0 mm (NASA POWER)",
-        "Chícharo, siembra nov (ciclo Nov–Ene): necesita ~227 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~1 mm (NASA POWER)"
+        "Veza (abono verde), siembra nov (ciclo Nov–Feb): necesita ~322 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~1 mm (NASA POWER)"
       ]
     },
     {
@@ -434,7 +434,7 @@ export const mockAnalysis: AnalysisResponse = {
           "waterSavingPct": 65.0,
           "nitrogenDelta": 8.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Dic – Feb",
           "irrigationMm": 316.0
@@ -451,48 +451,48 @@ export const mockAnalysis: AnalysisResponse = {
           "waterSavingPct": -22.0,
           "nitrogenDelta": -139.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Abr – May",
           "irrigationMm": 1390.0
         },
         {
           "season": "autumn",
-          "cropId": "pea",
-          "score": 70,
+          "cropId": "vetch",
+          "score": 62,
           "reasons": [
-            "Todo su ciclo (Nov–Ene) cae en su rango óptimo de temperatura (ECOCROP)",
-            "Necesita 44 % menos agua que maíz",
-            "Leguminosa: fija nitrógeno del aire (estimado)"
+            "Tolera las temperaturas de su ciclo (Nov–Feb)",
+            "Necesita 21 % menos agua que maíz",
+            "Cultivo de cobertura: protege el suelo de la erosión"
           ],
-          "waterSavingPct": 44.0,
-          "nitrogenDelta": 8.0,
+          "waterSavingPct": 21.0,
+          "nitrogenDelta": 119.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Nov",
-          "irrigationMm": 226.0
+          "irrigationMm": 321.0
         }
       ],
-      "waterMm": 1935.0,
-      "irrigationMm": 1932.0,
-      "nitrogenKgHa": -123.0,
-      "soilHealth": 70,
+      "waterMm": 2029.0,
+      "irrigationMm": 2027.0,
+      "nitrogenKgHa": -12.0,
+      "soilHealth": 68,
       "bareSeasons": 0,
       "why": "Da más peso a leguminosas y coberturas, que devuelven nitrógeno y protegen el suelo.",
       "benefits": [
-        "Menos riego por ciclo: ~644 mm contra ~655 mm de seguir como hoy",
-        "Salud del suelo de 40 a 70 / 100 (estimado)",
+        "Balance de nitrógeno 82 kg/ha mejor que seguir como hoy (estimado)",
+        "Salud del suelo de 40 a 68 / 100 (estimado)",
         "Cada ciclo cambia de familia botánica: corta ciclos de plagas"
       ],
       "tradeoffs": [
-        "Usa 624 mm más de agua en total: hay más ciclos de cultivo",
-        "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+        "Usa 718 mm más de agua en total: hay más ciclos de cultivo",
+        "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
       ],
       "evidence": [
         "Chícharo, siembra dic – feb (ciclo Ene–Mar): necesita ~317 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~1 mm (NASA POWER)",
         "Algodón, siembra abr – may (ciclo Abr–Oct): necesita ~1390 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~0 mm (NASA POWER)",
-        "Chícharo, siembra nov (ciclo Nov–Ene): necesita ~227 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~1 mm (NASA POWER)"
+        "Veza (abono verde), siembra nov (ciclo Nov–Feb): necesita ~322 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~1 mm (NASA POWER)"
       ]
     },
     {
@@ -513,7 +513,7 @@ export const mockAnalysis: AnalysisResponse = {
           "waterSavingPct": 65.0,
           "nitrogenDelta": 8.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Dic – Feb",
           "irrigationMm": 316.0
@@ -530,7 +530,7 @@ export const mockAnalysis: AnalysisResponse = {
           "waterSavingPct": -22.0,
           "nitrogenDelta": -139.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Abr – May",
           "irrigationMm": 1390.0
@@ -547,7 +547,7 @@ export const mockAnalysis: AnalysisResponse = {
           "waterSavingPct": 12.0,
           "nitrogenDelta": -52.0,
           "risks": [
-            "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+            "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
           ],
           "plantingWindow": "Nov",
           "irrigationMm": 361.0
@@ -565,7 +565,7 @@ export const mockAnalysis: AnalysisResponse = {
       ],
       "tradeoffs": [
         "Usa 758 mm más de agua en total: hay más ciclos de cultivo",
-        "Requiere riego: la lluvia cubre ~0 % de lo que necesita"
+        "Puede requerir riego: la lluvia del ciclo cubre ~0 % de lo que necesita (no cuenta el agua que el suelo ya guarda al sembrar)"
       ],
       "evidence": [
         "Chícharo, siembra dic – feb (ciclo Ene–Mar): necesita ~317 mm (FAO-56, ET₀ Penman-Monteith) y la lluvia efectiva aporta ~1 mm (NASA POWER)",
@@ -596,7 +596,7 @@ export const mockHistory: AnalysisSummary[] = [
     "rotationCrops": [
       "pea",
       "sorghum",
-      "pea"
+      "vetch"
     ]
   },
   {
@@ -612,7 +612,7 @@ export const mockHistory: AnalysisSummary[] = [
     "rotationCrops": [
       "pea",
       "sorghum",
-      "pea"
+      "vetch"
     ]
   }
 ];

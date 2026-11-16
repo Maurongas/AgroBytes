@@ -1,7 +1,7 @@
 import type { Season } from '../api/types';
 
-// Espejo de backend/app/data/crops.json (18 cultivos). Mejor aún: leerlo de GET /api/v1/crops
-// (ver docs/FRONTEND-PENDIENTES.md). 'fallow' no es un cultivo: es el paso de "descanso" de la rotación.
+// Espejo de backend/app/data/crops.json (18 cultivos). Mejor aún: leerlo de GET /api/v1/crops.
+// 'fallow' no es un cultivo: es el paso de "descanso" de la rotación.
 export const CROPS = [
   { id: 'maize', name: 'Maíz' },
   { id: 'sorghum', name: 'Sorgo' },

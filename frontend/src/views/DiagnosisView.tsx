@@ -209,6 +209,10 @@ export default function DiagnosisView() {
           <strong className="text-ink-900">Tú decides.</strong> AgroBytes te ayuda a explorar opciones con clima de
           NASA POWER y reglas agronómicas; no reemplaza tu experiencia ni la de un agrónomo de tu zona. El nitrógeno y
           la salud del suelo son estimaciones.
+          <span className="mt-2 block text-xs text-ink-500">
+            Fuentes: NASA POWER (clima) · FAO ECOCROP y FAO-56 (cultivos y agua) · ISRIC SoilGrids (suelo, CC BY 4.0)
+            · FAOSTAT (cultivos por país).
+          </span>
         </p>
       </aside>
     </div>

@@ -80,19 +80,19 @@ Rotaciones comparadas: 11 lugares × 3 prioridades × 3 temporadas. Se mueve un 
 
 | Parámetro | Cambio | Pasos de la rotación que NO cambian |
 |---|---|---|
-| `W_TEMP` | ×0.5 | 87 % |
-| `W_TEMP` | ×1.5 | 98 % |
-| `W_WATER` | ×0.5 | 96 % |
-| `W_WATER` | ×1.5 | 94 % |
+| `W_TEMP` | ×0.5 | 86 % |
+| `W_TEMP` | ×1.5 | 97 % |
+| `W_WATER` | ×0.5 | 93 % |
+| `W_WATER` | ×1.5 | 96 % |
 | `W_SOIL` | ×0.5 | 99 % |
-| `W_SOIL` | ×1.5 | 96 % |
-| `W_PRIORITY` | ×0.5 | 96 % |
-| `W_PRIORITY` | ×1.5 | 91 % |
+| `W_SOIL` | ×1.5 | 97 % |
+| `W_PRIORITY` | ×0.5 | 95 % |
+| `W_PRIORITY` | ×1.5 | 89 % |
 | `SAME_FAMILY_PENALTY` | 0.70 → 0.55 | 100 % |
-| `SAME_FAMILY_PENALTY` | 0.70 → 0.85 | 98 % |
+| `SAME_FAMILY_PENALTY` | 0.70 → 0.85 | 97 % |
 | `OUT_OF_SEASON_PENALTY` | 0.90 → 0.85 | 98 % |
-| `OUT_OF_SEASON_PENALTY` | 0.90 → 0.95 | 91 % |
-| `SYSTEM_CHANGE_PENALTY` | 0.85 → 0.75 | 98 % |
-| `SYSTEM_CHANGE_PENALTY` | 0.85 → 0.95 | 87 % |
+| `OUT_OF_SEASON_PENALTY` | 0.90 → 0.95 | 90 % |
+| `SYSTEM_CHANGE_PENALTY` | 0.85 → 0.75 | 97 % |
+| `SYSTEM_CHANGE_PENALTY` | 0.85 → 0.95 | 85 % |
 
-Promedio: **95 %** de los pasos se mantienen.
+Promedio: **94 %** de los pasos se mantienen.

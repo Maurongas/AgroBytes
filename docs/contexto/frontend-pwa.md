@@ -29,7 +29,7 @@ frontend/src/components/InstallButton.tsx  botón "Instalar app" (vista Cuenta)
 
 ## Lo que ya existe
 - `client.ts` con `request()` común: lee `VITE_API_URL`, muestra el `detail` de los errores del backend,
-  y si `VITE_USE_MOCK=true` (por defecto en compose) responde con `mock.ts`.
+  y si `VITE_USE_MOCK=true` (en compose el default es `false`) responde con `mock.ts`.
 - `types.ts`/`mock.ts` ya incluyen `uncertainty`, `location`, `createdAt` y `AnalysisSummary`.
 
 ## Tareas (en orden)

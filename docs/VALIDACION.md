@@ -68,10 +68,10 @@ no tomado de un artículo.
 11 lugares × 3 prioridades × 3 pasos de rotación. Se movió un parámetro a la vez: cada peso ×0.5 y ×1.5 (los pesos se
 renormalizan para sumar 1) y cada castigo hacia arriba y hacia abajo.
 
-- **En promedio, el 95 % de los pasos de la rotación no cambia.**
-- Los más influyentes: el castigo por cambio de sistema (0.85 → 0.95 deja igual el 87 %) y el peso de la temperatura
-  a la mitad (87 %). Tiene sentido: deciden si se propone pasar de granos a hortalizas y cuánto pesa el clima.
-- Lo menos influyente: el peso del suelo y el castigo por repetir familia (95–100 %).
+- **En promedio, el 94 % de los pasos de la rotación no cambia.**
+- Los más influyentes: el castigo por cambio de sistema (0.85 → 0.95 deja igual el 85 %) y el peso de la temperatura
+  a la mitad (86 %). Tiene sentido: deciden si se propone pasar de granos a hortalizas y cuánto pesa el clima.
+- Lo menos influyente: el peso del suelo y el castigo por repetir familia (97–100 %).
 
 Conclusión: las recomendaciones dependen sobre todo de los datos (clima, ciclo, agua) y no de los números que
 elegimos nosotros.

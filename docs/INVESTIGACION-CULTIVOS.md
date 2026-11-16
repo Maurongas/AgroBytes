@@ -7,7 +7,7 @@
 > catálogo de **18 cultivos** generado por `backend/research/build_crops.py` (16 de la propuesta + canola y papa,
 > para Norteamérica), migración `a3f1c2d4e5b6`, riego, barbecho, familia botánica, heladas, pH, agua FAO-56 y suelo
 > con SoilGrids (`GET /api/v1/soil`). La temporada pasó de filtro a preferencia y se agregó la regla de sistema de
-> producción (granos ↔ hortalizas). Lo que falta en la UI: `FRONTEND-PENDIENTES.md`. Alcance mundial: `ALCANCE-GEOGRAFICO.md`.
+> producción (granos ↔ hortalizas). Alcance mundial: `ALCANCE-GEOGRAFICO.md`.
 
 > **Actualización (2026-11-15, v2.3):** este documento es el **diagnóstico histórico**. Lo vigente está en
 > [`METODOLOGIA.md`](METODOLOGIA.md) (fuente y nivel de respaldo de cada número) y [`VALIDACION.md`](VALIDACION.md)
