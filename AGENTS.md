@@ -9,15 +9,16 @@ de cultivos por temporada** con puntaje, razones, riesgos, impacto estimado e in
 - **De dónde sale cada número (fuentes, qué es calibrado y qué es diseño propio):** `docs/METODOLOGIA.md` ·
   **validación contra calendarios oficiales:** `docs/VALIDACION.md`. No agregues un número al motor sin su fuente.
 - **Contexto por rol:** `docs/contexto/` → `backend.md`, `backend-dba.md`, `frontend-layout.md`, `frontend-mapa.md`, `frontend-pwa.md`
-- Cómo correr: `docker compose up --build` (ver `docs/GUIA-INICIO.md`). Frontend :3000, API :8000/docs, BD :5432.
+- Cómo correr: `docker compose up --build` (ver `docs/GUIA-INICIO.md`). Frontend :3000, API :8000/docs, BD solo dentro de Docker
+  (`docker compose exec db psql -U admin -d agridb`).
 
 Reglas generales:
 - Trabaja solo en los archivos de tu rol; si cambias el contrato (§5) o el modelo de datos (§6), actualiza
   ARQUITECTURA.md **y** los dos espejos del contrato (`backend/app/schemas/`, `frontend/src/api/types.ts` + `mock.ts`) en el mismo PR.
 - Rutas reales: `frontend/src/` (React 19 + Vite 8 + Tailwind 4, **no Next.js**), `backend/app/`.
 - No asumas APIs de versiones anteriores: React 19, Vite 8, TypeScript 6, Tailwind 4, react-leaflet 5, Pydantic v2, SQLAlchemy 2.
-- El backend ya implementa todos los endpoints con NASA POWER real y PostgreSQL. `VITE_USE_MOCK=true` (default
-  en compose) muestra datos de ejemplo de `frontend/src/api/mock.ts`; con `false` el frontend usa el backend.
+- El backend ya implementa todos los endpoints con NASA POWER real y PostgreSQL. `VITE_USE_MOCK=false` (default
+  en compose) usa el backend real; con `true` muestra datos de ejemplo de `frontend/src/api/mock.ts`.
 - No describir como "ML"/"IA"/"satélite" algo que no lo es; la fuente de datos es NASA POWER. Nitrógeno y
   salud del suelo son **estimaciones por reglas** y se etiquetan así.
 - Commits `feat:/fix:/chore:/docs:/refactor:`, ramas `feature/<area>-<tema>`, PR a `main` con 1 revisión.

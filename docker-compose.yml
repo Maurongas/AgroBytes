@@ -3,7 +3,7 @@
 #
 #       docker compose up --build
 #
-#    db       -> PostgreSQL + PostGIS        (localhost:5432)
+#    db       -> PostgreSQL + PostGIS        (solo dentro de Docker; ver abajo)
 #    backend  -> API FastAPI                 (http://localhost:8000/docs)
 #    frontend -> React + Vite (mapa y UI)    (http://localhost:3000)
 #
@@ -17,8 +17,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-admin}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       POSTGRES_DB: ${POSTGRES_DB:-agridb}
-    ports:
-      - "5432:5432"
+    # Sin `ports`: la BD solo se usa dentro de Docker (el backend llega a ella como `db:5432`), así no choca con
+    # un PostgreSQL instalado en tu compu. Para entrar: docker compose exec db psql -U admin -d agridb
     volumes:
       # Los datos sobreviven aunque apagues los contenedores.
       # Se borran SOLO con: docker compose down -v
@@ -59,8 +59,8 @@ services:
       - "3000:3000"
     environment:
       VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-      # true = datos de ejemplo (src/api/mock.ts). Pásalo a false cuando el backend implemente /api/v1/analyses.
-      VITE_USE_MOCK: ${VITE_USE_MOCK:-true}
+      # false = backend real con NASA POWER; true = datos de ejemplo (src/api/mock.ts), solo para trabajar sin backend.
+      VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
       # Necesario en Windows para detectar cambios en los archivos
       CHOKIDAR_USEPOLLING: "true"
     volumes:

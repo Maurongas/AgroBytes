@@ -60,10 +60,11 @@ Cada número cae en una de cuatro categorías. La regla es **no presentar nunca 
 
 | Parámetro | Valor | Por qué existe | Sensibilidad (`VALIDACION.md`) |
 |---|---|---|---|
-| Pesos del puntaje | temperatura 0.40 · agua 0.30 · suelo 0.15 · prioridad 0.15 | Ordenar candidatos que ya son viables | ±50 % en cada peso: 87–99 % de los pasos no cambian |
-| Misma familia botánica seguida | × 0.7 | Plagas y enfermedades compartidas (la dirección sí está respaldada por guías de extensión; el número no) | 98–100 % |
-| Fuera de su temporada habitual | × 0.9 | La temporada es preferencia, no filtro | 91–98 % |
-| Cambio de sistema (granos ↔ hortalizas) | × 0.85 | Otro equipo, mano de obra y mercado | 87–98 % (el más influyente) |
+| Pesos del puntaje | temperatura 0.40 · agua 0.30 · suelo 0.15 · prioridad 0.15 | Ordenar candidatos que ya son viables | ±50 % en cada peso: 86–99 % de los pasos no cambian |
+| Misma familia botánica seguida | × 0.7 | Plagas y enfermedades compartidas (la dirección sí está respaldada por guías de extensión; el número no) | 97–100 % |
+| No repetir un cultivo en la rotación | Excluido si hay otra opción (nunca el inmediato anterior) | Mismo motivo que la regla de familia: repetir la especie en 12 meses acumula sus plagas y enfermedades. Es filtro, no número | — |
+| Fuera de su temporada habitual | × 0.9 | La temporada es preferencia, no filtro | 90–98 % |
+| Cambio de sistema (granos ↔ hortalizas) | × 0.85 | Otro equipo, mano de obra y mercado | 85–97 % (el más influyente) |
 | Suelo fuera de lo que tolera | textura × 0.5 · pH × 0.6 | Castigo, no descarte | — |
 | Tolerancia de pH | óptimo de ECOCROP ± 0.5 | ECOCROP da el óptimo, no el absoluto | — |
 | Factor de prioridad "rendimiento" | cereales, hortalizas, oleaginosas e industriales 1; otros 0.5 | No hay datos de precio ni de rendimiento por variedad | — |
@@ -94,6 +95,9 @@ Cada número cae en una de cuatro categorías. La regla es **no presentar nunca 
 - ECOCROP da rangos por especie, no por variedad. Un modelo mensual tipo EcoCrop no simula la latencia invernal de
   los cereales de invierno (trigo de Kansas: el motor lo descarta).
 - Sin rendimiento ni economía (precios, costos), sin plagas locales (solo la regla de familia botánica).
+- Sin balance de agua del suelo: el riego compara ETc contra la lluvia efectiva **del ciclo** y no cuenta el agua
+  que el suelo ya guarda al sembrar. En zonas de temporal con suelos profundos (p. ej. el Medio Oeste de EE. UU.)
+  sobrestima el riego; por eso el aviso dice «Puede requerir riego» y lo aclara.
 - Pesos y castigos propios: medidos con sensibilidad, no calibrados con rendimientos.
 - Validación con agricultores y agrónomos (INIFAP, extensionistas): **pendiente**. Ver `VALIDACION.md`.
 

@@ -44,7 +44,7 @@ explicando razones, riesgos, impacto estimado e incertidumbre.
 flowchart LR
     U[Agricultor<br/>navegador / PWA] --> FE[Frontend<br/>React 19 + Vite 8<br/>:3000]
     FE -->|REST JSON<br/>VITE_API_URL| BE[Backend<br/>FastAPI<br/>:8000]
-    BE -->|SQLAlchemy| DB[(PostgreSQL 15<br/>+ PostGIS<br/>:5432)]
+    BE -->|SQLAlchemy| DB[(PostgreSQL 15<br/>+ PostGIS<br/>db:5432, interna)]
     BE -->|httpx| NASA[NASA POWER API]
     FE -.->|Service Worker| SW[(Caché del navegador)]
 ```
@@ -501,11 +501,13 @@ Una temporada que el cultivo anterior todavía ocupa no se muestra. Las temporad
   - fuera de su temporada habitual (`seasons`, calendario templado) → × 0.9 (es preferencia, no filtro);
   - cambia de sistema de producción respecto a `currentCrop` (granos ↔ hortalizas; las coberturas encajan en ambos) → × 0.85.
   Pesos y multiplicadores son **parámetros de diseño** (no vienen de un estudio); su efecto se mide en `docs/VALIDACION.md`.
-- Nunca el mismo cultivo dos pasos seguidos (el paso 1 tampoco repite `currentCrop`). Empate → el que necesita menos agua.
+- Nunca el mismo cultivo dos pasos seguidos (el paso 1 tampoco repite `currentCrop`), y un cultivo que ya está en la
+  rotación solo se repite si no queda otra opción viable. Empate → el que necesita menos agua.
 - **Barbecho:** si ningún cultivo es viable en ese paso → `cropId: "fallow"`, score 0; la razón dice si fue por clima
   o porque ningún ciclo cabe entre la cosecha anterior y lo que sigue.
 - **Riesgos:** helada = ≥ 1 día con helada esperado en el ciclo (`frostDays` de NASA POWER); calor = temperatura
-  **media** de algún mes del ciclo > óptimo de ECOCROP; riego, pH, familia, sistema, temporada, lluvia variable.
+  **media** de algún mes del ciclo > óptimo de ECOCROP; riego («Puede requerir riego» si la lluvia efectiva del ciclo cubre < 60 % de ETc; no cuenta el agua guardada en el
+  suelo), pH, familia, sistema, temporada, lluvia variable.
 - `waterSavingPct` = ahorro de agua vs. `currentCrop` sembrado en esa misma temporada.
 - `nitrogenDelta` = balance parcial de N del cultivo con el rendimiento FAOSTAT **del país de la parcela**
   (`crop_countries.nitrogen_kg_ha`; si no hay, el del catálogo).
@@ -640,13 +642,13 @@ CLIMATE_CACHE_DAYS=30
 RATE_LIMIT_ANALYSES_PER_MIN=30   # POST /analyses por IP por minuto; 0 = sin límite
 REQUIRE_DEVICE_ID=false          # true = historial/detalle/borrado exigen X-Device-Id
 VITE_API_URL=http://localhost:8000
-VITE_USE_MOCK=true
+VITE_USE_MOCK=false             # true = datos de ejemplo de mock.ts (sin backend)
 ```
 | Servicio | URL |
 |---|---|
 | Frontend | http://localhost:3000 |
 | API + docs | http://localhost:8000/docs |
-| BD | localhost:5432 |
+| BD | solo dentro de Docker: `docker compose exec db psql -U admin -d agridb` |
 
 ---
 
